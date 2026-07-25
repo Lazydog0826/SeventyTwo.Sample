@@ -1,4 +1,5 @@
 using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SqlSugar;
 
 namespace SeventyTwo.Sample.Domain.Products;
 
@@ -28,7 +29,15 @@ public sealed class Product : AggregateRoot
         Price = price;
     }
 
+    /// <summary>
+    /// 商品名称。
+    /// </summary>
+    [SugarColumn(ColumnDescription = "商品名称")]
     public string Name { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 商品价格。
+    /// </summary>
+    [SugarColumn(ColumnDescription = "商品价格")]
     public decimal Price { get; private set; }
 }
