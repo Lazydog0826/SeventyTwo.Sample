@@ -1,6 +1,9 @@
 using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
 using SqlSugar;
 
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+
 namespace SeventyTwo.Sample.Domain.Products;
 
 public sealed class Product : AggregateRoot
