@@ -1,5 +1,4 @@
 using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
-using SqlSugar;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -35,12 +34,10 @@ public sealed class Product : AggregateRoot
     /// <summary>
     /// 商品名称。
     /// </summary>
-    [SugarColumn(ColumnDescription = "商品名称")]
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
     /// 商品价格。
     /// </summary>
-    [SugarColumn(ColumnDescription = "商品价格")]
     public decimal Price { get; private set; }
 }

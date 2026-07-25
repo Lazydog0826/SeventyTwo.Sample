@@ -1,14 +1,21 @@
 using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
-using SqlSugar;
 
-// ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace SeventyTwo.Sample.Domain.Inventories;
 
 public sealed class Inventory : AggregateRoot
 {
-    private Inventory() { }
+    public Inventory(
+        long id,
+        long productId,
+        long warehouseId,
+        long locationId,
+        string inboundBatchNo,
+        DateTimeOffset inboundAt,
+        int quantity
+    )
+        : this(id, productId, warehouseId, locationId, inboundBatchNo, inboundAt, quantity, quantity) { }
 
     public Inventory(
         long id,
@@ -17,6 +24,7 @@ public sealed class Inventory : AggregateRoot
         long locationId,
         string inboundBatchNo,
         DateTimeOffset inboundAt,
+        int initialQuantity,
         int quantity
     )
     {
@@ -50,6 +58,11 @@ public sealed class Inventory : AggregateRoot
             throw new InventoryDomainException("入库时间不能为空");
         }
 
+        if (initialQuantity < 0)
+        {
+            throw new InventoryDomainException("初始库存数量不能小于 0");
+        }
+
         if (quantity < 0)
         {
             throw new InventoryDomainException("库存数量不能小于 0");
@@ -61,49 +74,78 @@ public sealed class Inventory : AggregateRoot
         LocationId = locationId;
         InboundBatchNo = inboundBatchNo;
         InboundAt = inboundAt;
-        InitialQuantity = quantity;
+        InitialQuantity = initialQuantity;
         Quantity = quantity;
     }
 
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    [SugarColumn(ColumnDescription = "商品 ID")]
     public long ProductId { get; private set; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    [SugarColumn(ColumnDescription = "仓库 ID")]
     public long WarehouseId { get; private set; }
 
     /// <summary>
     /// 货位 ID。
     /// </summary>
-    [SugarColumn(ColumnDescription = "货位 ID")]
     public long LocationId { get; private set; }
 
     /// <summary>
     /// 入库批次号。
     /// </summary>
-    [SugarColumn(ColumnDescription = "入库批次号")]
-    public string InboundBatchNo { get; private set; } = string.Empty;
+    public string InboundBatchNo { get; private set; }
 
     /// <summary>
     /// 入库时间。
     /// </summary>
-    [SugarColumn(ColumnDescription = "入库时间")]
     public DateTimeOffset InboundAt { get; private set; }
 
     /// <summary>
     /// 初始入库数量。
     /// </summary>
-    [SugarColumn(ColumnDescription = "初始入库数量")]
     public int InitialQuantity { get; private set; }
 
     /// <summary>
     /// 当前库存数量。
     /// </summary>
-    [SugarColumn(ColumnDescription = "当前库存数量")]
     public int Quantity { get; private set; }
+
+    public InventoryQuantityChange Increase(int quantity)
+    {
+        if (quantity <= 0)
+        {
+            throw new InventoryDomainException("库存变更数量必须大于 0");
+        }
+
+        if (quantity > int.MaxValue - Quantity)
+        {
+            throw new InventoryDomainException("库存数量超出范围");
+        }
+
+        var beforeQuantity = Quantity;
+        Quantity += quantity;
+        return new InventoryQuantityChange(beforeQuantity, Quantity);
+    }
+
+    public InventoryQuantityChange Decrease(int quantity)
+    {
+        if (quantity <= 0)
+        {
+            throw new InventoryDomainException("库存变更数量必须大于 0");
+        }
+
+        if (quantity > Quantity)
+        {
+            throw new InventoryDomainException("库存不足");
+        }
+
+        var beforeQuantity = Quantity;
+        Quantity -= quantity;
+        return new InventoryQuantityChange(beforeQuantity, Quantity);
+    }
 }
+
+public sealed record InventoryQuantityChange(int BeforeQuantity, int AfterQuantity);

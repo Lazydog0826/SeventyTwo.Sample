@@ -1,10 +1,12 @@
-using SeventyTwo.Sample.Application.Abstractions;
+using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Application.Orders.CreateOrder;
 using SeventyTwo.Sample.Domain.Orders;
+using Yitter.IdGenerator;
 
 namespace SeventyTwo.Sample.Application.Orders;
 
-public sealed class OrderApplication(IIdGenerator idGenerator, IOrderRepository orderRepository)
+[AutofacDependency(typeof(IOrderApplication))]
+public sealed class OrderApplication(IOrderRepository orderRepository)
     : IOrderApplication
 {
     public async Task<CreateOrderResult> CreateAsync(
@@ -12,7 +14,7 @@ public sealed class OrderApplication(IIdGenerator idGenerator, IOrderRepository 
         CancellationToken cancellationToken
     )
     {
-        var orderId = idGenerator.NextId();
+        var orderId = YitIdHelper.NextId();
         var orderNo = $"SO{orderId}";
         var createdAt = DateTime.UtcNow;
         var items = input.Items

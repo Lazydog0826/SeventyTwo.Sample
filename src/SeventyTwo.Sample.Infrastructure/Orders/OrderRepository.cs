@@ -1,8 +1,10 @@
+using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
 
 namespace SeventyTwo.Sample.Infrastructure.Orders;
 
+[AutofacDependency(typeof(IOrderRepository))]
 public sealed class OrderRepository(ISqlSugarClient db) : IOrderRepository
 {
     public async Task AddAsync(Order order, CancellationToken cancellationToken)
