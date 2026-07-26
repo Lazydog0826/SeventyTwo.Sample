@@ -28,6 +28,23 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             return;
         }
 
+        drafts =
+        [
+            .. drafts
+                .GroupBy(x => new
+                {
+                    x.WarehouseId,
+                    x.LocationId,
+                    x.ProductId,
+                })
+                .Select(x => new InventoryDecreaseDraft(
+                    x.Key.ProductId,
+                    x.Key.WarehouseId,
+                    x.Key.LocationId,
+                    x.Sum(x2 => x2.Quantity)
+                )),
+        ];
+
         var increaseKeys = increases.Select(GetKey);
         var draftKeys = drafts.Select(GetKey);
         var allKeys = increaseKeys.Concat(draftKeys).Distinct().OrderBy(x => x).ToList();
@@ -113,8 +130,8 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             var draftQty = x.Quantity;
 
             var currKey = GetKey(x);
-            var currInventoryList = inventoryList.Where(x2 => x2.Key == currKey).ToList();
-            currInventoryList.AddRange([.. addInventoryList.Where(x2 => x2.Key == currKey)]);
+            var currInventoryList = inventoryList.Where(x2 => x2.Key == currKey && x2.Quantity > 0).ToList();
+            currInventoryList.AddRange([.. addInventoryList.Where(x2 => x2.Key == currKey && x2.Quantity > 0)]);
             currInventoryList = [.. currInventoryList.OrderByDescending(x2 => x2.InboundAt)];
 
             while (currInventoryList.Any())
@@ -162,7 +179,7 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
 
             if (draftQty > 0)
             {
-                throw new InvalidOperationException("库存不足");
+                throw new InventoryDomainException("库存不足");
             }
         });
 
