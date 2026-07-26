@@ -1,36 +1,57 @@
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application.Inventories;
 using SeventyTwo.Sample.Application.Inventories.ChangeInventory;
-using SeventyTwo.Sample.Domain.Inventories;
+
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
 [ApiController]
 [Route("api/inventories")]
-public sealed class InventoriesController(IInventoryApplication inventoryApplication)
-    : ControllerBase
+public sealed class InventoriesController(IInventoryApplication inventoryApplication) : ControllerBase
 {
-    [HttpPost("{inventoryId:long}/changes")]
-    public async Task<ActionResult<ChangeInventoryResult>> Change(
-        long inventoryId,
-        ChangeInventoryRequest request,
-        CancellationToken cancellationToken
-    )
+    [HttpPost("changes")]
+    public async Task Change(ChangeInventoryRequest request, CancellationToken cancellationToken)
     {
         var input = new ChangeInventoryInput(
             request.RequestNo,
-            inventoryId,
-            request.ChangeType,
-            request.Quantity
+            [
+                .. request.Increases.Select(x => new InventoryIncreaseInput(
+                    x.ProductId,
+                    x.WarehouseId,
+                    x.LocationId,
+                    x.Quantity,
+                    x.InboundBatchNo,
+                    x.ChangedAt
+                )),
+            ],
+            [
+                .. request.Decreases.Select(x => new InventoryDecreaseInput(
+                    x.ProductId,
+                    x.WarehouseId,
+                    x.LocationId,
+                    x.Quantity
+                )),
+            ]
         );
-        var result = await inventoryApplication.ChangeAsync(input, cancellationToken);
 
-        return Ok(result);
+        await inventoryApplication.ChangeAsync(input, cancellationToken);
     }
 }
 
 public sealed record ChangeInventoryRequest(
     string RequestNo,
-    InventoryChangeType ChangeType,
-    int Quantity
+    IReadOnlyCollection<InventoryIncreaseRequest> Increases,
+    IReadOnlyCollection<InventoryDecreaseRequest> Decreases
 );
+
+public sealed record InventoryIncreaseRequest(
+    long ProductId,
+    long WarehouseId,
+    long LocationId,
+    int Quantity,
+    string InboundBatchNo,
+    DateTimeOffset ChangedAt
+);
+
+public sealed record InventoryDecreaseRequest(long ProductId, long WarehouseId, long LocationId, int Quantity);

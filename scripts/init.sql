@@ -1,6 +1,7 @@
-CREATE TABLE IF NOT EXISTS inventories
+CREATE TABLE IF NOT EXISTS inventory_record
 (
     id                  bigint                      PRIMARY KEY,
+    key                 varchar(128)                NOT NULL,
     product_id          bigint                      NOT NULL,
     warehouse_id        bigint                      NOT NULL,
     location_id         bigint                      NOT NULL,
@@ -19,7 +20,21 @@ CREATE TABLE IF NOT EXISTS inventories
     version             bigint                      NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS inventory_changes
+CREATE INDEX IF NOT EXISTS ix_inventory_record_key
+    ON inventory_record (key);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_record_product_warehouse_location_batch
+    ON inventory_record (product_id, warehouse_id, location_id, inbound_batch_no);
+
+CREATE TABLE IF NOT EXISTS inventory_change_request
+(
+    request_id          bigint                      PRIMARY KEY,
+    request_no          varchar(64)                 NOT NULL,
+    request_at          timestamp with time zone    NOT NULL,
+    CONSTRAINT uq_inventory_change_request_request_no UNIQUE (request_no)
+);
+
+CREATE TABLE IF NOT EXISTS inventory_change_record
 (
     change_id           bigint                      PRIMARY KEY,
     request_no          varchar(64)                 NOT NULL,
@@ -29,14 +44,18 @@ CREATE TABLE IF NOT EXISTS inventory_changes
     before_quantity     integer                     NOT NULL CHECK (before_quantity >= 0),
     after_quantity      integer                     NOT NULL CHECK (after_quantity >= 0),
     changed_at          timestamp with time zone    NOT NULL,
-    CONSTRAINT uq_inventory_changes_request_no UNIQUE (request_no),
-    CONSTRAINT fk_inventory_changes_inventory
-        FOREIGN KEY (inventory_id) REFERENCES inventories (id)
+    CONSTRAINT fk_inventory_change_record_request
+        FOREIGN KEY (request_no) REFERENCES inventory_change_request (request_no),
+    CONSTRAINT fk_inventory_change_record_inventory
+        FOREIGN KEY (inventory_id) REFERENCES inventory_record (id)
         DEFERRABLE INITIALLY DEFERRED
 );
 
-CREATE INDEX IF NOT EXISTS ix_inventory_changes_inventory_changed_at
-    ON inventory_changes (inventory_id, changed_at, change_id);
+CREATE INDEX IF NOT EXISTS ix_inventory_change_record_request_no
+    ON inventory_change_record (request_no);
+
+CREATE INDEX IF NOT EXISTS ix_inventory_change_record_inventory_changed_at
+    ON inventory_change_record (inventory_id, changed_at, change_id);
 
 CREATE TABLE IF NOT EXISTS outbox_messages
 (

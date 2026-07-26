@@ -4,8 +4,11 @@ namespace SeventyTwo.Sample.Application.Inventories;
 
 public interface IInventoryApplication
 {
-    Task<ChangeInventoryResult> ChangeAsync(
-        ChangeInventoryInput input,
-        CancellationToken cancellationToken
-    );
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task ChangeAsync(ChangeInventoryInput input, CancellationToken cancellationToken);
 }

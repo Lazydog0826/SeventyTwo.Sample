@@ -1,144 +1,167 @@
+using Dm.util;
 using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Inventories;
 using SqlSugar;
+
+// ReSharper disable MemberCanBeMadeStatic.Local
 
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
 
 [AutofacDependency(typeof(IInventoryRepository))]
 public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryRepository
 {
-    public async Task<InventoryChange> ChangeAsync(InventoryChangeDraft change, CancellationToken cancellationToken)
+    public async Task ChangeAsync(
+        List<InventoryIncreaseDraft> increases,
+        List<InventoryDecreaseDraft> drafts,
+        string requestNo,
+        CancellationToken cancellationToken
+    )
     {
-        InventoryChange? completedChange = null;
-        var transaction = await db.Ado.UseTranAsync(async () =>
+        var increaseKeys = increases.Select(GetKey);
+        var draftKeys = drafts.Select(GetKey);
+        var allKeys = increaseKeys.Concat(draftKeys).Distinct().OrderBy(x => x).ToList();
+
+        using var uow = db.CreateContext(db.Ado.IsNoTran());
+
+        var newRequest = new InventoryChangeRequest
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var changeRecord = new InventoryChangeRecord
-            {
-                ChangeId = change.Id,
-                RequestNo = change.RequestNo,
-                InventoryId = change.InventoryId,
-                ChangeType = (short)change.ChangeType,
-                Quantity = change.Quantity,
-                ChangedAt = change.ChangedAt,
-            };
-            var inserted = await db.Insertable(changeRecord)
-                .PostgreSQLConflictNothing(["request_no"])
-                .ExecuteCommandAsync(cancellationToken);
+            RequestId = Yitter.IdGenerator.YitIdHelper.NextId(),
+            RequestNo = requestNo,
+            RequestAt = DateTimeExtension.Now(),
+        };
 
-            if (inserted == 0)
-            {
-                var existing = await GetByRequestNoAsync(change.RequestNo);
-                if (existing is null)
+        var addRequestResult = await db.Insertable(newRequest)
+            .PostgreSQLConflictNothing(["request_no"])
+            .ExecuteCommandAsync(cancellationToken);
+
+        if (addRequestResult == 0)
+        {
+            // 抛出异常或直接返回
+            return;
+        }
+
+        var inventoryList = await db.Queryable<InventoryRecord>()
+            .Where(x => allKeys.Contains(x.Key) && x.Quantity > 0)
+            .TranLock(DbLockType.Wait)
+            .ToListAsync(cancellationToken);
+
+        var inventoryChangeRecordList = new List<InventoryChangeRecord>();
+        var updateInventoryList = new List<InventoryRecord>();
+        var addInventoryList = new List<InventoryRecord>();
+
+        increases.ForEach(x =>
+        {
+            var inventoryId = Yitter.IdGenerator.YitIdHelper.NextId();
+            addInventoryList.add(
+                new InventoryRecord
                 {
-                    throw new InvalidOperationException("读取库存幂等记录失败");
+                    Id = inventoryId,
+                    CreatedBy = 0,
+                    CreatedAt = DateTimeExtension.Now(),
+                    Key = GetKey(x),
+                    ProductId = x.ProductId,
+                    WarehouseId = x.WarehouseId,
+                    LocationId = x.LocationId,
+                    InboundBatchNo = x.InboundBatchNo,
+                    InboundAt = x.ChangedAt,
+                    InitialQuantity = x.Quantity,
+                    Quantity = x.Quantity,
                 }
-
-                if (
-                    existing.InventoryId != change.InventoryId
-                    || existing.ChangeType != (short)change.ChangeType
-                    || existing.Quantity != change.Quantity
-                )
+            );
+            inventoryChangeRecordList.Add(
+                new InventoryChangeRecord
                 {
-                    throw new InventoryDomainException("业务请求号已用于其他库存变更");
+                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                    RequestNo = requestNo,
+                    InventoryId = inventoryId,
+                    ChangeType = InventoryChangeType.Increase,
+                    Quantity = x.Quantity,
+                    BeforeQuantity = 0,
+                    AfterQuantity = x.Quantity,
+                    ChangedAt = x.ChangedAt,
                 }
-
-                completedChange = ToDomain(existing);
-                return;
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            var inventoryRecord = await db.Queryable<InventoryRecord>()
-                .Where(record => record.Id == change.InventoryId)
-                .TranLock(DbLockType.Wait)
-                .FirstAsync(cancellationToken);
-            if (inventoryRecord is null)
-            {
-                throw new InventoryDomainException("库存不存在");
-            }
-
-            var inventory = ToDomain(inventoryRecord);
-            var quantityChange = change.ChangeType switch
-            {
-                InventoryChangeType.Increase => inventory.Increase(change.Quantity),
-                InventoryChangeType.Decrease => inventory.Decrease(change.Quantity),
-                _ => throw new InventoryDomainException("库存变更类型无效"),
-            };
-
-            var updatedInventory = await db.Updateable<InventoryRecord>()
-                .SetColumns(record => record.Quantity == inventory.Quantity)
-                .Where(record => record.Id == inventory.Id)
-                .ExecuteCommandAsync(cancellationToken);
-            if (updatedInventory != 1)
-            {
-                throw new InvalidOperationException("更新库存失败");
-            }
-
-            var updatedChange = await db.Updateable<InventoryChangeRecord>()
-                .SetColumns(record => new InventoryChangeRecord
-                {
-                    BeforeQuantity = quantityChange.BeforeQuantity,
-                    AfterQuantity = quantityChange.AfterQuantity,
-                })
-                .Where(record => record.ChangeId == change.Id)
-                .ExecuteCommandAsync(cancellationToken);
-            if (updatedChange != 1)
-            {
-                throw new InvalidOperationException("更新库存变更记录失败");
-            }
-
-            completedChange = new InventoryChange(
-                change.Id,
-                change.RequestNo,
-                change.InventoryId,
-                change.ChangeType,
-                change.Quantity,
-                quantityChange.BeforeQuantity,
-                quantityChange.AfterQuantity,
-                change.ChangedAt
             );
         });
 
-        if (!transaction.IsSuccess)
+        drafts.ForEach(x =>
         {
-            throw new InvalidOperationException("库存变更失败", transaction.ErrorException);
+            var draftQty = x.Quantity;
+
+            var currKey = GetKey(x);
+            var currInventoryList = inventoryList.Where(x2 => x2.Key == currKey).ToList();
+            currInventoryList.AddRange([.. addInventoryList.Where(x2 => x2.Key == currKey)]);
+            currInventoryList = [.. currInventoryList.OrderByDescending(x2 => x2.InboundAt)];
+
+            while (currInventoryList.Any())
+            {
+                var first = currInventoryList.First();
+                int oldQty;
+                int newQty;
+
+                if (first.Quantity > draftQty)
+                {
+                    oldQty = first.Quantity;
+                    newQty = first.Quantity - draftQty;
+                    draftQty = 0;
+                }
+                else
+                {
+                    oldQty = first.Quantity;
+                    newQty = 0;
+                    draftQty -= first.Quantity;
+                }
+
+                first.Quantity = newQty;
+
+                inventoryChangeRecordList.Add(
+                    new InventoryChangeRecord
+                    {
+                        ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                        RequestNo = requestNo,
+                        InventoryId = first.Id,
+                        ChangeType = InventoryChangeType.Decrease,
+                        Quantity = oldQty - newQty,
+                        BeforeQuantity = oldQty,
+                        AfterQuantity = newQty,
+                        ChangedAt = DateTimeExtension.Now(),
+                    }
+                );
+
+                currInventoryList.Remove(first);
+                updateInventoryList.Add(first);
+                if (draftQty == 0)
+                {
+                    break;
+                }
+            }
+
+            if (draftQty > 0)
+            {
+                throw new InvalidOperationException("库存不足");
+            }
+        });
+
+        if (addInventoryList.Any())
+        {
+            await db.Insertable(addInventoryList).ExecuteCommandAsync(cancellationToken);
         }
 
-        return completedChange ?? throw new InvalidOperationException("库存变更结果为空");
+        if (updateInventoryList.Any())
+        {
+            await db.Updateable(updateInventoryList).ExecuteCommandAsync(cancellationToken);
+        }
+
+        if (inventoryChangeRecordList.Any())
+        {
+            await db.Insertable(inventoryChangeRecordList).ExecuteCommandAsync(cancellationToken);
+        }
+
+        uow.Commit();
     }
 
-    private async Task<InventoryChangeRecord?> GetByRequestNoAsync(string requestNo)
+    private string GetKey(InventoryDraft increase)
     {
-        return await db.Queryable<InventoryChangeRecord>().Where(record => record.RequestNo == requestNo).FirstAsync();
-    }
-
-    private Inventory ToDomain(InventoryRecord record)
-    {
-        var inventory = new Inventory(
-            record.Id,
-            record.ProductId,
-            record.WarehouseId,
-            record.LocationId,
-            record.InboundBatchNo,
-            record.InboundAt,
-            record.InitialQuantity,
-            record.Quantity
-        );
-        inventory.EntityToAggregateRoot(record);
-        return inventory;
-    }
-
-    private InventoryChange ToDomain(InventoryChangeRecord record)
-    {
-        return new InventoryChange(
-            record.ChangeId,
-            record.RequestNo,
-            record.InventoryId,
-            (InventoryChangeType)record.ChangeType,
-            record.Quantity,
-            record.BeforeQuantity,
-            record.AfterQuantity,
-            record.ChangedAt
-        );
+        return $"{increase.WarehouseId}:{increase.LocationId}:{increase.ProductId}";
     }
 }

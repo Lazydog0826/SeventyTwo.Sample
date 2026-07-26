@@ -6,22 +6,16 @@ public enum InventoryChangeType : short
     Decrease = 2,
 }
 
-public sealed record InventoryChange(
-    long Id,
-    string RequestNo,
-    long InventoryId,
-    InventoryChangeType ChangeType,
-    int Quantity,
-    int BeforeQuantity,
-    int AfterQuantity,
-    DateTimeOffset ChangedAt
-);
+public record InventoryDraft(long ProductId, long WarehouseId, long LocationId, int Quantity);
 
-public sealed record InventoryChangeDraft(
-    long Id,
-    string RequestNo,
-    long InventoryId,
-    InventoryChangeType ChangeType,
+public sealed record InventoryIncreaseDraft(
+    long ProductId,
+    long WarehouseId,
+    long LocationId,
     int Quantity,
+    string InboundBatchNo,
     DateTimeOffset ChangedAt
-);
+) : InventoryDraft(ProductId, WarehouseId, LocationId, Quantity);
+
+public sealed record InventoryDecreaseDraft(long ProductId, long WarehouseId, long LocationId, int Quantity)
+    : InventoryDraft(ProductId, WarehouseId, LocationId, Quantity);

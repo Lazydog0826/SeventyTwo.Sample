@@ -48,9 +48,8 @@ await HostApp.StartWebAppAsync(
         app.UseInfraKitExceptionHandler(
             (_, exception) =>
             {
-                var isDomainException = exception is OrderDomainException
-                    or InventoryDomainException
-                    or ProductDomainException;
+                var isDomainException =
+                    exception is OrderDomainException or InventoryDomainException or ProductDomainException;
                 var response = isDomainException
                     ? WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest)
                     : WebApiResponse.Error("服务异常");
