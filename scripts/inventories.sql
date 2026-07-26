@@ -3,10 +3,10 @@ create table if not exists inventory_record
 (
     id               bigint primary key,
     key              varchar(128)                not null,
-    product_id       bigint                      not null,
-    warehouse_id     bigint                      not null,
-    location_id      bigint                      not null,
-    inbound_batch_no varchar(64)                 not null,
+    product_id       bigint                      not null check (product_id > 0),
+    warehouse_id     bigint                      not null check (warehouse_id > 0),
+    location_id      bigint                      not null check (location_id > 0),
+    inbound_batch_no varchar(64)                 not null check (btrim(inbound_batch_no) <> ''),
     inbound_at       timestamp with time zone    not null,
     initial_quantity integer                     not null check (initial_quantity >= 0),
     quantity         integer                     not null check (quantity >= 0),
@@ -44,10 +44,6 @@ comment on column inventory_record.version is '乐观锁版本号';
 -- 加速通过业务键查询库存记录。
 create index if not exists ix_inventory_record_key
     on inventory_record (key);
-
--- 同一商品、仓库、库位及入库批次只能存在一条库存记录。
-create unique index if not exists uq_inventory_record_product_warehouse_location_batch
-    on inventory_record (product_id, warehouse_id, location_id, inbound_batch_no);
 
 -- 库存变更请求：通过唯一请求号保证变更请求的幂等性。
 create table if not exists inventory_change_request

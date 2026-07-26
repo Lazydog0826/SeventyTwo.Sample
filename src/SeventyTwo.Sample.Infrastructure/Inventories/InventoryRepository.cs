@@ -18,11 +18,6 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         CancellationToken cancellationToken
     )
     {
-        if (increases.Any(x => x.Quantity <= 0) || drafts.Any(x => x.Quantity <= 0))
-        {
-            throw new InventoryDomainException("库存变更数量必须大于 0");
-        }
-
         if (!increases.Any() && !drafts.Any())
         {
             return;
