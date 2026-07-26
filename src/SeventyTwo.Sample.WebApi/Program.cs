@@ -6,20 +6,22 @@ using SeventyTwo.InfraKit.Core;
 using SeventyTwo.InfraKit.Core.App;
 using SeventyTwo.InfraKit.Core.App.JsonConverter;
 using SeventyTwo.InfraKit.SnowFlake;
-using SeventyTwo.Sample.Application.Orders;
 using SeventyTwo.Sample.Domain.Inventories;
-using SeventyTwo.Sample.Domain.Orders;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using ApiLogSetup = SeventyTwo.InfraKit.ApiLog.Setup;
+using ApplicationAssemblyMarker = SeventyTwo.Sample.Application.AssemblyMarker;
+using DomainAssemblyMarker = SeventyTwo.Sample.Domain.AssemblyMarker;
+using InfrastructureAssemblyMarker = SeventyTwo.Sample.Infrastructure.AssemblyMarker;
+using WebApiAssemblyMarker = SeventyTwo.Sample.WebApi.AssemblyMarker;
 
 await HostApp.StartWebAppAsync(
     args,
     [
-        typeof(Program).Assembly,
-        typeof(OrderApplication).Assembly,
-        typeof(Order).Assembly,
-        typeof(InfrastructureSetup).Assembly,
+        typeof(WebApiAssemblyMarker).Assembly,
+        typeof(ApplicationAssemblyMarker).Assembly,
+        typeof(DomainAssemblyMarker).Assembly,
+        typeof(InfrastructureAssemblyMarker).Assembly,
     ],
     builder =>
     {
@@ -48,8 +50,7 @@ await HostApp.StartWebAppAsync(
         app.UseInfraKitExceptionHandler(
             (_, exception) =>
             {
-                var isDomainException =
-                    exception is OrderDomainException or InventoryDomainException or ProductDomainException;
+                var isDomainException = exception is InventoryDomainException or ProductDomainException;
                 var response = isDomainException
                     ? WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest)
                     : WebApiResponse.Error("服务异常");
