@@ -18,18 +18,25 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         CancellationToken cancellationToken
     )
     {
+        if (increases.Any(x => x.Quantity <= 0) || drafts.Any(x => x.Quantity <= 0))
+        {
+            throw new InventoryDomainException("库存变更数量必须大于 0");
+        }
+
+        if (!increases.Any() && !drafts.Any())
+        {
+            return;
+        }
+
         var increaseKeys = increases.Select(GetKey);
         var draftKeys = drafts.Select(GetKey);
         var allKeys = increaseKeys.Concat(draftKeys).Distinct().OrderBy(x => x).ToList();
 
         using var uow = db.CreateContext(db.Ado.IsNoTran());
 
-        var newRequest = new InventoryChangeRequest
-        {
-            RequestId = Yitter.IdGenerator.YitIdHelper.NextId(),
-            RequestNo = requestNo,
-            RequestAt = DateTimeExtension.Now(),
-        };
+        #region 幂等
+
+        var newRequest = new InventoryChangeRequest { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
 
         var addRequestResult = await db.Insertable(newRequest)
             .PostgreSQLConflictNothing(["request_no"])
@@ -41,9 +48,26 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             return;
         }
 
+        #endregion
+
+        #region 维度锁防并发
+
+        var lockList = allKeys.Select(x => new InventoryChangeLock { LockKey = x }).ToList();
+        await db.Insertable(lockList).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
+
+        _ = await db.Queryable<InventoryChangeLock>()
+            .Where(x => allKeys.Contains(x.LockKey))
+            .OrderBy(x => x.LockKey)
+            .TranLock(DbLockType.Wait)
+            .ToListAsync(cancellationToken);
+
+        #endregion
+
+        #region 库存操作
+
         var inventoryList = await db.Queryable<InventoryRecord>()
             .Where(x => allKeys.Contains(x.Key) && x.Quantity > 0)
-            .TranLock(DbLockType.Wait)
+            .OrderBy(x => x.Key)
             .ToListAsync(cancellationToken);
 
         var inventoryChangeRecordList = new List<InventoryChangeRecord>();
@@ -156,6 +180,8 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         {
             await db.Insertable(inventoryChangeRecordList).ExecuteCommandAsync(cancellationToken);
         }
+
+        #endregion
 
         uow.Commit();
     }

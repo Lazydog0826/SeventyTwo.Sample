@@ -52,16 +52,22 @@ create unique index if not exists uq_inventory_record_product_warehouse_location
 -- 库存变更请求：通过唯一请求号保证变更请求的幂等性。
 create table if not exists inventory_change_request
 (
-    request_id bigint primary key,
-    request_no varchar(64)              not null,
-    request_at timestamp with time zone not null,
-    constraint uq_inventory_change_request_request_no unique (request_no)
+    request_no varchar(255) primary key,
+    request_at timestamp with time zone not null
 );
 
 comment on table inventory_change_request is '库存变更请求';
-comment on column inventory_change_request.request_id is '变更请求标识';
 comment on column inventory_change_request.request_no is '具有唯一性的变更请求号';
 comment on column inventory_change_request.request_at is '请求时间';
+
+-- 库存变更锁：按库存维度串行处理库存变更。
+create table if not exists inventory_change_lock
+(
+    lock_key varchar(255) primary key
+);
+
+comment on table inventory_change_lock is '库存变更锁';
+comment on column inventory_change_lock.lock_key is '库存维度锁键';
 
 -- 库存变更记录：保存每次库存变更前后的数量及变更时间。
 create table if not exists inventory_change_record

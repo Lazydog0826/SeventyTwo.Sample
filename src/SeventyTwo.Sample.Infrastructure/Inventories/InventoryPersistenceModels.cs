@@ -114,15 +114,9 @@ internal sealed class InventoryChangeRecord
 internal sealed class InventoryChangeRequest
 {
     /// <summary>
-    /// 库存变更请求 ID。
+    /// 业务请求号（唯一约束）
     /// </summary>
-    [SugarColumn(ColumnName = "request_id", IsPrimaryKey = true)]
-    public long RequestId { get; set; }
-
-    /// <summary>
-    /// 业务请求号。
-    /// </summary>
-    [SugarColumn(ColumnName = "request_no")]
+    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, Length = 255)]
     public string RequestNo { get; set; } = string.Empty;
 
     /// <summary>
@@ -130,4 +124,14 @@ internal sealed class InventoryChangeRequest
     /// </summary>
     [SugarColumn(ColumnName = "request_at")]
     public DateTimeOffset RequestAt { get; set; }
+}
+
+[SugarTable("inventory_change_lock")]
+internal sealed class InventoryChangeLock
+{
+    /// <summary>
+    /// 锁KEY（唯一约束）
+    /// </summary>
+    [SugarColumn(ColumnName = "lock_key", IsPrimaryKey = true, Length = 255)]
+    public string LockKey { get; init; } = string.Empty;
 }
