@@ -5,6 +5,7 @@ using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.InfraKit.Core.App;
 using SeventyTwo.InfraKit.Core.App.JsonConverter;
+using SeventyTwo.InfraKit.DynamicExpression;
 using SeventyTwo.InfraKit.SnowFlake;
 using SeventyTwo.Sample.Domain.Inventories;
 using SeventyTwo.Sample.Domain.Products;
@@ -27,8 +28,10 @@ await HostApp.StartWebAppAsync(
     {
         builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(HostApp.AppDomainTypes));
         builder.Services.AddApiLog();
+        builder.Services.AddAutoMapper(_ => { }, HostApp.AppAssemblyList);
         builder.Services.Configure<RecordLogEvent>(options => options.Event += ApiLogSetup.WriteLogFile);
         builder.Services.AddCacheService();
+        builder.Services.AddComparisonType();
         builder.Services.AddPersistence(builder.Configuration);
         builder
             .Services.AddControllers(options =>
@@ -50,6 +53,11 @@ await HostApp.StartWebAppAsync(
         app.UseInfraKitExceptionHandler(
             (_, exception) =>
             {
+                if (exception is ProductNotFoundException)
+                {
+                    return Task.FromResult((WebApiResponse.Error(exception.Message), SaveLog: false));
+                }
+
                 var isDomainException = exception is InventoryDomainException or ProductDomainException;
                 var response = isDomainException
                     ? WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest)

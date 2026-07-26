@@ -5,6 +5,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="SeventyTwo.InfraKit" Version="10.5.2" />
+    <PackageReference Include="SeventyTwo.InfraKit" Version="10.5.3" />
   </ItemGroup>
 </Project>
