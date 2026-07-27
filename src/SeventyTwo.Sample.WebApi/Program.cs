@@ -9,6 +9,7 @@ using SeventyTwo.InfraKit.DynamicExpression;
 using SeventyTwo.InfraKit.SnowFlake;
 using SeventyTwo.Sample.Domain.Inventories;
 using SeventyTwo.Sample.Domain.Products;
+using SeventyTwo.Sample.Domain.Wallets;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using ApiLogSetup = SeventyTwo.InfraKit.ApiLog.Setup;
 using ApplicationAssemblyMarker = SeventyTwo.Sample.Application.AssemblyMarker;
@@ -58,7 +59,8 @@ await HostApp.StartWebAppAsync(
                     return Task.FromResult((WebApiResponse.Error(exception.Message), SaveLog: false));
                 }
 
-                var isDomainException = exception is InventoryDomainException or ProductDomainException;
+                var isDomainException =
+                    exception is InventoryDomainException or ProductDomainException or WalletDomainException;
                 var response = isDomainException
                     ? WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest)
                     : WebApiResponse.Error("服务异常");
