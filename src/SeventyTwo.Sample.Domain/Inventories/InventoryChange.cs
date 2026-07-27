@@ -6,6 +6,36 @@ public enum InventoryChangeType : short
     Decrease = 2,
 }
 
+public sealed class InventoryChangeDraft
+{
+    public InventoryChangeDraft(
+        string requestNo,
+        List<InventoryIncreaseDraft> increases,
+        List<InventoryDecreaseDraft> decreases
+    )
+    {
+        if (string.IsNullOrWhiteSpace(requestNo))
+        {
+            throw new InventoryDomainException("业务请求号不能为空");
+        }
+
+        if (requestNo.Length > 64)
+        {
+            throw new InventoryDomainException("业务请求号长度不能超过 64 个字符");
+        }
+
+        RequestNo = requestNo;
+        Increases = increases.ToList().AsReadOnly();
+        Decreases = decreases.ToList().AsReadOnly();
+    }
+
+    public string RequestNo { get; }
+
+    public IReadOnlyList<InventoryIncreaseDraft> Increases { get; }
+
+    public IReadOnlyList<InventoryDecreaseDraft> Decreases { get; }
+}
+
 public record InventoryDraft
 {
     protected InventoryDraft(long productId, long warehouseId, long locationId, int quantity)

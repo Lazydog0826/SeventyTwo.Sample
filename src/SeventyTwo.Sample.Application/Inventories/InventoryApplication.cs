@@ -9,16 +9,6 @@ public sealed class InventoryApplication(IInventoryRepository inventoryRepositor
 {
     public async Task ChangeAsync(ChangeInventoryInput input, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(input.RequestNo))
-        {
-            throw new InventoryDomainException("业务请求号不能为空");
-        }
-
-        if (input.RequestNo.Length > 64)
-        {
-            throw new InventoryDomainException("业务请求号长度不能超过 64 个字符");
-        }
-
         var increases = input
             .Increases.Select(x => new InventoryIncreaseDraft(
                 x.ProductId,
@@ -33,6 +23,7 @@ public sealed class InventoryApplication(IInventoryRepository inventoryRepositor
             .Decreases.Select(x => new InventoryDecreaseDraft(x.ProductId, x.WarehouseId, x.LocationId, x.Quantity))
             .ToList();
 
-        await inventoryRepository.ChangeAsync(increases, decreases, input.RequestNo, cancellationToken);
+        var draft = new InventoryChangeDraft(input.RequestNo, increases, decreases);
+        await inventoryRepository.ChangeAsync(draft, cancellationToken);
     }
 }

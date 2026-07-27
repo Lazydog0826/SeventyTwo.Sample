@@ -11,22 +11,17 @@ namespace SeventyTwo.Sample.Infrastructure.Inventories;
 [AutofacDependency(typeof(IInventoryRepository))]
 public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryRepository
 {
-    public async Task ChangeAsync(
-        List<InventoryIncreaseDraft> increases,
-        List<InventoryDecreaseDraft> drafts,
-        string requestNo,
-        CancellationToken cancellationToken
-    )
+    public async Task ChangeAsync(InventoryChangeDraft draft, CancellationToken cancellationToken)
     {
-        if (!increases.Any() && !drafts.Any())
+        if (!draft.Increases.Any() && !draft.Decreases.Any())
         {
             return;
         }
 
-        drafts =
+        List<InventoryDecreaseDraft> decreaseDrafts =
         [
-            .. drafts
-                .GroupBy(x => new
+            .. draft
+                .Decreases.GroupBy(x => new
                 {
                     x.WarehouseId,
                     x.LocationId,
@@ -40,15 +35,19 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
                 )),
         ];
 
-        var increaseKeys = increases.Select(GetKey);
-        var draftKeys = drafts.Select(GetKey);
+        var increaseKeys = draft.Increases.Select(GetKey);
+        var draftKeys = decreaseDrafts.Select(GetKey);
         var allKeys = increaseKeys.Concat(draftKeys).Distinct().OrderBy(x => x).ToList();
 
         using var uow = db.CreateContext(db.Ado.IsNoTran());
 
         #region 幂等
 
-        var newRequest = new InventoryChangeRequest { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
+        var newRequest = new InventoryChangeRequest
+        {
+            RequestNo = draft.RequestNo,
+            RequestAt = DateTimeExtension.Now(),
+        };
 
         var addRequestResult = await db.Insertable(newRequest)
             .PostgreSQLConflictNothing(["request_no"])
@@ -86,41 +85,43 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         var updateInventoryList = new List<InventoryRecord>();
         var addInventoryList = new List<InventoryRecord>();
 
-        increases.ForEach(x =>
-        {
-            var inventoryId = Yitter.IdGenerator.YitIdHelper.NextId();
-            addInventoryList.add(
-                new InventoryRecord
-                {
-                    Id = inventoryId,
-                    CreatedBy = 0,
-                    CreatedAt = DateTimeExtension.Now(),
-                    Key = GetKey(x),
-                    ProductId = x.ProductId,
-                    WarehouseId = x.WarehouseId,
-                    LocationId = x.LocationId,
-                    InboundBatchNo = x.InboundBatchNo,
-                    InboundAt = x.ChangedAt,
-                    InitialQuantity = x.Quantity,
-                    Quantity = x.Quantity,
-                }
-            );
-            inventoryChangeRecordList.Add(
-                new InventoryChangeRecord
-                {
-                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
-                    RequestNo = requestNo,
-                    InventoryId = inventoryId,
-                    ChangeType = InventoryChangeType.Increase,
-                    Quantity = x.Quantity,
-                    BeforeQuantity = 0,
-                    AfterQuantity = x.Quantity,
-                    ChangedAt = x.ChangedAt,
-                }
-            );
-        });
+        draft
+            .Increases.ToList()
+            .ForEach(x =>
+            {
+                var inventoryId = Yitter.IdGenerator.YitIdHelper.NextId();
+                addInventoryList.add(
+                    new InventoryRecord
+                    {
+                        Id = inventoryId,
+                        CreatedBy = 0,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Key = GetKey(x),
+                        ProductId = x.ProductId,
+                        WarehouseId = x.WarehouseId,
+                        LocationId = x.LocationId,
+                        InboundBatchNo = x.InboundBatchNo,
+                        InboundAt = x.ChangedAt,
+                        InitialQuantity = x.Quantity,
+                        Quantity = x.Quantity,
+                    }
+                );
+                inventoryChangeRecordList.Add(
+                    new InventoryChangeRecord
+                    {
+                        ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                        RequestNo = draft.RequestNo,
+                        InventoryId = inventoryId,
+                        ChangeType = InventoryChangeType.Increase,
+                        Quantity = x.Quantity,
+                        BeforeQuantity = 0,
+                        AfterQuantity = x.Quantity,
+                        ChangedAt = x.ChangedAt,
+                    }
+                );
+            });
 
-        drafts.ForEach(x =>
+        decreaseDrafts.ForEach(x =>
         {
             var draftQty = x.Quantity;
 
@@ -154,7 +155,7 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
                     new InventoryChangeRecord
                     {
                         ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
-                        RequestNo = requestNo,
+                        RequestNo = draft.RequestNo,
                         InventoryId = first.Id,
                         ChangeType = InventoryChangeType.Decrease,
                         Quantity = oldQty - newQty,
