@@ -1,4 +1,5 @@
-﻿using SeventyTwo.InfraKit.Autofac;
+﻿using AutoMapper;
+using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Wallets;
 using SqlSugar;
@@ -6,152 +7,62 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Wallets;
 
 [AutofacDependency(typeof(IWalletRepository))]
-public class WalletRepository(ISqlSugarClient db) : IWalletRepository
+public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepository
 {
-    public async Task BalanceChangeAsync(BalanceChangeDraft draft, CancellationToken cancellationToken)
+    private readonly ISqlSugarClient _db = db;
+
+    public async Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken)
     {
-        if (!draft.Drafts.Any())
-        {
-            return;
-        }
-
-        List<BalanceChangeDetailDraft> balanceChangeDrafts =
-        [
-            .. draft
-                .Drafts.GroupBy(x => new { x.Currency, x.ChangeType })
-                .Select(x => new BalanceChangeDetailDraft(x.Key.Currency, x.Key.ChangeType, x.Sum(x2 => x2.Amount)))
-                .OrderBy(x => x.ChangeType),
-        ];
-
-        var key = draft.CustomerId.ToString();
-        var currencyList = balanceChangeDrafts.Select(x => x.Currency).ToList();
-
-        var addWalletList = new List<WalletRecord>();
-        var updateWalletList = new List<WalletRecord>();
-        var addWalletChangeRecordList = new List<WalletChangeRecord>();
-
-        using var uow = db.CreateContext(db.Ado.IsNoTran());
-
-        #region 幂等
-
-        var newRequest = new WalletChangeRequest() { RequestNo = draft.RequestNo, RequestAt = DateTimeExtension.Now() };
-        var addRequestResult = await db.Insertable(newRequest)
+        var newRequest = new WalletChangeRequest() { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
+        var affectedRows = await _db.Insertable(newRequest)
             .PostgreSQLConflictNothing(["request_no"])
             .ExecuteCommandAsync(cancellationToken);
+        return affectedRows > 0;
+    }
 
-        if (addRequestResult == 0)
-        {
-            // 抛出异常或直接返回
-            return;
-        }
-
-        #endregion
-
-        #region 防并发
-
+    public async Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
+        long customerId,
+        IReadOnlyCollection<WalletCurrency> walletCurrencies,
+        CancellationToken cancellationToken
+    )
+    {
+        var key = customerId.ToString();
         var newLock = new WalletChangeLock { LockKey = key };
-        await db.Insertable(newLock).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
-        await db.Queryable<WalletChangeLock>()
+        await _db.Insertable(newLock).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
+        await _db.Queryable<WalletChangeLock>()
             .Where(x => x.LockKey == key)
             .TranLock(DbLockType.Wait)
             .FirstAsync(cancellationToken);
 
-        #endregion
-
-        #region 操作
-
-        var walletList = await db.Queryable<WalletRecord>()
-            .Where(x => x.CustomerId == draft.CustomerId && currencyList.Contains(x.Currency))
+        var dbDataList = await _db.Queryable<WalletRecord>()
+            .Where(x => x.CustomerId == customerId && walletCurrencies.Contains(x.Currency))
             .ToListAsync(cancellationToken);
+        return mapper.Map<List<Wallet>>(dbDataList);
+    }
 
-        var pendingCurWallet = new HashSet<WalletCurrency>();
-        var walletDic = walletList.ToDictionary(x => x.Currency, x => x);
-
-        balanceChangeDrafts.ForEach(x =>
+    public async Task SaveBalanceChangeAsync(
+        IReadOnlyCollection<Wallet> newWallets,
+        IReadOnlyCollection<Wallet> changedWallets,
+        IReadOnlyCollection<WalletChangeRecordDraft> changeRecords,
+        CancellationToken cancellationToken
+    )
+    {
+        if (newWallets.Count > 0)
         {
-            decimal oldBalanceAmount;
-            decimal newBalanceAmount;
-
-            if (walletDic.TryGetValue(x.Currency, out var temWallet))
-            {
-                if (!pendingCurWallet.Contains(x.Currency))
-                {
-                    updateWalletList.Add(temWallet);
-                    pendingCurWallet.Add(x.Currency);
-                }
-            }
-            else
-            {
-                temWallet = new WalletRecord
-                {
-                    Id = Yitter.IdGenerator.YitIdHelper.NextId(),
-                    CreatedBy = 0,
-                    CreatedAt = DateTimeExtension.Now(),
-                    CustomerId = draft.CustomerId,
-                    Currency = x.Currency,
-                    BalanceAmount = 0,
-                };
-                if (!pendingCurWallet.Contains(x.Currency))
-                {
-                    addWalletList.Add(temWallet);
-                    walletDic.Add(x.Currency, temWallet);
-                    pendingCurWallet.Add(x.Currency);
-                }
-            }
-
-            switch (x.ChangeType)
-            {
-                case WalletChangeType.Increase:
-                    oldBalanceAmount = temWallet.BalanceAmount;
-                    temWallet.BalanceAmount += x.Amount;
-                    newBalanceAmount = temWallet.BalanceAmount;
-                    break;
-                case WalletChangeType.Decrease:
-                    oldBalanceAmount = temWallet.BalanceAmount;
-                    temWallet.BalanceAmount -= x.Amount;
-                    newBalanceAmount = temWallet.BalanceAmount;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(x.ChangeType));
-            }
-
-            if (temWallet.BalanceAmount < 0)
-            {
-                throw new WalletDomainException("余额不足");
-            }
-
-            addWalletChangeRecordList.Add(
-                new WalletChangeRecord
-                {
-                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
-                    RequestNo = draft.RequestNo,
-                    WalletId = temWallet.Id,
-                    ChangeType = x.ChangeType,
-                    Amount = x.Amount,
-                    BeforeBalanceAmount = oldBalanceAmount,
-                    AfterBalanceAmount = newBalanceAmount,
-                    ChangedAt = DateTimeExtension.Now(),
-                }
-            );
-        });
-
-        #endregion
-
-        if (addWalletList.Any())
-        {
-            await db.Insertable(addWalletList).ExecuteCommandAsync(cancellationToken);
+            var newWalletRecords = mapper.Map<List<WalletRecord>>(newWallets);
+            await _db.Insertable(newWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
 
-        if (updateWalletList.Any())
+        if (changedWallets.Count > 0)
         {
-            await db.Updateable(updateWalletList).ExecuteCommandAsync(cancellationToken);
+            var changedWalletRecords = mapper.Map<List<WalletRecord>>(changedWallets);
+            await _db.Updateable(changedWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
 
-        if (addWalletChangeRecordList.Any())
+        if (changeRecords.Count > 0)
         {
-            await db.Insertable(addWalletChangeRecordList).ExecuteCommandAsync(cancellationToken);
+            var changeRecordEntities = mapper.Map<List<WalletChangeRecord>>(changeRecords);
+            await _db.Insertable(changeRecordEntities).ExecuteCommandAsync(cancellationToken);
         }
-
-        uow.Commit();
     }
 }

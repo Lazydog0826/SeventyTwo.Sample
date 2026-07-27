@@ -2,11 +2,18 @@
 
 public interface IWalletRepository
 {
-    /// <summary>
-    /// 余额变更
-    /// </summary>
-    /// <param name="draft"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task BalanceChangeAsync(BalanceChangeDraft draft, CancellationToken cancellationToken);
+    Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
+        long customerId,
+        IReadOnlyCollection<WalletCurrency> walletCurrencies,
+        CancellationToken cancellationToken
+    );
+
+    Task SaveBalanceChangeAsync(
+        IReadOnlyCollection<Wallet> newWallets,
+        IReadOnlyCollection<Wallet> changedWallets,
+        IReadOnlyCollection<WalletChangeRecordDraft> changeRecords,
+        CancellationToken cancellationToken
+    );
 }

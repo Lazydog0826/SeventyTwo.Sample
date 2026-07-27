@@ -68,11 +68,63 @@ public sealed class BalanceChangeDraft
         Drafts = drafts.ToList().AsReadOnly();
     }
 
+    /// <summary>
+    /// 客户 ID。
+    /// </summary>
     public long CustomerId { get; }
 
+    /// <summary>
+    /// 业务请求号。
+    /// </summary>
     public string RequestNo { get; }
 
+    /// <summary>
+    /// 余额变更明细。
+    /// </summary>
     public IReadOnlyList<BalanceChangeDetailDraft> Drafts { get; }
 }
 
 public sealed record BalanceChangeDetailDraft(WalletCurrency Currency, WalletChangeType ChangeType, decimal Amount);
+
+public sealed class WalletChangeRecordDraft
+{
+    /// <summary>
+    /// 钱包变更记录 ID。
+    /// </summary>
+    public long ChangeId { get; set; }
+
+    /// <summary>
+    /// 业务请求号。
+    /// </summary>
+    public string RequestNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 钱包 ID。
+    /// </summary>
+    public long WalletId { get; set; }
+
+    /// <summary>
+    /// 钱包变更类型。
+    /// </summary>
+    public WalletChangeType ChangeType { get; set; }
+
+    /// <summary>
+    /// 本次变更金额。
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// 变更前余额。
+    /// </summary>
+    public decimal BeforeBalanceAmount { get; set; }
+
+    /// <summary>
+    /// 变更后余额。
+    /// </summary>
+    public decimal AfterBalanceAmount { get; set; }
+
+    /// <summary>
+    /// 变更时间。
+    /// </summary>
+    public DateTimeOffset ChangedAt { get; set; }
+}

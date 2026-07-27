@@ -5,7 +5,7 @@ using SeventyTwo.Sample.Domain.Wallets;
 namespace SeventyTwo.Sample.Application.Wallets;
 
 [AutofacDependency(typeof(IWalletApplication))]
-public sealed class WalletApplication(IWalletRepository walletRepository) : IWalletApplication
+public sealed class WalletApplication(IBalanceChangeService balanceChangeService) : IWalletApplication
 {
     public Task BalanceChangeAsync(BalanceChangeInput input, CancellationToken cancellationToken)
     {
@@ -14,6 +14,6 @@ public sealed class WalletApplication(IWalletRepository walletRepository) : IWal
             .ToList();
         var draft = new BalanceChangeDraft(input.CustomerId, input.RequestNo, details);
 
-        return walletRepository.BalanceChangeAsync(draft, cancellationToken);
+        return balanceChangeService.BalanceChangeAsync(draft, cancellationToken);
     }
 }

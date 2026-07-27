@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="SeventyTwo.InfraKit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Application\SeventyTwo.Sample.Application.csproj" />
     <ProjectReference Include="..\SeventyTwo.Sample.Domain\SeventyTwo.Sample.Domain.csproj" />
   </ItemGroup>
