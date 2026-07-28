@@ -1,8 +1,6 @@
 using SeventyTwo.InfraKit.Autofac;
-using SeventyTwo.InfraKit.DynamicExpression;
-using SeventyTwo.InfraKit.DynamicExpression.Model;
 using SeventyTwo.InfraKit.Extension;
-using SeventyTwo.InfraKit.ShareDto;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 using SqlSugar;
 
@@ -25,28 +23,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
     /// <inheritdoc />
     public async Task<ProductPage> GetPageAsync(PageRequest request, CancellationToken cancellationToken)
     {
-        var query = db.Queryable<ProductRecord>().Where(x => x.DeleteAt == null);
-        var sorts =
-            request.Sort.Count > 0
-                ? request.Sort
-                :
-                [
-                    new SortModel
-                    {
-                        TableAlias = "x",
-                        PropName = nameof(ProductRecord.Id),
-                        SortType = SortTypeEnum.Desc,
-                    },
-                ];
-        try
-        {
-            query = query.Where(request.Search).OrderBy(sorts);
-        }
-        catch (InvalidOperationException exception)
-        {
-            throw new ProductDomainException(exception.Message);
-        }
-
+        var query = db.Queryable<ProductRecord>().Where(x => x.DeleteAt == null).OrderByDescending(x => x.Id);
         var total = await query.CountAsync(cancellationToken);
         var records = await query
             .Skip((request.Index - 1) * request.Limit)

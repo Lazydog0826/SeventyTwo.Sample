@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.ShareDto;
+using SeventyTwo.Sample.Domain;
 
 namespace SeventyTwo.Sample.Application.Products;
 
@@ -38,7 +38,7 @@ public interface IProductApplication
     /// <summary>
     /// 分页查询商品。
     /// </summary>
-    /// <param name="request">分页及动态表达式请求。</param>
+    /// <param name="request">分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
     Task<PageResponse<ProductOutput>> GetPageAsync(PageRequest request, CancellationToken cancellationToken);

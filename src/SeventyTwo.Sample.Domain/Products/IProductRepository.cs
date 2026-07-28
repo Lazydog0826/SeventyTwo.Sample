@@ -1,5 +1,3 @@
-using SeventyTwo.InfraKit.ShareDto;
-
 namespace SeventyTwo.Sample.Domain.Products;
 
 public interface IProductRepository
@@ -15,7 +13,7 @@ public interface IProductRepository
     /// <summary>
     /// 分页查询未删除的商品。
     /// </summary>
-    /// <param name="request">分页及动态表达式请求。</param>
+    /// <param name="request">分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
     Task<ProductPage> GetPageAsync(PageRequest request, CancellationToken cancellationToken);

@@ -5,7 +5,6 @@ using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.InfraKit.Core.App;
 using SeventyTwo.InfraKit.Core.App.JsonConverter;
-using SeventyTwo.InfraKit.DynamicExpression;
 using SeventyTwo.InfraKit.SnowFlake;
 using SeventyTwo.Sample.Domain.Inventories;
 using SeventyTwo.Sample.Domain.Orders;
@@ -33,7 +32,6 @@ await HostApp.StartWebAppAsync(
         builder.Services.AddAutoMapper(_ => { }, HostApp.AppAssemblyList);
         builder.Services.Configure<RecordLogEvent>(options => options.Event += ApiLogSetup.WriteLogFile);
         builder.Services.AddCacheService();
-        builder.Services.AddComparisonType();
         builder.Services.AddPersistence(builder.Configuration);
         builder
             .Services.AddControllers(options =>

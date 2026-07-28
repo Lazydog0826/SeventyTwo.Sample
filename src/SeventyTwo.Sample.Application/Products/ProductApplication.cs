@@ -1,7 +1,7 @@
 using AutoMapper;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
-using SeventyTwo.InfraKit.ShareDto;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 
 namespace SeventyTwo.Sample.Application.Products;

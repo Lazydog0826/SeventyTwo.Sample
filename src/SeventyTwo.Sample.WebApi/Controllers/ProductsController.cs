@@ -1,7 +1,8 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using SeventyTwo.InfraKit.ShareDto;
+using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Products;
+using SeventyTwo.Sample.Domain;
 
 // ReSharper disable NotAccessedPositionalProperty.Global
 
@@ -62,7 +63,7 @@ public sealed class ProductsController(IProductApplication productApplication, I
     /// <summary>
     /// 分页查询商品。
     /// </summary>
-    /// <param name="request">分页及动态表达式请求。</param>
+    /// <param name="request">分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
     [HttpPost("page")]
