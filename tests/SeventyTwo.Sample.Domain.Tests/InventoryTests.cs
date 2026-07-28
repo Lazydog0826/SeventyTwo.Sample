@@ -57,6 +57,78 @@ public sealed class InventoryTests
         Assert.Equal(10, inventory.Quantity);
     }
 
+    [Fact]
+    public void Change_ShouldDecreaseNewestInventoryFirst()
+    {
+        var olderInventory = CreateInventory(1, 5, new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero));
+        var newerInventory = CreateInventory(2, 6, new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero));
+        var draft = new InventoryChangeDraft(
+            "REQUEST-1",
+            [],
+            [new InventoryDecreaseDraft(2, 3, 4, 8)]
+        );
+        var service = new InventoryChangeService();
+
+        var batch = service.Change(
+            [olderInventory, newerInventory],
+            draft,
+            () => 100,
+            new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
+        );
+
+        Assert.Equal(3, olderInventory.Quantity);
+        Assert.Equal(0, newerInventory.Quantity);
+        Assert.Empty(batch.NewInventories);
+        Assert.Equal(2, batch.ChangedInventories.Count);
+        Assert.Collection(
+            batch.Changes,
+            change =>
+            {
+                Assert.Equal(2, change.InventoryId);
+                Assert.Equal(6, change.Quantity);
+            },
+            change =>
+            {
+                Assert.Equal(1, change.InventoryId);
+                Assert.Equal(2, change.Quantity);
+            }
+        );
+    }
+
+    [Fact]
+    public void Change_ShouldIncludeNewInventoryInDecreaseAllocation()
+    {
+        var inventory = CreateInventory(1, 10, new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero));
+        var draft = new InventoryChangeDraft(
+            "REQUEST-1",
+            [
+                new InventoryIncreaseDraft(
+                    2,
+                    3,
+                    4,
+                    5,
+                    "BATCH-2",
+                    new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
+                ),
+            ],
+            [new InventoryDecreaseDraft(2, 3, 4, 7)]
+        );
+        var service = new InventoryChangeService();
+
+        var batch = service.Change(
+            [inventory],
+            draft,
+            () => 2,
+            new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
+        );
+
+        var newInventory = Assert.Single(batch.NewInventories);
+        Assert.Equal(0, newInventory.Quantity);
+        Assert.Equal(8, inventory.Quantity);
+        Assert.Single(batch.ChangedInventories);
+        Assert.Equal(3, batch.Changes.Count);
+    }
+
     private Inventory CreateInventory(int quantity)
     {
         return new Inventory(
@@ -68,5 +140,10 @@ public sealed class InventoryTests
             new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero),
             quantity
         );
+    }
+
+    private Inventory CreateInventory(long id, int quantity, DateTimeOffset inboundAt)
+    {
+        return new Inventory(id, 2, 3, 4, $"BATCH-{id}", inboundAt, quantity);
     }
 }

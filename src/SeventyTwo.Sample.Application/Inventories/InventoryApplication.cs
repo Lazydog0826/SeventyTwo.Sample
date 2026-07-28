@@ -6,7 +6,7 @@ using SeventyTwo.Sample.Domain.Inventories;
 namespace SeventyTwo.Sample.Application.Inventories;
 
 [AutofacDependency(typeof(IInventoryApplication))]
-public sealed class InventoryApplication(IInventoryRepository inventoryRepository) : IInventoryApplication
+public sealed class InventoryApplication(IChangeInventoryService changeInventoryService) : IInventoryApplication
 {
     public async Task ChangeAsync(ChangeInventoryInput input, CancellationToken cancellationToken)
     {
@@ -25,7 +25,7 @@ public sealed class InventoryApplication(IInventoryRepository inventoryRepositor
             .ToList();
 
         var draft = new InventoryChangeDraft(input.RequestNo, increases, decreases);
-        await inventoryRepository.ChangeAsync(draft, cancellationToken);
+        await changeInventoryService.ChangeAsync(draft, cancellationToken);
     }
 
     public Task<IReadOnlyDictionary<string, decimal>> StorageFeeCalcAsync()
