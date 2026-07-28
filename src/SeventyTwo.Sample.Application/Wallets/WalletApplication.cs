@@ -10,10 +10,10 @@ public sealed class WalletApplication(IBalanceChangeService balanceChangeService
     public Task BalanceChangeAsync(BalanceChangeInput input, CancellationToken cancellationToken)
     {
         var details = input
-            .Details.Select(x => new BalanceChangeDetailDraft(x.Currency, x.ChangeType, x.Amount))
+            .Details.Select(x => new BalanceChangeDetailCommand(x.Currency, x.ChangeType, new Money(x.Amount)))
             .ToList();
-        var draft = new BalanceChangeDraft(input.CustomerId, input.RequestNo, details);
+        var command = new BalanceChangeCommand(input.CustomerId, input.RequestNo, details);
 
-        return balanceChangeService.BalanceChangeAsync(draft, cancellationToken);
+        return balanceChangeService.BalanceChangeAsync(command, cancellationToken);
     }
 }

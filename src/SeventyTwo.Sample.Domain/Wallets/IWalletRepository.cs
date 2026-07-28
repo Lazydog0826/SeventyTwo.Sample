@@ -11,9 +11,10 @@ public interface IWalletRepository
     );
 
     Task SaveBalanceChangeAsync(
+        string requestNo,
         IReadOnlyCollection<Wallet> newWallets,
         IReadOnlyCollection<Wallet> changedWallets,
-        IReadOnlyCollection<WalletChangeRecordDraft> changeRecords,
+        IReadOnlyCollection<WalletBalanceChange> changes,
         CancellationToken cancellationToken
     );
 }

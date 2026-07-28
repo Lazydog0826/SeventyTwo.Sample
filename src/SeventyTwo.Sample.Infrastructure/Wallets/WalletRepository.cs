@@ -41,9 +41,10 @@ public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepos
     }
 
     public async Task SaveBalanceChangeAsync(
+        string requestNo,
         IReadOnlyCollection<Wallet> newWallets,
         IReadOnlyCollection<Wallet> changedWallets,
-        IReadOnlyCollection<WalletChangeRecordDraft> changeRecords,
+        IReadOnlyCollection<WalletBalanceChange> changes,
         CancellationToken cancellationToken
     )
     {
@@ -59,9 +60,22 @@ public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepos
             await _db.Updateable(changedWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
 
-        if (changeRecords.Count > 0)
+        if (changes.Count > 0)
         {
-            var changeRecordEntities = mapper.Map<List<WalletChangeRecord>>(changeRecords);
+            var changedAt = DateTimeExtension.Now();
+            var changeRecordEntities = changes
+                .Select(x => new WalletChangeRecord
+                {
+                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                    RequestNo = requestNo,
+                    WalletId = x.WalletId,
+                    ChangeType = x.ChangeType,
+                    Amount = x.Amount.Value,
+                    BeforeBalanceAmount = x.BeforeBalance.Value,
+                    AfterBalanceAmount = x.AfterBalance.Value,
+                    ChangedAt = changedAt,
+                })
+                .ToList();
             await _db.Insertable(changeRecordEntities).ExecuteCommandAsync(cancellationToken);
         }
     }
