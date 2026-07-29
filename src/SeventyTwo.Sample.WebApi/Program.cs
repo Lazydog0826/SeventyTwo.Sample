@@ -4,7 +4,6 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.InfraKit.Core.App;
-using SeventyTwo.InfraKit.Core.App.JsonConverter;
 using SeventyTwo.InfraKit.SnowFlake;
 using SeventyTwo.Sample.Domain.Inventories;
 using SeventyTwo.Sample.Domain.Orders;
