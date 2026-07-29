@@ -5,6 +5,8 @@ using SeventyTwo.Sample.Application.Orders;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
 
+// ReSharper disable MemberCanBeMadeStatic.Local
+
 namespace SeventyTwo.Sample.Infrastructure.Orders;
 
 [AutofacDependency(typeof(IRandomOrderDataService))]
@@ -43,7 +45,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
         );
     }
 
-    private OrderRecord CreateOrder(long orderId, DateTime now)
+    private OrderRecord CreateOrder(long orderId, DateTimeOffset now)
     {
         return new OrderRecord
         {

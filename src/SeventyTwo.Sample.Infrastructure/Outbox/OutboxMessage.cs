@@ -33,19 +33,19 @@ public sealed class OutboxMessage
     /// 事件发生时间。
     /// </summary>
     [SugarColumn(ColumnName = "occurred_at")]
-    public DateTime OccurredAt { get; init; }
+    public DateTimeOffset OccurredAt { get; init; }
 
     /// <summary>
     /// 处理完成时间，未处理时为空。
     /// </summary>
     [SugarColumn(ColumnName = "processed_at", IsNullable = true)]
-    public DateTime? ProcessedAt { get; set; }
+    public DateTimeOffset? ProcessedAt { get; set; }
 
     /// <summary>
     /// 最近一次处理尝试时间。
     /// </summary>
     [SugarColumn(ColumnName = "last_attempt_at", IsNullable = true)]
-    public DateTime? LastAttemptAt { get; set; }
+    public DateTimeOffset? LastAttemptAt { get; set; }
 
     /// <summary>
     /// 处理失败次数。
