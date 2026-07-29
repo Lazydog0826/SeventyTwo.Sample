@@ -16,73 +16,73 @@ internal sealed class OrderRecord : BaseEntity
     /// 订单编号。
     /// </summary>
     [SugarColumn(ColumnName = "order_no", Length = 32, ColumnDescription = "订单编号")]
-    public string OrderNo { get; set; } = string.Empty;
+    public string OrderNo { get; init; } = string.Empty;
 
     /// <summary>
     /// 客户 ID。
     /// </summary>
     [SugarColumn(ColumnName = "customer_id", ColumnDescription = "客户id")]
-    public long CustomerId { get; set; }
+    public long CustomerId { get; init; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
     [SugarColumn(ColumnName = "warehouse_id", ColumnDescription = "仓库id")]
-    public int WarehouseId { get; set; }
+    public int WarehouseId { get; init; }
 
     /// <summary>
     /// 订单类型：1 销售订单，2 退货订单，3 调拨订单。
     /// </summary>
     [SugarColumn(ColumnName = "order_type", ColumnDescription = "订单类型：1销售订单，2退货订单，3调拨订单")]
-    public OrderType OrderType { get; set; }
+    public OrderType OrderType { get; init; }
 
     /// <summary>
     /// 订单状态：0 待处理，1 处理中，2 已处理，3 已取消。
     /// </summary>
     [SugarColumn(ColumnName = "order_status", ColumnDescription = "订单状态：0待处理，1处理中，2已处理，3已取消")]
-    public OrderStatus OrderStatus { get; set; }
+    public OrderStatus OrderStatus { get; init; }
 
     /// <summary>
     /// 收货人姓名。
     /// </summary>
     [SugarColumn(ColumnName = "receiver_name", Length = 50, IsNullable = true, ColumnDescription = "收货人姓名")]
-    public string? ReceiverName { get; set; }
+    public string? ReceiverName { get; init; }
 
     /// <summary>
     /// 收货人手机号。
     /// </summary>
     [SugarColumn(ColumnName = "receiver_phone", Length = 20, IsNullable = true, ColumnDescription = "收货人手机号")]
-    public string? ReceiverPhone { get; set; }
+    public string? ReceiverPhone { get; init; }
 
     /// <summary>
     /// 收货地址所在省份。
     /// </summary>
     [SugarColumn(ColumnName = "province", Length = 30, IsNullable = true, ColumnDescription = "省份")]
-    public string? Province { get; set; }
+    public string? Province { get; init; }
 
     /// <summary>
     /// 收货地址所在城市。
     /// </summary>
     [SugarColumn(ColumnName = "city", Length = 30, IsNullable = true, ColumnDescription = "城市")]
-    public string? City { get; set; }
+    public string? City { get; init; }
 
     /// <summary>
     /// 收货地址所在区县。
     /// </summary>
     [SugarColumn(ColumnName = "district", Length = 30, IsNullable = true, ColumnDescription = "区县")]
-    public string? District { get; set; }
+    public string? District { get; init; }
 
     /// <summary>
     /// 收货详细地址。
     /// </summary>
     [SugarColumn(ColumnName = "detail_address", Length = 200, IsNullable = true, ColumnDescription = "详细地址")]
-    public string? DetailAddress { get; set; }
+    public string? DetailAddress { get; init; }
 
     /// <summary>
     /// 订单备注。
     /// </summary>
     [SugarColumn(ColumnName = "remark", Length = 500, IsNullable = true, ColumnDescription = "订单备注")]
-    public string? Remark { get; set; }
+    public string? Remark { get; init; }
 }
 
 [SugarTable("order_items")]
