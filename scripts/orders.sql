@@ -2,27 +2,27 @@
 create table if not exists orders
 (
     id             bigint primary key,
-    order_no       varchar(32)                 not null check (btrim(order_no) <> ''),
-    customer_id    bigint                      not null check (customer_id > 0),
-    warehouse_id   integer                     not null check (warehouse_id > 0),
-    order_type     smallint                    not null check (order_type in (1, 2, 3)),
-    order_status   smallint                    not null check (order_status in (0, 1, 2, 3)),
-    receiver_name  varchar(50)                 null,
-    receiver_phone varchar(20)                 null,
-    province       varchar(30)                 null,
-    city           varchar(30)                 null,
-    district       varchar(30)                 null,
-    detail_address varchar(200)                null,
-    remark         varchar(500)                null,
-    enable         boolean                     not null default true,
-    delete_by      bigint                      null,
-    delete_at      timestamp without time zone null,
-    created_by     bigint                      not null,
-    created_at     timestamp without time zone not null,
-    updated_by     bigint                      null,
-    updated_at     timestamp without time zone null,
-    org_id         bigint                      not null,
-    version        bigint                      not null default 0
+    order_no       varchar(32)              not null check (btrim(order_no) <> ''),
+    customer_id    bigint                   not null check (customer_id > 0),
+    warehouse_id   integer                  not null check (warehouse_id > 0),
+    order_type     smallint                 not null check (order_type in (1, 2, 3)),
+    order_status   smallint                 not null check (order_status in (0, 1, 2, 3)),
+    receiver_name  varchar(50)              null,
+    receiver_phone varchar(20)              null,
+    province       varchar(30)              null,
+    city           varchar(30)              null,
+    district       varchar(30)              null,
+    detail_address varchar(200)             null,
+    remark         varchar(500)             null,
+    enable         boolean                  not null default true,
+    delete_by      bigint                   null,
+    delete_at      timestamp with time zone null,
+    created_by     bigint                   not null,
+    created_at     timestamp with time zone not null,
+    updated_by     bigint                   null,
+    updated_at     timestamp with time zone null,
+    org_id         bigint                   not null,
+    version        bigint                   not null default 0
 );
 
 comment on table orders is '订单';
@@ -49,9 +49,20 @@ comment on column orders.updated_at is '修改时间';
 comment on column orders.org_id is '组织标识';
 comment on column orders.version is '乐观锁版本号';
 
--- 加速通过订单编号查询订单。
+-- 支持按创建时间和订单标识倒序分页查询未删除订单。
+create index if not exists ix_orders_created_at_id
+    on orders (created_at desc, id desc)
+    where delete_at is null;
+
+-- 加速通过订单编号查询未删除订单。
 create index if not exists ix_orders_order_no
-    on orders (order_no);
+    on orders (order_no)
+    where delete_at is null;
+
+-- 加速按收货人手机号前缀查询未删除订单。
+create index if not exists ix_orders_receiver_phone
+    on orders (receiver_phone varchar_pattern_ops)
+    where delete_at is null;
 
 -- 订单明细表：保存订单内的商品、数量、价格及履约数量。
 create table if not exists order_items

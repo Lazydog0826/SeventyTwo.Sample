@@ -2,18 +2,18 @@
 create table if not exists wallet_record
 (
     id             bigint primary key,
-    customer_id    bigint                      not null check (customer_id > 0),
-    currency       smallint                    not null check (currency in (1, 2, 3, 4, 5, 6)),
-    balance_amount numeric(18, 2)              not null default 0 check (balance_amount >= 0),
-    enable         boolean                     not null default true,
-    delete_by      bigint                      null,
-    delete_at      timestamp without time zone null,
-    created_by     bigint                      not null,
-    created_at     timestamp without time zone not null,
-    updated_by     bigint                      null,
-    updated_at     timestamp without time zone null,
-    org_id         bigint                      not null,
-    version        bigint                      not null default 0,
+    customer_id    bigint                   not null check (customer_id > 0),
+    currency       smallint                 not null check (currency in (1, 2, 3, 4, 5, 6)),
+    balance_amount numeric(18, 2)           not null default 0 check (balance_amount >= 0),
+    enable         boolean                  not null default true,
+    delete_by      bigint                   null,
+    delete_at      timestamp with time zone null,
+    created_by     bigint                   not null,
+    created_at     timestamp with time zone not null,
+    updated_by     bigint                   null,
+    updated_at     timestamp with time zone null,
+    org_id         bigint                   not null,
+    version        bigint                   not null default 0,
     constraint uq_wallet_record_customer_currency unique (customer_id, currency)
 );
 

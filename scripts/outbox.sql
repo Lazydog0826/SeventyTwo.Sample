@@ -2,14 +2,14 @@
 create table if not exists outbox_messages
 (
     event_id        bigint primary key,
-    event_name      varchar(100)                not null,
-    aggregate_id    bigint                      not null,
-    payload         text                        not null,
-    occurred_at     timestamp without time zone not null,
-    processed_at    timestamp without time zone null,
-    last_attempt_at timestamp without time zone null,
-    failure_count   integer                     not null default 0,
-    last_error      varchar(4000)               null
+    event_name      varchar(100)             not null,
+    aggregate_id    bigint                   not null,
+    payload         text                     not null,
+    occurred_at     timestamp with time zone not null,
+    processed_at    timestamp with time zone null,
+    last_attempt_at timestamp with time zone null,
+    failure_count   integer                  not null default 0,
+    last_error      varchar(4000)            null
 );
 
 comment on table outbox_messages is '事务发件箱消息';

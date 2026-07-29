@@ -2,23 +2,23 @@
 create table if not exists inventory_record
 (
     id               bigint primary key,
-    key              varchar(128)                not null,
-    product_id       bigint                      not null check (product_id > 0),
-    warehouse_id     bigint                      not null check (warehouse_id > 0),
-    location_id      bigint                      not null check (location_id > 0),
-    inbound_batch_no varchar(64)                 not null check (btrim(inbound_batch_no) <> ''),
-    inbound_at       timestamp with time zone    not null,
-    initial_quantity integer                     not null check (initial_quantity >= 0),
-    quantity         integer                     not null check (quantity >= 0),
-    enable           boolean                     not null default true,
-    delete_by        bigint                      null,
-    delete_at        timestamp without time zone null,
-    created_by       bigint                      not null,
-    created_at       timestamp without time zone not null,
-    updated_by       bigint                      null,
-    updated_at       timestamp without time zone null,
-    org_id           bigint                      not null,
-    version          bigint                      not null default 0
+    key              varchar(128)             not null,
+    product_id       bigint                   not null check (product_id > 0),
+    warehouse_id     bigint                   not null check (warehouse_id > 0),
+    location_id      bigint                   not null check (location_id > 0),
+    inbound_batch_no varchar(64)              not null check (btrim(inbound_batch_no) <> ''),
+    inbound_at       timestamp with time zone not null,
+    initial_quantity integer                  not null check (initial_quantity >= 0),
+    quantity         integer                  not null check (quantity >= 0),
+    enable           boolean                  not null default true,
+    delete_by        bigint                   null,
+    delete_at        timestamp with time zone null,
+    created_by       bigint                   not null,
+    created_at       timestamp with time zone not null,
+    updated_by       bigint                   null,
+    updated_at       timestamp with time zone null,
+    org_id           bigint                   not null,
+    version          bigint                   not null default 0
 );
 
 comment on table inventory_record is '库存记录';

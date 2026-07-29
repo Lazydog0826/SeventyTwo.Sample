@@ -2,17 +2,17 @@
 create table if not exists product_record
 (
     id         bigint primary key,
-    name       varchar(255)                not null check (btrim(name) <> ''),
-    price      numeric(18, 2)              not null check (price > 0),
-    enable     boolean                     not null default true,
-    delete_by  bigint                      null,
-    delete_at  timestamp without time zone null,
-    created_by bigint                      not null,
-    created_at timestamp without time zone not null,
-    updated_by bigint                      null,
-    updated_at timestamp without time zone null,
-    org_id     bigint                      not null,
-    version    bigint                      not null default 0
+    name       varchar(255)             not null check (btrim(name) <> ''),
+    price      numeric(18, 2)           not null check (price > 0),
+    enable     boolean                  not null default true,
+    delete_by  bigint                   null,
+    delete_at  timestamp with time zone null,
+    created_by bigint                   not null,
+    created_at timestamp with time zone not null,
+    updated_by bigint                   null,
+    updated_at timestamp with time zone null,
+    org_id     bigint                   not null,
+    version    bigint                   not null default 0
 );
 
 comment on table product_record is '商品记录';
