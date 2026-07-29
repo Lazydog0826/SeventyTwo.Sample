@@ -1,8 +1,8 @@
-using SeventyTwo.Sample.Domain;
+using SeventyTwo.Sample.Domain.Orders;
 
 namespace SeventyTwo.Sample.Application.Orders;
 
 public interface IOrderApplication
 {
-    Task<PageResponse<OrderOutput>> GetPageAsync(PageRequest request, CancellationToken cancellationToken);
+    Task<PageResponse<OrderOutput>> GetPageAsync(OrderPageRequest request, CancellationToken cancellationToken);
 }

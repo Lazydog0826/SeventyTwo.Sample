@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Orders;
-using SeventyTwo.Sample.Domain;
+using SeventyTwo.Sample.Domain.Orders;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -30,7 +30,7 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>订单分页数据。</returns>
     [HttpPost("page")]
-    public Task<PageResponse<OrderOutput>> GetPage(PageRequest request, CancellationToken cancellationToken)
+    public Task<PageResponse<OrderOutput>> GetPage(OrderPageRequest request, CancellationToken cancellationToken)
     {
         return orderApplication.GetPageAsync(request, cancellationToken);
     }
