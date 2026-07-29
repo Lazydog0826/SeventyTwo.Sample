@@ -50,7 +50,10 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
         return new OrderPage([.. query2DataList.Select(mapper.Map<Order>)], total, null, null);
     }
 
-    public async Task<OrderPage> GetPageByCursorAsync(OrderPageRequest request, CancellationToken cancellationToken)
+    public async Task<OrderCursorPage> GetPageByCursorAsync(
+        OrderPageRequest request,
+        CancellationToken cancellationToken
+    )
     {
         var queryable = db.Queryable<OrderRecord>()
             .WhereIF(
@@ -60,18 +63,22 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .Where(x => x.DeleteAt == null)
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc);
 
-        var total = await queryable.CountAsync(cancellationToken);
-
         queryable = queryable.WhereIF(
             request is { LastDateTime: not null, LastId: not null },
-            x => x.CreatedAt < request.LastDateTime || (x.CreatedAt == request.LastDateTime && x.Id < request.LastId)
+            "(created_at, id) < (@LastDateTime, @LastId)",
+            new { request.LastDateTime, request.LastId }
         );
 
-        var dataList = await queryable.Take(request.Limit).ToListAsync(cancellationToken);
+        var dataList = await queryable.Take(request.Limit + 1).ToListAsync(cancellationToken);
+        var hasNext = dataList.Count > request.Limit;
+        if (hasNext)
+        {
+            dataList.RemoveAt(request.Limit);
+        }
 
         var lastDateTime = dataList.LastOrDefault()?.CreatedAt;
         var lastId = dataList.LastOrDefault()?.Id;
 
-        return new OrderPage([.. dataList.Select(mapper.Map<Order>)], total, lastDateTime, lastId);
+        return new OrderCursorPage([.. dataList.Select(mapper.Map<Order>)], hasNext, lastDateTime, lastId);
     }
 }

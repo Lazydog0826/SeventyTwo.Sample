@@ -64,7 +64,7 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
         return new CursorPageResponse<OrderOutput>
         {
             List = mapper.Map<List<OrderOutput>>(page.Items),
-            Total = page.Total,
+            HasNext = page.HasNext,
             LastDateTime = page.LastDateTime,
             LastId = page.LastId,
         };

@@ -10,9 +10,9 @@ public sealed class CursorPageResponse<T>
     public List<T> List { get; set; } = [];
 
     /// <summary>
-    /// 总数。
+    /// 是否还有下一页。
     /// </summary>
-    public int Total { get; set; }
+    public bool HasNext { get; set; }
 
     /// <summary>
     /// 当前页最后一条数据的创建时间。
