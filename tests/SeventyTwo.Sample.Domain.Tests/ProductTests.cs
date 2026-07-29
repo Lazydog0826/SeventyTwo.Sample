@@ -70,7 +70,7 @@ public sealed class ProductTests
     public void Update_ShouldChangeInfoAndAuditFields()
     {
         var product = new Product(1, "旧商品", 1m);
-        var updatedAt = new DateTime(2026, 7, 26, 10, 0, 0);
+        var updatedAt = new DateTimeOffset(2026, 7, 26, 10, 0, 0, TimeSpan.Zero);
 
         product.Update("  新商品  ", 2.5m, 0, 0, updatedAt);
 
@@ -86,7 +86,7 @@ public sealed class ProductTests
         var product = new Product(1, "旧商品", 1m);
 
         _ = Assert.Throws<ProductDomainException>(() =>
-            product.Update("新商品", 1.001m, 0, 0, new DateTime(2026, 7, 26))
+            product.Update("新商品", 1.001m, 0, 0, new DateTimeOffset(2026, 7, 26, 0, 0, 0, TimeSpan.Zero))
         );
 
         Assert.Equal("旧商品", product.Name);
@@ -100,7 +100,7 @@ public sealed class ProductTests
         var product = new Product(1, "旧商品", 1m);
 
         var exception = Assert.Throws<ProductDomainException>(() =>
-            product.Update("新商品", 2m, 1, 0, new DateTime(2026, 7, 26))
+            product.Update("新商品", 2m, 1, 0, new DateTimeOffset(2026, 7, 26, 0, 0, 0, TimeSpan.Zero))
         );
 
         Assert.Equal("商品数据已变更，请刷新后重试", exception.Message);
@@ -112,7 +112,7 @@ public sealed class ProductTests
     public void Delete_ShouldDisableProductAndSetAuditFields()
     {
         var product = new Product(1, "测试商品", 1m);
-        var deletedAt = new DateTime(2026, 7, 26, 10, 0, 0);
+        var deletedAt = new DateTimeOffset(2026, 7, 26, 10, 0, 0, TimeSpan.Zero);
 
         product.Delete(0, deletedAt);
 
