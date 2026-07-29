@@ -14,7 +14,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .Where(x => x.DeleteAt == null)
             .WhereIF(
                 !string.IsNullOrWhiteSpace(request.ReceiverPhone),
-                x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone!)
+                x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone)
             )
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc);
         var total = await query.CountAsync(cancellationToken);
@@ -32,7 +32,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .Where(x => x.DeleteAt == null)
             .WhereIF(
                 !string.IsNullOrWhiteSpace(request.ReceiverPhone),
-                x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone!)
+                x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone)
             )
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
             .Select(x => x.Id);
