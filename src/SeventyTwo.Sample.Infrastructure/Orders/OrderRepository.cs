@@ -22,7 +22,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .Skip((request.Index - 1) * request.Limit)
             .Take(request.Limit)
             .ToListAsync(cancellationToken);
-        return new OrderPage([.. records.Select(mapper.Map<Order>)], total);
+        return new OrderPage([.. records.Select(mapper.Map<Order>)], total, null, null);
     }
 
     public async Task<OrderPage> GetPageByIdsAsync(OrderPageRequest request, CancellationToken cancellationToken)
@@ -47,11 +47,31 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
             .ToListAsync(cancellationToken);
 
-        return new OrderPage([.. query2DataList.Select(mapper.Map<Order>)], total);
+        return new OrderPage([.. query2DataList.Select(mapper.Map<Order>)], total, null, null);
     }
 
-    public Task<OrderPage> GetPageByCursorAsync(OrderPageRequest request, CancellationToken cancellationToken)
+    public async Task<OrderPage> GetPageByCursorAsync(OrderPageRequest request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var queryable = db.Queryable<OrderRecord>()
+            .WhereIF(
+                !string.IsNullOrWhiteSpace(request.ReceiverPhone),
+                x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone)
+            )
+            .Where(x => x.DeleteAt == null)
+            .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc);
+
+        var total = await queryable.CountAsync(cancellationToken);
+
+        queryable = queryable.WhereIF(
+            request is { LastDateTime: not null, LastId: not null },
+            x => x.CreatedAt < request.LastDateTime || (x.CreatedAt == request.LastDateTime && x.Id < request.LastId)
+        );
+
+        var dataList = await queryable.Take(request.Limit).ToListAsync(cancellationToken);
+
+        var lastDateTime = dataList.LastOrDefault()?.CreatedAt;
+        var lastId = dataList.LastOrDefault()?.Id;
+
+        return new OrderPage([.. dataList.Select(mapper.Map<Order>)], total, lastDateTime, lastId);
     }
 }

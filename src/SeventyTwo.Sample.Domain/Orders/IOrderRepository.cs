@@ -1,3 +1,4 @@
+// ReSharper disable NotAccessedPositionalProperty.Global
 namespace SeventyTwo.Sample.Domain.Orders;
 
 public interface IOrderRepository
@@ -9,4 +10,4 @@ public interface IOrderRepository
     Task<OrderPage> GetPageByCursorAsync(OrderPageRequest request, CancellationToken cancellationToken);
 }
 
-public sealed record OrderPage(IReadOnlyCollection<Order> Items, int Total);
+public sealed record OrderPage(IReadOnlyCollection<Order> Items, int Total, DateTimeOffset? LastDateTime, long? LastId);

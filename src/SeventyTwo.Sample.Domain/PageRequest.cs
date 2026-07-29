@@ -16,10 +16,10 @@ public class PageRequest
     /// <summary>
     /// 最后时间（用于游标分页）
     /// </summary>
-    public DateTimeOffset LastDateTime { get; set; }
+    public DateTimeOffset? LastDateTime { get; set; }
 
     /// <summary>
     /// 最后ID（用于游标分页）
     /// </summary>
-    public long LastId { get; set; }
+    public long? LastId { get; set; }
 }

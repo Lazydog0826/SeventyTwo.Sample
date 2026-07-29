@@ -22,17 +22,51 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
             throw new OrderDomainException("每页数量必须在 1 到 100 之间");
         }
 
-        if (request.FuncType is not (1 or 2 or 3))
+        var page = await orderRepository.GetPageAsync(request, cancellationToken);
+        return new PageResponse<OrderOutput> { List = mapper.Map<List<OrderOutput>>(page.Items), Total = page.Total };
+    }
+
+    public async Task<PageResponse<OrderOutput>> GetPageByIdsAsync(
+        OrderPageRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.Index <= 0)
         {
-            throw new OrderDomainException("查询实现类型必须为 1、2 或 3");
+            throw new OrderDomainException("页码必须大于 0");
         }
 
-        var page = request.FuncType switch
+        if (request.Limit is <= 0 or > 100)
         {
-            1 => await orderRepository.GetPageAsync(request, cancellationToken),
-            2 => await orderRepository.GetPageByIdsAsync(request, cancellationToken),
-            _ => await orderRepository.GetPageByCursorAsync(request, cancellationToken),
-        };
+            throw new OrderDomainException("每页数量必须在 1 到 100 之间");
+        }
+
+        var page = await orderRepository.GetPageByIdsAsync(request, cancellationToken);
         return new PageResponse<OrderOutput> { List = mapper.Map<List<OrderOutput>>(page.Items), Total = page.Total };
+    }
+
+    public async Task<CursorPageResponse<OrderOutput>> GetPageByCursorAsync(
+        OrderPageRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.Limit is <= 0 or > 100)
+        {
+            throw new OrderDomainException("每页数量必须在 1 到 100 之间");
+        }
+
+        if (request.LastDateTime.HasValue != request.LastId.HasValue)
+        {
+            throw new OrderDomainException("最后时间和最后 ID 必须同时传入");
+        }
+
+        var page = await orderRepository.GetPageByCursorAsync(request, cancellationToken);
+        return new CursorPageResponse<OrderOutput>
+        {
+            List = mapper.Map<List<OrderOutput>>(page.Items),
+            Total = page.Total,
+            LastDateTime = page.LastDateTime,
+            LastId = page.LastId,
+        };
     }
 }
