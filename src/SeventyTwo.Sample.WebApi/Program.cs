@@ -69,6 +69,7 @@ await HostApp.StartWebAppAsync(
                 return Task.FromResult((response, SaveLog: !isDomainException));
             }
         );
+        app.UseStaticFiles();
         app.UseRouting();
         app.MapControllers();
         return Task.CompletedTask;

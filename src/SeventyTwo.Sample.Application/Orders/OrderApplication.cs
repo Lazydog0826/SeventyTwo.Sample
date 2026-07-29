@@ -17,9 +17,9 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
             throw new OrderDomainException("页码必须大于 0");
         }
 
-        if (request.Limit is <= 0 or > 100)
+        if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 100 之间");
+            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
         }
 
         var page = await orderRepository.GetPageAsync(request, cancellationToken);
@@ -36,9 +36,9 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
             throw new OrderDomainException("页码必须大于 0");
         }
 
-        if (request.Limit is <= 0 or > 100)
+        if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 100 之间");
+            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
         }
 
         var page = await orderRepository.GetPageByIdsAsync(request, cancellationToken);
@@ -50,9 +50,9 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
         CancellationToken cancellationToken
     )
     {
-        if (request.Limit is <= 0 or > 100)
+        if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 100 之间");
+            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
         }
 
         if (request.LastDateTime.HasValue != request.LastId.HasValue)
