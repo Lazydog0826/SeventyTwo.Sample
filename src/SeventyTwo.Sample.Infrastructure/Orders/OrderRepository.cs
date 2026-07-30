@@ -38,13 +38,13 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
         var total = await query.CountAsync(cancellationToken);
         var pageQuery = query
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
-            .Select(x => x.Id)
+            .Select(x => new { x.Id })
             .Skip((request.Index - 1) * request.Limit)
             .Take(request.Limit);
         var records = await db.Queryable<OrderRecord>()
-            .InnerJoin(pageQuery, (order, pageId) => order.Id == pageId)
-            .OrderBy((order, _) => new { order.CreatedAt, order.Id }, OrderByType.Desc)
-            .Select((order, _) => order)
+            .InnerJoin(pageQuery, (order, page) => order.Id == page.Id)
+            .OrderBy((order, page) => new { order.CreatedAt, order.Id }, OrderByType.Desc)
+            .Select((order, page) => order)
             .ToListAsync(cancellationToken);
 
         return new OrderPage(records.Adapt<List<Order>>(), total, null, null);
