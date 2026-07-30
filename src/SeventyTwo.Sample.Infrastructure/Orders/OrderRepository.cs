@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
 
@@ -60,25 +61,64 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
                 !string.IsNullOrWhiteSpace(request.ReceiverPhone),
                 x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone)
             )
-            .Where(x => x.DeleteAt == null)
-            .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc);
+            .Where(x => x.DeleteAt == null);
 
-        queryable = queryable.WhereIF(
-            request is { LastDateTime: not null, LastId: not null },
-            "(created_at, id) < (@LastDateTime, @LastId)",
-            new { request.LastDateTime, request.LastId }
-        );
+        if (request.Direction == CursorDirection.Previous)
+        {
+            queryable = queryable
+                .Where("(created_at, id) > (@LastDateTime, @LastId)", new { request.LastDateTime, request.LastId })
+                .OrderBy(x => new { x.CreatedAt, x.Id });
+        }
+        else
+        {
+            queryable = queryable
+                .WhereIF(
+                    request is { LastDateTime: not null, LastId: not null },
+                    "(created_at, id) < (@LastDateTime, @LastId)",
+                    new { request.LastDateTime, request.LastId }
+                )
+                .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc);
+        }
 
         var dataList = await queryable.Take(request.Limit + 1).ToListAsync(cancellationToken);
-        var hasNext = dataList.Count > request.Limit;
-        if (hasNext)
+        var hasMore = dataList.Count > request.Limit;
+        if (hasMore)
         {
             dataList.RemoveAt(request.Limit);
         }
 
+        if (request.Direction == CursorDirection.Previous)
+        {
+            dataList.Reverse();
+        }
+
+        bool hasPrevious;
+        bool hasNext;
+
+        if (request.Direction == CursorDirection.Previous)
+        {
+            hasNext = true;
+            hasPrevious = hasMore;
+        }
+        else
+        {
+            hasNext = hasMore;
+            hasPrevious = request is { LastDateTime: not null, LastId: not null };
+        }
+
+        var firstDateTime = dataList.FirstOrDefault()?.CreatedAt;
+        var firstId = dataList.FirstOrDefault()?.Id;
         var lastDateTime = dataList.LastOrDefault()?.CreatedAt;
         var lastId = dataList.LastOrDefault()?.Id;
 
-        return new OrderCursorPage([.. dataList.Select(mapper.Map<Order>)], hasNext, lastDateTime, lastId);
+        return new OrderCursorPage(
+            [.. dataList.Select(mapper.Map<Order>)],
+            hasPrevious,
+            hasNext,
+            firstDateTime,
+            firstId,
+            lastDateTime,
+            lastId
+        );
     }
 }

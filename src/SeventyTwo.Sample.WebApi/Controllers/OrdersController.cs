@@ -52,7 +52,7 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// </summary>
     /// <param name="request">游标分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>订单分页数据及下一页游标。</returns>
+    /// <returns>订单分页数据及上一页、下一页游标。</returns>
     [HttpPost("page/cursor")]
     public Task<CursorPageResponse<OrderOutput>> GetPageByCursor(
         OrderPageRequest request,

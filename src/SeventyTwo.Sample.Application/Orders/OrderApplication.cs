@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
 
 namespace SeventyTwo.Sample.Application.Orders;
@@ -60,11 +61,24 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
             throw new OrderDomainException("最后时间和最后 ID 必须同时传入");
         }
 
+        if (request.Direction is not CursorDirection.Next and not CursorDirection.Previous)
+        {
+            throw new OrderDomainException("游标翻页方向无效");
+        }
+
+        if (request is { Direction: CursorDirection.Previous, LastDateTime: null })
+        {
+            throw new OrderDomainException("查询上一页时必须传入游标");
+        }
+
         var page = await orderRepository.GetPageByCursorAsync(request, cancellationToken);
         return new CursorPageResponse<OrderOutput>
         {
             List = mapper.Map<List<OrderOutput>>(page.Items),
+            HasPrevious = page.HasPrevious,
             HasNext = page.HasNext,
+            FirstDateTime = page.FirstDateTime,
+            FirstId = page.FirstId,
             LastDateTime = page.LastDateTime,
             LastId = page.LastId,
         };

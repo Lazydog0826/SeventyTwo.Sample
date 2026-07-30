@@ -182,7 +182,8 @@
         <a href="page3.html" aria-current="page">游标分页</a>
     </nav>
     <h1>订单游标分页</h1>
-    <p class="subtitle">测试 <code>POST /api/orders/page/cursor</code>，使用上一页末条订单的创建时间和 ID 查询下一页。</p>
+    <p class="subtitle">测试 <code>POST /api/orders/page/cursor</code>，使用当前页首条或末条订单的创建时间和 ID 双向翻页。
+    </p>
     <section class="panel">
         <form id="queryForm" class="toolbar">
             <label>手机号前缀 <input id="receiverPhone" type="text" placeholder="可选"></label>
@@ -245,8 +246,8 @@
         limit: 10,
         receiverPhone: "",
         requestCursor: null,
-        nextCursor: null,
-        history: []
+        previousCursor: null,
+        nextCursor: null
     };
     const form = document.querySelector("#queryForm");
     const queryButton = form.querySelector('button[type="submit"]');
@@ -281,14 +282,14 @@
     function updatePager(limit) {
         queryButton.disabled = state.loading;
         pageInfo.textContent = `第 ${state.page} 页，每页 ${limit} 条`;
-        previousButton.disabled = state.loading || state.history.length === 0;
+        previousButton.disabled = state.loading || !state.previousCursor;
         nextButton.disabled = state.loading || !state.nextCursor;
         cursorInfo.textContent = state.requestCursor
-            ? `当前请求游标：${state.requestCursor.lastDateTime} / ${state.requestCursor.lastId}`
+            ? `当前请求游标（${state.requestCursor.direction === 1 ? "上一页" : "下一页"}）：${state.requestCursor.lastDateTime} / ${state.requestCursor.lastId}`
             : "当前请求游标：无（第一页）";
     }
 
-    async function query() {
+    async function query(previousState = null) {
         const {limit, receiverPhone} = state;
         state.loading = true;
         status.className = "status";
@@ -307,8 +308,11 @@
             if (!response.ok) throw new Error(payload?.message ?? `请求失败：HTTP ${response.status}`);
             const page = getPage(payload);
             const items = page?.list ?? [];
+            state.previousCursor = page?.hasPrevious && page?.firstDateTime != null && page?.firstId != null
+                ? {direction: 1, lastDateTime: page.firstDateTime, lastId: page.firstId}
+                : null;
             state.nextCursor = page?.hasNext && page?.lastDateTime != null && page?.lastId != null
-                ? {lastDateTime: page.lastDateTime, lastId: page.lastId}
+                ? {direction: 0, lastDateTime: page.lastDateTime, lastId: page.lastId}
                 : null;
             const requestElapsed = Math.round(performance.now() - startedAt);
             const renderStartedAt = performance.now();
@@ -317,7 +321,12 @@
             status.textContent = `本页 ${items.length} 条，接口 ${requestElapsed} ms，渲染 ${renderElapsed} ms`;
         } catch (error) {
             rows.innerHTML = '<tr><td class="empty" colspan="9">查询失败</td></tr>';
-            state.nextCursor = null;
+            if (previousState) {
+                Object.assign(state, previousState);
+            } else {
+                state.previousCursor = null;
+                state.nextCursor = null;
+            }
             status.className = "status error";
             status.textContent = error.message;
         } finally {
@@ -334,21 +343,32 @@
             limit: Number(document.querySelector("#limit").value),
             receiverPhone: document.querySelector("#receiverPhone").value.trim(),
             requestCursor: null,
-            nextCursor: null,
-            history: []
+            previousCursor: null,
+            nextCursor: null
         });
         query();
     });
     previousButton.addEventListener("click", () => {
-        state.requestCursor = state.history.pop() ?? null;
+        const previousState = {
+            page: state.page,
+            requestCursor: state.requestCursor,
+            previousCursor: state.previousCursor,
+            nextCursor: state.nextCursor
+        };
+        state.requestCursor = state.previousCursor;
         state.page--;
-        query();
+        query(previousState);
     });
     nextButton.addEventListener("click", () => {
-        state.history.push(state.requestCursor);
+        const previousState = {
+            page: state.page,
+            requestCursor: state.requestCursor,
+            previousCursor: state.previousCursor,
+            nextCursor: state.nextCursor
+        };
         state.requestCursor = state.nextCursor;
         state.page++;
-        query();
+        query(previousState);
     });
     query();
 </script>
