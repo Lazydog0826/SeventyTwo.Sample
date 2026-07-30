@@ -1,12 +1,12 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Domain.Orders;
 
 namespace SeventyTwo.Sample.Application.Orders;
 
-public sealed class OrderMappingProfile : Profile
+public sealed class OrderMappingProfile : IRegister
 {
-    public OrderMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<Order, OrderOutput>();
+        config.NewConfig<Order, OrderOutput>();
     }
 }

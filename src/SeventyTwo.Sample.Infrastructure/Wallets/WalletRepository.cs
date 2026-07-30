@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Wallets;
@@ -7,14 +7,12 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Wallets;
 
 [AutofacDependency(typeof(IWalletRepository))]
-public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepository
+public class WalletRepository(ISqlSugarClient db) : IWalletRepository
 {
-    private readonly ISqlSugarClient _db = db;
-
     public async Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken)
     {
         var newRequest = new WalletChangeRequest() { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
-        var affectedRows = await _db.Insertable(newRequest)
+        var affectedRows = await db.Insertable(newRequest)
             .PostgreSQLConflictNothing(["request_no"])
             .ExecuteCommandAsync(cancellationToken);
         return affectedRows > 0;
@@ -28,16 +26,16 @@ public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepos
     {
         var key = customerId.ToString();
         var newLock = new WalletChangeLock { LockKey = key };
-        await _db.Insertable(newLock).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
-        await _db.Queryable<WalletChangeLock>()
+        await db.Insertable(newLock).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
+        await db.Queryable<WalletChangeLock>()
             .Where(x => x.LockKey == key)
             .TranLock(DbLockType.Wait)
             .FirstAsync(cancellationToken);
 
-        var dbDataList = await _db.Queryable<WalletRecord>()
+        var dbDataList = await db.Queryable<WalletRecord>()
             .Where(x => x.CustomerId == customerId && walletCurrencies.Contains(x.Currency))
             .ToListAsync(cancellationToken);
-        return mapper.Map<List<Wallet>>(dbDataList);
+        return dbDataList.Adapt<List<Wallet>>();
     }
 
     public async Task SaveBalanceChangeAsync(
@@ -50,14 +48,14 @@ public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepos
     {
         if (newWallets.Count > 0)
         {
-            var newWalletRecords = mapper.Map<List<WalletRecord>>(newWallets);
-            await _db.Insertable(newWalletRecords).ExecuteCommandAsync(cancellationToken);
+            var newWalletRecords = newWallets.Adapt<List<WalletRecord>>();
+            await db.Insertable(newWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
 
         if (changedWallets.Count > 0)
         {
-            var changedWalletRecords = mapper.Map<List<WalletRecord>>(changedWallets);
-            await _db.Updateable(changedWalletRecords).ExecuteCommandAsync(cancellationToken);
+            var changedWalletRecords = changedWallets.Adapt<List<WalletRecord>>();
+            await db.Updateable(changedWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
 
         if (changes.Count > 0)
@@ -76,7 +74,7 @@ public class WalletRepository(ISqlSugarClient db, IMapper mapper) : IWalletRepos
                     ChangedAt = changedAt,
                 })
                 .ToList();
-            await _db.Insertable(changeRecordEntities).ExecuteCommandAsync(cancellationToken);
+            await db.Insertable(changeRecordEntities).ExecuteCommandAsync(cancellationToken);
         }
     }
 }

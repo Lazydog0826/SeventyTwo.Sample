@@ -1,4 +1,5 @@
 using System.Net;
+using Mapster;
 using SeventyTwo.InfraKit.ApiLog;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
@@ -28,7 +29,7 @@ await HostApp.StartWebAppAsync(
     {
         builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(HostApp.AppDomainTypes));
         builder.Services.AddApiLog();
-        builder.Services.AddAutoMapper(_ => { }, HostApp.AppAssemblyList);
+        TypeAdapterConfig.GlobalSettings.Scan([.. HostApp.AppAssemblyList]);
         builder.Services.Configure<RecordLogEvent>(options => options.Event += ApiLogSetup.WriteLogFile);
         builder.Services.AddCacheService();
         builder.Services.AddPersistence(builder.Configuration);

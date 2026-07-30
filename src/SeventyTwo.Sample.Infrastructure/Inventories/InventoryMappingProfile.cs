@@ -1,13 +1,14 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Domain.Inventories;
 
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
 
-public sealed class InventoryMappingProfile : Profile
+public sealed class InventoryMappingProfile : IRegister
 {
-    public InventoryMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<InventoryRecord, Inventory>()
+        config
+            .NewConfig<InventoryRecord, Inventory>()
             .ConstructUsing(x => new Inventory(
                 x.Id,
                 x.ProductId,
@@ -18,7 +19,8 @@ public sealed class InventoryMappingProfile : Profile
                 x.InitialQuantity,
                 x.Quantity
             ));
-        CreateMap<Inventory, InventoryRecord>()
-            .ForMember(x => x.Key, options => options.MapFrom(x => $"{x.WarehouseId}:{x.LocationId}:{x.ProductId}"));
+        config
+            .NewConfig<Inventory, InventoryRecord>()
+            .Map(x => x.Key, x => $"{x.WarehouseId}:{x.LocationId}:{x.ProductId}");
     }
 }

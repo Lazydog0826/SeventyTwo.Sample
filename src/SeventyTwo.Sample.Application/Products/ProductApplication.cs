@@ -1,4 +1,4 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
@@ -7,14 +7,14 @@ using SeventyTwo.Sample.Domain.Products;
 namespace SeventyTwo.Sample.Application.Products;
 
 [AutofacDependency(typeof(IProductApplication))]
-public sealed class ProductApplication(IProductRepository productRepository, IMapper mapper) : IProductApplication
+public sealed class ProductApplication(IProductRepository productRepository) : IProductApplication
 {
     /// <inheritdoc />
     public async Task<ProductOutput> CreateAsync(CreateProductInput input, CancellationToken cancellationToken)
     {
         var product = new Product(Yitter.IdGenerator.YitIdHelper.NextId(), input.Name, input.Price);
         await productRepository.AddAsync(product, cancellationToken);
-        return mapper.Map<ProductOutput>(product);
+        return product.Adapt<ProductOutput>();
     }
 
     /// <inheritdoc />
@@ -37,7 +37,7 @@ public sealed class ProductApplication(IProductRepository productRepository, IMa
     public async Task<ProductOutput> GetAsync(long id, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
-        return mapper.Map<ProductOutput>(product);
+        return product.Adapt<ProductOutput>();
     }
 
     /// <inheritdoc />
@@ -57,11 +57,7 @@ public sealed class ProductApplication(IProductRepository productRepository, IMa
         }
 
         var page = await productRepository.GetPageAsync(request, cancellationToken);
-        return new PageResponse<ProductOutput>
-        {
-            List = mapper.Map<List<ProductOutput>>(page.Items),
-            Total = page.Total,
-        };
+        return new PageResponse<ProductOutput> { List = page.Items.Adapt<List<ProductOutput>>(), Total = page.Total };
     }
 
     /// <summary>

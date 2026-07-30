@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
@@ -7,7 +7,7 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Orders;
 
 [AutofacDependency(typeof(IOrderRepository))]
-public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderRepository
+public class OrderRepository(ISqlSugarClient db) : IOrderRepository
 {
     public async Task<OrderPage> GetPageAsync(OrderPageRequest request, CancellationToken cancellationToken)
     {
@@ -23,7 +23,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .Skip((request.Index - 1) * request.Limit)
             .Take(request.Limit)
             .ToListAsync(cancellationToken);
-        return new OrderPage([.. records.Select(mapper.Map<Order>)], total, null, null);
+        return new OrderPage(records.Adapt<List<Order>>(), total, null, null);
     }
 
     public async Task<OrderPage> GetPageByIdsAsync(OrderPageRequest request, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
             .ToListAsync(cancellationToken);
 
-        return new OrderPage([.. query2DataList.Select(mapper.Map<Order>)], total, null, null);
+        return new OrderPage(query2DataList.Adapt<List<Order>>(), total, null, null);
     }
 
     public async Task<OrderCursorPage> GetPageByCursorAsync(
@@ -112,7 +112,7 @@ public class OrderRepository(ISqlSugarClient db, IMapper mapper) : IOrderReposit
         var lastId = dataList.LastOrDefault()?.Id;
 
         return new OrderCursorPage(
-            [.. dataList.Select(mapper.Map<Order>)],
+            dataList.Adapt<List<Order>>(),
             hasPrevious,
             hasNext,
             firstDateTime,

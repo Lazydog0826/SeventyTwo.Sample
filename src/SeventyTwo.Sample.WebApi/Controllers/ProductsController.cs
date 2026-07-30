@@ -1,4 +1,4 @@
-using AutoMapper;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Products;
@@ -12,7 +12,7 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 
 [ApiController]
 [Route("api/products")]
-public sealed class ProductsController(IProductApplication productApplication, IMapper mapper) : ControllerBase
+public sealed class ProductsController(IProductApplication productApplication) : ControllerBase
 {
     /// <summary>
     /// 创建商品。
@@ -23,7 +23,7 @@ public sealed class ProductsController(IProductApplication productApplication, I
     [HttpPost("create")]
     public Task<ProductOutput> Create(CreateProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.CreateAsync(mapper.Map<CreateProductInput>(request), cancellationToken);
+        return productApplication.CreateAsync(request.Adapt<CreateProductInput>(), cancellationToken);
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public sealed class ProductsController(IProductApplication productApplication, I
     [HttpPost("update")]
     public Task Update(UpdateProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.UpdateAsync(request.Id, mapper.Map<UpdateProductInput>(request), cancellationToken);
+        return productApplication.UpdateAsync(request.Id, request.Adapt<UpdateProductInput>(), cancellationToken);
     }
 
     /// <summary>

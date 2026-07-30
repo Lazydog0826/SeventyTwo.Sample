@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
@@ -6,7 +6,7 @@ using SeventyTwo.Sample.Domain.Orders;
 namespace SeventyTwo.Sample.Application.Orders;
 
 [AutofacDependency(typeof(IOrderApplication))]
-public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) : IOrderApplication
+public class OrderApplication(IOrderRepository orderRepository) : IOrderApplication
 {
     public async Task<PageResponse<OrderOutput>> GetPageAsync(
         OrderPageRequest request,
@@ -24,7 +24,7 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
         }
 
         var page = await orderRepository.GetPageAsync(request, cancellationToken);
-        return new PageResponse<OrderOutput> { List = mapper.Map<List<OrderOutput>>(page.Items), Total = page.Total };
+        return new PageResponse<OrderOutput> { List = page.Items.Adapt<List<OrderOutput>>(), Total = page.Total };
     }
 
     public async Task<PageResponse<OrderOutput>> GetPageByIdsAsync(
@@ -43,7 +43,7 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
         }
 
         var page = await orderRepository.GetPageByIdsAsync(request, cancellationToken);
-        return new PageResponse<OrderOutput> { List = mapper.Map<List<OrderOutput>>(page.Items), Total = page.Total };
+        return new PageResponse<OrderOutput> { List = page.Items.Adapt<List<OrderOutput>>(), Total = page.Total };
     }
 
     public async Task<CursorPageResponse<OrderOutput>> GetPageByCursorAsync(
@@ -74,7 +74,7 @@ public class OrderApplication(IOrderRepository orderRepository, IMapper mapper) 
         var page = await orderRepository.GetPageByCursorAsync(request, cancellationToken);
         return new CursorPageResponse<OrderOutput>
         {
-            List = mapper.Map<List<OrderOutput>>(page.Items),
+            List = page.Items.Adapt<List<OrderOutput>>(),
             HasPrevious = page.HasPrevious,
             HasNext = page.HasNext,
             FirstDateTime = page.FirstDateTime,

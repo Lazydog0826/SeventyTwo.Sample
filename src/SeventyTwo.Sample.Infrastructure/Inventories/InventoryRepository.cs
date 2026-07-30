@@ -1,4 +1,4 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Inventories;
@@ -7,7 +7,7 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
 
 [AutofacDependency(typeof(IInventoryRepository))]
-public sealed class InventoryRepository(ISqlSugarClient db, IMapper mapper) : IInventoryRepository
+public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryRepository
 {
     public async Task<bool> TryRegisterChangeAsync(string requestNo, CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public sealed class InventoryRepository(ISqlSugarClient db, IMapper mapper) : II
             .Where(x => keys.Contains(x.Key) && x.Quantity > 0)
             .OrderBy(x => x.Key)
             .ToListAsync(cancellationToken);
-        return mapper.Map<List<Inventory>>(records);
+        return records.Adapt<List<Inventory>>();
     }
 
     public async Task SaveChangeAsync(
@@ -49,13 +49,13 @@ public sealed class InventoryRepository(ISqlSugarClient db, IMapper mapper) : II
     {
         if (newInventories.Count > 0)
         {
-            var newRecords = mapper.Map<List<InventoryRecord>>(newInventories);
+            var newRecords = newInventories.Adapt<List<InventoryRecord>>();
             await db.Insertable(newRecords).ExecuteCommandAsync(cancellationToken);
         }
 
         if (changedInventories.Count > 0)
         {
-            var changedRecords = mapper.Map<List<InventoryRecord>>(changedInventories);
+            var changedRecords = changedInventories.Adapt<List<InventoryRecord>>();
             await db.Updateable(changedRecords).ExecuteCommandAsync(cancellationToken);
         }
 

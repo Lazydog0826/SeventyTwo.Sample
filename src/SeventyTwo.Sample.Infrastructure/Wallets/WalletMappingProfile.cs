@@ -1,18 +1,20 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Domain.Wallets;
 
 namespace SeventyTwo.Sample.Infrastructure.Wallets;
 
-public sealed class WalletMappingProfile : Profile
+public sealed class WalletMappingProfile : IRegister
 {
-    public WalletMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<WalletRecord, Wallet>()
+        config
+            .NewConfig<WalletRecord, Wallet>()
             .ConstructUsing(x => new Wallet(x.Id, x.CustomerId, x.Currency, new Money(x.BalanceAmount)))
-            .ForMember(x => x.WalletType, options => options.MapFrom(x => x.Currency))
-            .ForMember(x => x.Balance, options => options.MapFrom(x => new Money(x.BalanceAmount)));
-        CreateMap<Wallet, WalletRecord>()
-            .ForMember(x => x.Currency, options => options.MapFrom(x => x.WalletType))
-            .ForMember(x => x.BalanceAmount, options => options.MapFrom(x => x.Balance.Value));
+            .Map(x => x.WalletType, x => x.Currency)
+            .Map(x => x.Balance, x => new Money(x.BalanceAmount));
+        config
+            .NewConfig<Wallet, WalletRecord>()
+            .Map(x => x.Currency, x => x.WalletType)
+            .Map(x => x.BalanceAmount, x => x.Balance.Value);
     }
 }

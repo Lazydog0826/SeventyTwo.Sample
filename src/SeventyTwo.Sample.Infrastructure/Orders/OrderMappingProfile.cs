@@ -1,13 +1,14 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Domain.Orders;
 
 namespace SeventyTwo.Sample.Infrastructure.Orders;
 
-public sealed class OrderMappingProfile : Profile
+public sealed class OrderMappingProfile : IRegister
 {
-    public OrderMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<OrderRecord, Order>()
+        config
+            .NewConfig<OrderRecord, Order>()
             .ConstructUsing(x => new Order(
                 x.Id,
                 x.OrderNo,

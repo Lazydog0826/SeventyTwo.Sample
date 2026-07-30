@@ -1,15 +1,15 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Domain.Products;
 
 namespace SeventyTwo.Sample.Application.Products;
 
-public sealed class ProductMappingProfile : Profile
+public sealed class ProductMappingProfile : IRegister
 {
     /// <summary>
     /// 配置商品领域对象到应用层输出的映射。
     /// </summary>
-    public ProductMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<Product, ProductOutput>();
+        config.NewConfig<Product, ProductOutput>();
     }
 }

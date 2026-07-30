@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
   </ItemGroup>
   <ItemGroup>

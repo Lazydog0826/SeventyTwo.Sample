@@ -1,16 +1,16 @@
-using AutoMapper;
+using Mapster;
 using SeventyTwo.Sample.Application.Products;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
-public sealed class ProductMappingProfile : Profile
+public sealed class ProductMappingProfile : IRegister
 {
     /// <summary>
     /// 配置商品接口请求到应用层输入的映射。
     /// </summary>
-    public ProductMappingProfile()
+    public void Register(TypeAdapterConfig config)
     {
-        CreateMap<CreateProductRequest, CreateProductInput>();
-        CreateMap<UpdateProductRequest, UpdateProductInput>();
+        config.NewConfig<CreateProductRequest, CreateProductInput>();
+        config.NewConfig<UpdateProductRequest, UpdateProductInput>();
     }
 }
