@@ -28,27 +28,26 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
 
     public async Task<OrderPage> GetPageByIdsAsync(OrderPageRequest request, CancellationToken cancellationToken)
     {
-        // 索引分页后回表查询
-        var query1 = db.Queryable<OrderRecord>()
+        // 子查询分页后在数据库内回表
+        var query = db.Queryable<OrderRecord>()
             .Where(x => x.DeleteAt == null)
             .WhereIF(
                 !string.IsNullOrWhiteSpace(request.ReceiverPhone),
                 x => x.ReceiverPhone != null && x.ReceiverPhone.StartsWith(request.ReceiverPhone)
-            )
+            );
+        var total = await query.CountAsync(cancellationToken);
+        var pageQuery = query
             .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
-            .Select(x => x.Id);
-        var total = await query1.CountAsync(cancellationToken);
-        var query1DataIds = await query1
+            .Select(x => x.Id)
             .Skip((request.Index - 1) * request.Limit)
-            .Take(request.Limit)
+            .Take(request.Limit);
+        var records = await db.Queryable<OrderRecord>()
+            .InnerJoin(pageQuery, (order, pageId) => order.Id == pageId)
+            .OrderBy((order, _) => new { order.CreatedAt, order.Id }, OrderByType.Desc)
+            .Select((order, _) => order)
             .ToListAsync(cancellationToken);
 
-        var query2DataList = await db.Queryable<OrderRecord>()
-            .Where(x => query1DataIds.Contains(x.Id))
-            .OrderBy(x => new { x.CreatedAt, x.Id }, OrderByType.Desc)
-            .ToListAsync(cancellationToken);
-
-        return new OrderPage(query2DataList.Adapt<List<Order>>(), total, null, null);
+        return new OrderPage(records.Adapt<List<Order>>(), total, null, null);
     }
 
     public async Task<OrderCursorPage> GetPageByCursorAsync(
