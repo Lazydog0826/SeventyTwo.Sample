@@ -36,7 +36,8 @@ public sealed class MapsterConfigurationTests
             "市",
             "区",
             "地址",
-            "备注"
+            "备注",
+            [new OrderItem(1, 1, 1, 2, "商品", "件", 3, 4m, 2, 1, "明细备注")]
         ).Adapt<OrderOutput>(configuration);
 
         Assert.Equal(new CreateProductInput("商品", 1m), createInput);
@@ -47,5 +48,8 @@ public sealed class MapsterConfigurationTests
         Assert.Equal(0, output.Version);
         Assert.Equal(1, orderOutput.Id);
         Assert.Equal("ORDER-1", orderOutput.OrderNo);
+        var orderItemOutput = Assert.Single(orderOutput.Items);
+        Assert.Equal(1, orderItemOutput.Id);
+        Assert.Equal("商品", orderItemOutput.ProductName);
     }
 }

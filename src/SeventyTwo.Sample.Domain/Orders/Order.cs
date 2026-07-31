@@ -1,5 +1,7 @@
 using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+
 namespace SeventyTwo.Sample.Domain.Orders;
 
 public sealed class Order : AggregateRoot
@@ -17,7 +19,8 @@ public sealed class Order : AggregateRoot
         string? city,
         string? district,
         string? detailAddress,
-        string? remark
+        string? remark,
+        IReadOnlyCollection<OrderItem> items
     )
     {
         Id = id;
@@ -33,6 +36,7 @@ public sealed class Order : AggregateRoot
         District = district;
         DetailAddress = detailAddress;
         Remark = remark;
+        Items = items;
     }
 
     public string OrderNo { get; private set; }
@@ -58,4 +62,43 @@ public sealed class Order : AggregateRoot
     public string? DetailAddress { get; private set; }
 
     public string? Remark { get; private set; }
+
+    public IReadOnlyCollection<OrderItem> Items { get; private set; }
+}
+
+public sealed class OrderItem(
+    long id,
+    long orderId,
+    int lineNo,
+    long productId,
+    string productName,
+    string? unit,
+    int quantity,
+    decimal unitPrice,
+    int shippedQuantity,
+    int returnedQuantity,
+    string? remark
+)
+{
+    public long Id { get; } = id;
+
+    public long OrderId { get; } = orderId;
+
+    public int LineNo { get; } = lineNo;
+
+    public long ProductId { get; } = productId;
+
+    public string ProductName { get; } = productName;
+
+    public string? Unit { get; } = unit;
+
+    public int Quantity { get; } = quantity;
+
+    public decimal UnitPrice { get; } = unitPrice;
+
+    public int ShippedQuantity { get; } = shippedQuantity;
+
+    public int ReturnedQuantity { get; } = returnedQuantity;
+
+    public string? Remark { get; } = remark;
 }

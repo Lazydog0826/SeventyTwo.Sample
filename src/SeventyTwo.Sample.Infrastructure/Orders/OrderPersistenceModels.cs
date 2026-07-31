@@ -83,6 +83,9 @@ internal sealed class OrderRecord : BaseEntity
     /// </summary>
     [SugarColumn(ColumnName = "remark", Length = 500, IsNullable = true, ColumnDescription = "订单备注")]
     public string? Remark { get; init; }
+
+    [SugarColumn(IsIgnore = true)]
+    public List<OrderItemRecord> Items { get; set; } = [];
 }
 
 [SugarTable("order_items")]

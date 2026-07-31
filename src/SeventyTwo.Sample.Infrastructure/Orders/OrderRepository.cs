@@ -23,6 +23,7 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
             .Skip((request.Index - 1) * request.Limit)
             .Take(request.Limit)
             .ToListAsync(cancellationToken);
+        await LoadItemsAsync(records, cancellationToken);
         return new OrderPage(records.Adapt<List<Order>>(), total, null, null);
     }
 
@@ -46,6 +47,7 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
             .OrderBy((order, page) => new { order.CreatedAt, order.Id }, OrderByType.Desc)
             .Select((order, page) => order)
             .ToListAsync(cancellationToken);
+        await LoadItemsAsync(records, cancellationToken);
 
         return new OrderPage(records.Adapt<List<Order>>(), total, null, null);
     }
@@ -91,6 +93,8 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
             dataList.Reverse();
         }
 
+        await LoadItemsAsync(dataList, cancellationToken);
+
         bool hasPrevious;
         bool hasNext;
 
@@ -119,5 +123,30 @@ public class OrderRepository(ISqlSugarClient db) : IOrderRepository
             lastDateTime,
             lastId
         );
+    }
+
+    private async Task LoadItemsAsync(List<OrderRecord> orders, CancellationToken cancellationToken)
+    {
+        if (orders.Count == 0)
+        {
+            return;
+        }
+
+        var orderIds = orders.Select(x => x.Id).ToList();
+        var items = await db.Queryable<OrderItemRecord>()
+            .Where(x => orderIds.Contains(x.OrderId))
+            .OrderBy(x => new
+            {
+                x.OrderId,
+                x.LineNo,
+                x.Id,
+            })
+            .ToListAsync(cancellationToken);
+        var itemsByOrderId = items.ToLookup(x => x.OrderId);
+
+        foreach (var order in orders)
+        {
+            order.Items = itemsByOrderId[order.Id].ToList();
+        }
     }
 }

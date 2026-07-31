@@ -1,5 +1,8 @@
 using SeventyTwo.Sample.Domain.Orders;
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace SeventyTwo.Sample.Application.Orders;
 
 /// <summary>
@@ -73,7 +76,40 @@ public sealed record OrderOutput
     public string? Remark { get; init; }
 
     /// <summary>
+    /// 订单明细。
+    /// </summary>
+    public IReadOnlyCollection<OrderItemOutput> Items { get; init; } = [];
+
+    /// <summary>
     /// 乐观锁版本号。
     /// </summary>
     public long Version { get; init; }
+}
+
+/// <summary>
+/// 订单明细输出。
+/// </summary>
+public sealed record OrderItemOutput
+{
+    public long Id { get; init; }
+
+    public long OrderId { get; init; }
+
+    public int LineNo { get; init; }
+
+    public long ProductId { get; init; }
+
+    public string ProductName { get; init; } = string.Empty;
+
+    public string? Unit { get; init; }
+
+    public int Quantity { get; init; }
+
+    public decimal UnitPrice { get; init; }
+
+    public int ShippedQuantity { get; init; }
+
+    public int ReturnedQuantity { get; init; }
+
+    public string? Remark { get; init; }
 }
