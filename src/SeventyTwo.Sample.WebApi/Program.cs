@@ -56,6 +56,7 @@ await HostApp.StartWebAppAsync(
         builder
             .Services.AddCap(x =>
             {
+                x.UseDashboard();
                 x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
                 x.UseRabbitMQ(options =>
                 {
