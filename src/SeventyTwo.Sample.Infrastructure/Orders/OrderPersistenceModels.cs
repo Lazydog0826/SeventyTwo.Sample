@@ -103,59 +103,59 @@ internal sealed class OrderItemRecord
     /// 所属订单 ID。
     /// </summary>
     [SugarColumn(ColumnName = "order_id", ColumnDescription = "订单主表id")]
-    public long OrderId { get; set; }
+    public long OrderId { get; init; }
 
     /// <summary>
     /// 订单内明细行号。
     /// </summary>
     [SugarColumn(ColumnName = "line_no", ColumnDescription = "订单内明细行号")]
-    public int LineNo { get; set; }
+    public int LineNo { get; init; }
 
     /// <summary>
     /// 商品 ID。
     /// </summary>
     [SugarColumn(ColumnName = "product_id", ColumnDescription = "商品id")]
-    public long ProductId { get; set; }
+    public long ProductId { get; init; }
 
     /// <summary>
     /// 下单时的商品名称快照。
     /// </summary>
     [SugarColumn(ColumnName = "product_name", Length = 100, ColumnDescription = "商品名称快照")]
-    public string ProductName { get; set; } = string.Empty;
+    public string ProductName { get; init; } = string.Empty;
 
     /// <summary>
     /// 商品计量单位。
     /// </summary>
     [SugarColumn(ColumnName = "unit", Length = 20, IsNullable = true, ColumnDescription = "计量单位")]
-    public string? Unit { get; set; }
+    public string? Unit { get; init; }
 
     /// <summary>
     /// 购买数量。
     /// </summary>
     [SugarColumn(ColumnName = "quantity", ColumnDescription = "购买数量")]
-    public int Quantity { get; set; }
+    public int Quantity { get; init; }
 
     /// <summary>
     /// 下单时的商品单价。
     /// </summary>
     [SugarColumn(ColumnName = "unit_price", Length = 14, DecimalDigits = 2, ColumnDescription = "商品单价")]
-    public decimal UnitPrice { get; set; }
+    public decimal UnitPrice { get; init; }
 
     /// <summary>
     /// 已发货数量。
     /// </summary>
     [SugarColumn(ColumnName = "shipped_quantity", ColumnDescription = "已发货数量")]
-    public int ShippedQuantity { get; set; }
+    public int ShippedQuantity { get; init; }
 
     /// <summary>
     /// 已退货数量。
     /// </summary>
     [SugarColumn(ColumnName = "returned_quantity", ColumnDescription = "已退货数量")]
-    public int ReturnedQuantity { get; set; }
+    public int ReturnedQuantity { get; init; }
 
     /// <summary>
     /// 订单明细备注。
     /// </summary>
     [SugarColumn(ColumnName = "remark", Length = 300, IsNullable = true, ColumnDescription = "明细备注")]
-    public string? Remark { get; set; }
+    public string? Remark { get; init; }
 }
