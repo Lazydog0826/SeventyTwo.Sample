@@ -10,6 +10,7 @@ using SeventyTwo.Sample.Domain.Inventories;
 using SeventyTwo.Sample.Domain.Orders;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.Domain.Wallets;
+using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using ApiLogSetup = SeventyTwo.InfraKit.ApiLog.Setup;
 using ApplicationAssemblyMarker = SeventyTwo.Sample.Application.AssemblyMarker;
@@ -46,6 +47,26 @@ await HostApp.StartWebAppAsync(
             builder.Configuration.GetSection(nameof(SnowFlakeConfiguration))
         );
         builder.Services.AddHostedService<SnowFlakeHostService>();
+
+        #region CAP
+
+        var capConfiguration = builder
+            .Configuration.GetRequiredSection(nameof(CapConfiguration))
+            .Get<CapConfiguration>()!;
+        builder.Services.AddCap(x =>
+        {
+            x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
+            x.UseRabbitMQ(options =>
+            {
+                options.HostName = capConfiguration.RabbitMqHostName;
+                options.UserName = capConfiguration.RabbitMqUserName;
+                options.Password = capConfiguration.RabbitMqPassword;
+                options.VirtualHost = capConfiguration.RabbitMqVirtualHost;
+            });
+        });
+
+        #endregion
+
         return Task.CompletedTask;
     },
     app =>

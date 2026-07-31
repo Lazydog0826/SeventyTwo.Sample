@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="DotNetCore.CAP" />
     <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
   </ItemGroup>

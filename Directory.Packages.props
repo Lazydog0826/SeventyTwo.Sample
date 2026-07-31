@@ -3,6 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="DotNetCore.CAP" Version="10.0.1" />
+    <PackageVersion Include="DotNetCore.CAP.PostgreSql" Version="10.0.1" />
+    <PackageVersion Include="DotNetCore.CAP.RabbitMQ" Version="10.0.1" />
     <PackageVersion Include="Mapster" Version="10.0.11" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="SeventyTwo.InfraKit" Version="10.7.1" />
