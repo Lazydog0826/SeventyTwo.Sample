@@ -53,17 +53,21 @@ await HostApp.StartWebAppAsync(
         var capConfiguration = builder
             .Configuration.GetRequiredSection(nameof(CapConfiguration))
             .Get<CapConfiguration>()!;
-        builder.Services.AddCap(x =>
-        {
-            x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
-            x.UseRabbitMQ(options =>
+        builder
+            .Services.AddCap(x =>
             {
-                options.HostName = capConfiguration.RabbitMqHostName;
-                options.UserName = capConfiguration.RabbitMqUserName;
-                options.Password = capConfiguration.RabbitMqPassword;
-                options.VirtualHost = capConfiguration.RabbitMqVirtualHost;
-            });
-        });
+                x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
+                x.UseRabbitMQ(options =>
+                {
+                    options.HostName = capConfiguration.RabbitMqHostName;
+                    options.UserName = capConfiguration.RabbitMqUserName;
+                    options.Password = capConfiguration.RabbitMqPassword;
+                    options.VirtualHost = capConfiguration.RabbitMqVirtualHost;
+                    options.PublishConfirms = true;
+                    options.QueueOptions.Durable = true;
+                });
+            })
+            .AddSubscriberAssembly(typeof(InfrastructureAssemblyMarker));
 
         #endregion
 
