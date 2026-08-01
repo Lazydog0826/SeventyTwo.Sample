@@ -16,6 +16,10 @@
         "RabbitMqPassword": "your_password",
         "RabbitMqVirtualHost": "your_virtual_host"
     },
+    "CapDashboardAuthenticationConfiguration": {
+        "UserName": "your_username",
+        "Password": "your_password"
+    },
     "CacheConfiguration": {
         "ConnectionString": "localhost:6379,password=your_password,abortConnect=false",
         "KeyNamespace": "SeventyTwo.InfraKit",

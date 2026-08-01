@@ -12,6 +12,7 @@ using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.Domain.Wallets;
 using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Persistence;
+using SeventyTwo.Sample.WebApi.Authentication;
 using ApiLogSetup = SeventyTwo.InfraKit.ApiLog.Setup;
 using ApplicationAssemblyMarker = SeventyTwo.Sample.Application.AssemblyMarker;
 using DomainAssemblyMarker = SeventyTwo.Sample.Domain.AssemblyMarker;
@@ -53,10 +54,40 @@ await HostApp.StartWebAppAsync(
         var capConfiguration = builder
             .Configuration.GetRequiredSection(nameof(CapConfiguration))
             .Get<CapConfiguration>()!;
+        var dashboardAuthenticationConfiguration = builder
+            .Configuration.GetRequiredSection(nameof(CapDashboardAuthenticationConfiguration))
+            .Get<CapDashboardAuthenticationConfiguration>()!;
+
+        // 注册仅允许通过 CAP Dashboard Basic Authentication 的授权策略。
+        builder
+            .Services.AddAuthorization(options =>
+            {
+                options.AddPolicy(
+                    CapDashboardAuthenticationDefaults.Policy,
+                    policy =>
+                        policy
+                            .AddAuthenticationSchemes(CapDashboardAuthenticationDefaults.BasicScheme)
+                            .RequireAuthenticatedUser()
+                );
+            })
+            .AddAuthentication()
+            .AddScheme<CapDashboardBasicAuthenticationOptions, CapDashboardBasicAuthenticationHandler>(
+                CapDashboardAuthenticationDefaults.BasicScheme,
+                options =>
+                {
+                    options.UserName = dashboardAuthenticationConfiguration.UserName;
+                    options.Password = dashboardAuthenticationConfiguration.Password;
+                }
+            );
         builder
             .Services.AddCap(x =>
             {
-                x.UseDashboard();
+                // 禁止匿名访问，并将 Dashboard 请求交由上方授权策略校验。
+                x.UseDashboard(options =>
+                {
+                    options.AllowAnonymousExplicit = false;
+                    options.AuthorizationPolicy = CapDashboardAuthenticationDefaults.Policy;
+                });
                 x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
                 x.UseRabbitMQ(options =>
                 {
@@ -98,6 +129,8 @@ await HostApp.StartWebAppAsync(
         );
         app.UseStaticFiles();
         app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.MapControllers();
         return Task.CompletedTask;
     }
