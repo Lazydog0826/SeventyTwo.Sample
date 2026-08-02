@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
 namespace SeventyTwo.Sample.Infrastructure.Products;

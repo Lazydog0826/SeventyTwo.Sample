@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Domain;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
@@ -7,9 +7,9 @@ namespace SeventyTwo.Sample.Domain.Orders;
 public sealed class Order : AggregateRoot
 {
     public Order(
-        long id,
+        string id,
         string orderNo,
-        long customerId,
+        string customerId,
         int warehouseId,
         OrderType orderType,
         OrderStatus orderStatus,
@@ -41,7 +41,7 @@ public sealed class Order : AggregateRoot
 
     public string OrderNo { get; private set; }
 
-    public long CustomerId { get; private set; }
+    public string CustomerId { get; private set; }
 
     public int WarehouseId { get; private set; }
 
@@ -67,10 +67,10 @@ public sealed class Order : AggregateRoot
 }
 
 public sealed class OrderItem(
-    long id,
-    long orderId,
+    string id,
+    string orderId,
     int lineNo,
-    long productId,
+    string productId,
     string productName,
     string? unit,
     int quantity,
@@ -80,13 +80,13 @@ public sealed class OrderItem(
     string? remark
 )
 {
-    public long Id { get; } = id;
+    public string Id { get; } = id;
 
-    public long OrderId { get; } = orderId;
+    public string OrderId { get; } = orderId;
 
     public int LineNo { get; } = lineNo;
 
-    public long ProductId { get; } = productId;
+    public string ProductId { get; } = productId;
 
     public string ProductName { get; } = productName;
 

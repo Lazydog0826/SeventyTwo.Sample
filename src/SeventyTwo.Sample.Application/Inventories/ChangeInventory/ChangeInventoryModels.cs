@@ -7,12 +7,12 @@ public sealed record ChangeInventoryInput(
 );
 
 public sealed record InventoryIncreaseInput(
-    long ProductId,
-    long WarehouseId,
-    long LocationId,
+    string ProductId,
+    string WarehouseId,
+    string LocationId,
     int Quantity,
     string InboundBatchNo,
     DateTimeOffset ChangedAt
 );
 
-public sealed record InventoryDecreaseInput(long ProductId, long WarehouseId, long LocationId, int Quantity);
+public sealed record InventoryDecreaseInput(string ProductId, string WarehouseId, string LocationId, int Quantity);

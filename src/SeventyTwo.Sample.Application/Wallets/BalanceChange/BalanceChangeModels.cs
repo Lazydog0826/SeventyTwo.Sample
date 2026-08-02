@@ -3,7 +3,7 @@ using SeventyTwo.Sample.Domain.Wallets;
 namespace SeventyTwo.Sample.Application.Wallets.BalanceChange;
 
 public sealed record BalanceChangeInput(
-    long CustomerId,
+    string CustomerId,
     string RequestNo,
     IReadOnlyCollection<BalanceChangeDetailInput> Details
 );
@@ -13,14 +13,14 @@ public sealed record BalanceChangeDetailInput(WalletCurrency Currency, WalletCha
 public sealed class BalanceChangeCommand
 {
     public BalanceChangeCommand(
-        long customerId,
+        string customerId,
         string requestNo,
         IReadOnlyCollection<BalanceChangeDetailCommand> details
     )
     {
-        if (customerId <= 0)
+        if (string.IsNullOrWhiteSpace(customerId))
         {
-            throw new WalletDomainException("客户 ID 必须大于 0");
+            throw new WalletDomainException("客户 ID 不能为空");
         }
 
         if (string.IsNullOrWhiteSpace(requestNo))
@@ -62,7 +62,7 @@ public sealed class BalanceChangeCommand
         Details = details.ToList().AsReadOnly();
     }
 
-    public long CustomerId { get; }
+    public string CustomerId { get; }
 
     public string RequestNo { get; }
 

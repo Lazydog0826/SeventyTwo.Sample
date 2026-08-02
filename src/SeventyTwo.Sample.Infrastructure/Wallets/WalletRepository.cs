@@ -19,12 +19,12 @@ public class WalletRepository(ISqlSugarClient db) : IWalletRepository
     }
 
     public async Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
-        long customerId,
+        string customerId,
         IReadOnlyCollection<WalletCurrency> walletCurrencies,
         CancellationToken cancellationToken
     )
     {
-        var key = customerId.ToString();
+        var key = customerId;
         var newLock = new WalletChangeLock { LockKey = key };
         await db.Insertable(newLock).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
         await db.Queryable<WalletChangeLock>()
@@ -64,7 +64,7 @@ public class WalletRepository(ISqlSugarClient db) : IWalletRepository
             var changeRecordEntities = changes
                 .Select(x => new WalletChangeRecord
                 {
-                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                    ChangeId = Ulid.NewUlid().ToString(),
                     RequestNo = requestNo,
                     WalletId = x.WalletId,
                     ChangeType = x.ChangeType,

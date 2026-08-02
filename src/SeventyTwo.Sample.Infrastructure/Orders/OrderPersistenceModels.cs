@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
 
@@ -21,8 +21,8 @@ internal sealed class OrderRecord : BaseEntity
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "customer_id", ColumnDescription = "客户id")]
-    public long CustomerId { get; init; }
+    [SugarColumn(ColumnName = "customer_id", ColumnDescription = "客户id", ColumnDataType = "char(26)")]
+    public string CustomerId { get; init; } = string.Empty;
 
     /// <summary>
     /// 仓库 ID。
@@ -96,14 +96,14 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 订单明细主键。
     /// </summary>
-    [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true, ColumnDescription = "订单明细主键")]
-    public long Id { get; set; }
+    [SugarColumn(ColumnName = "id", IsPrimaryKey = true, ColumnDataType = "char(26)", ColumnDescription = "订单明细主键")]
+    public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 所属订单 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "order_id", ColumnDescription = "订单主表id")]
-    public long OrderId { get; init; }
+    [SugarColumn(ColumnName = "order_id", ColumnDescription = "订单主表id", ColumnDataType = "char(26)")]
+    public string OrderId { get; init; } = string.Empty;
 
     /// <summary>
     /// 订单内明细行号。
@@ -114,8 +114,8 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "product_id", ColumnDescription = "商品id")]
-    public long ProductId { get; init; }
+    [SugarColumn(ColumnName = "product_id", ColumnDescription = "商品id", ColumnDataType = "char(26)")]
+    public string ProductId { get; init; } = string.Empty;
 
     /// <summary>
     /// 下单时的商品名称快照。

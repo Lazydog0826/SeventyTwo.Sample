@@ -1,5 +1,5 @@
-﻿using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
-using SeventyTwo.Sample.Domain.Wallets;
+﻿using SeventyTwo.Sample.Domain.Wallets;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -12,8 +12,8 @@ internal sealed class WalletRecord : BaseEntity
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "customer_id")]
-    public long CustomerId { get; init; }
+    [SugarColumn(ColumnName = "customer_id", ColumnDataType = "char(26)")]
+    public string CustomerId { get; init; } = string.Empty;
 
     /// <summary>
     /// 钱包币种。
@@ -34,8 +34,8 @@ internal sealed class WalletChangeRecord
     /// <summary>
     /// 钱包变更记录 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true)]
-    public long ChangeId { get; set; }
+    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "char(26)")]
+    public string ChangeId { get; set; } = string.Empty;
 
     /// <summary>
     /// 业务请求号。
@@ -46,8 +46,8 @@ internal sealed class WalletChangeRecord
     /// <summary>
     /// 钱包 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "wallet_id")]
-    public long WalletId { get; set; }
+    [SugarColumn(ColumnName = "wallet_id", ColumnDataType = "char(26)")]
+    public string WalletId { get; set; } = string.Empty;
 
     /// <summary>
     /// 钱包变更类型。

@@ -12,7 +12,7 @@ namespace SeventyTwo.Sample.Infrastructure.Products;
 public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
 {
     /// <inheritdoc />
-    public async Task<Product?> FindAsync(long id, CancellationToken cancellationToken)
+    public async Task<Product?> FindAsync(string id, CancellationToken cancellationToken)
     {
         var record = await db.Queryable<ProductRecord>()
             .Where(x => x.Id == id && x.DeleteAt == null)
@@ -41,13 +41,13 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             Name = product.Name,
             Price = product.Price,
             Enable = true,
-            CreatedBy = 0,
+            CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
-            OrgId = 0,
-            Version = 0,
+            OrgId = SystemIds.System,
+            Version = Ulid.NewUlid().ToString(),
         };
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);
-        product.EntityToAggregateRoot(record);
+        record.AggregateRootToEntity(product);
     }
 
     /// <inheritdoc />
@@ -70,7 +70,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
         }
         else
         {
-            nextVersion = product.Version + 1;
+            nextVersion = Ulid.NewUlid().ToString();
             affectedRows = await db.Updateable<ProductRecord>()
                 .SetColumns(x => new ProductRecord
                 {
@@ -105,7 +105,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
     private Product ToDomain(ProductRecord record)
     {
         var product = new Product(record.Id, record.Name, record.Price);
-        product.EntityToAggregateRoot(record);
+        record.AggregateRootToEntity(product);
         return product;
     }
 }

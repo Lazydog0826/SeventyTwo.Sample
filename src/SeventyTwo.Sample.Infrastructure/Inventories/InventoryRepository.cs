@@ -64,7 +64,7 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             var changeRecords = changes
                 .Select(x => new InventoryChangeRecord
                 {
-                    ChangeId = Yitter.IdGenerator.YitIdHelper.NextId(),
+                    ChangeId = Ulid.NewUlid().ToString(),
                     RequestNo = requestNo,
                     InventoryId = x.InventoryId,
                     ChangeType = x.ChangeType,

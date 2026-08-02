@@ -8,7 +8,7 @@ public interface IProductRepository
     /// <param name="id">商品 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品聚合；不存在时返回 <see langword="null"/>。</returns>
-    Task<Product?> FindAsync(long id, CancellationToken cancellationToken);
+    Task<Product?> FindAsync(string id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 分页查询未删除的商品。

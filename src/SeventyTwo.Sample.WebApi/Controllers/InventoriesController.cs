@@ -46,12 +46,12 @@ public sealed record ChangeInventoryRequest(
 );
 
 public sealed record InventoryIncreaseRequest(
-    long ProductId,
-    long WarehouseId,
-    long LocationId,
+    string ProductId,
+    string WarehouseId,
+    string LocationId,
     int Quantity,
     string InboundBatchNo,
     DateTimeOffset ChangedAt
 );
 
-public sealed record InventoryDecreaseRequest(long ProductId, long WarehouseId, long LocationId, int Quantity);
+public sealed record InventoryDecreaseRequest(string ProductId, string WarehouseId, string LocationId, int Quantity);

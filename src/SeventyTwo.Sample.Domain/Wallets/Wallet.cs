@@ -1,21 +1,19 @@
-﻿using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
-
-// ReSharper disable ConvertIfStatementToSwitchStatement
+﻿// ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace SeventyTwo.Sample.Domain.Wallets;
 
 public class Wallet : AggregateRoot
 {
-    public Wallet(long id, long customerId, WalletCurrency walletType, Money balance)
+    public Wallet(string id, string customerId, WalletCurrency walletType, Money balance)
     {
-        if (id <= 0)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            throw new WalletDomainException("钱包 ID 必须大于 0");
+            throw new WalletDomainException("钱包 ID 不能为空");
         }
 
-        if (customerId <= 0)
+        if (string.IsNullOrWhiteSpace(customerId))
         {
-            throw new WalletDomainException("客户 ID 必须大于 0");
+            throw new WalletDomainException("客户 ID 不能为空");
         }
 
         if (!Enum.IsDefined(walletType))
@@ -29,7 +27,7 @@ public class Wallet : AggregateRoot
         Balance = balance;
     }
 
-    public long CustomerId { get; private set; }
+    public string CustomerId { get; private set; }
 
     public WalletCurrency WalletType { get; private set; }
 

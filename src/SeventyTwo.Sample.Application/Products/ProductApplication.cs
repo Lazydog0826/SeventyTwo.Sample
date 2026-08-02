@@ -12,29 +12,29 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     /// <inheritdoc />
     public async Task<ProductOutput> CreateAsync(CreateProductInput input, CancellationToken cancellationToken)
     {
-        var product = new Product(Yitter.IdGenerator.YitIdHelper.NextId(), input.Name, input.Price);
+        var product = new Product(Ulid.NewUlid().ToString(), input.Name, input.Price);
         await productRepository.AddAsync(product, cancellationToken);
         return product.Adapt<ProductOutput>();
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(long id, UpdateProductInput input, CancellationToken cancellationToken)
+    public async Task UpdateAsync(string id, UpdateProductInput input, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
-        product.Update(input.Name, input.Price, input.Version, 0, DateTimeExtension.Now());
+        product.Update(input.Name, input.Price, input.Version, SystemIds.System, DateTimeExtension.Now());
         await productRepository.SaveAsync(product, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
-        product.Delete(0, DateTimeExtension.Now());
+        product.Delete(SystemIds.System, DateTimeExtension.Now());
         await productRepository.SaveAsync(product, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<ProductOutput> GetAsync(long id, CancellationToken cancellationToken)
+    public async Task<ProductOutput> GetAsync(string id, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
         return product.Adapt<ProductOutput>();
@@ -66,11 +66,11 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     /// <param name="id">商品 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品聚合。</returns>
-    private async Task<Product> GetRequiredAsync(long id, CancellationToken cancellationToken)
+    private async Task<Product> GetRequiredAsync(string id, CancellationToken cancellationToken)
     {
-        if (id <= 0)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            throw new ProductDomainException("商品 ID 必须大于 0");
+            throw new ProductDomainException("商品 ID 不能为空");
         }
 
         return await productRepository.FindAsync(id, cancellationToken) ?? throw new ProductNotFoundException();

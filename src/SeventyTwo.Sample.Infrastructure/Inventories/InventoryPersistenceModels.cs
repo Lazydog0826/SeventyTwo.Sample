@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.Domain.Inventories;
 using SqlSugar;
 
@@ -18,20 +18,20 @@ internal sealed class InventoryRecord : BaseEntity
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "product_id")]
-    public long ProductId { get; set; }
+    [SugarColumn(ColumnName = "product_id", ColumnDataType = "char(26)")]
+    public string ProductId { get; set; } = string.Empty;
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "warehouse_id")]
-    public long WarehouseId { get; set; }
+    [SugarColumn(ColumnName = "warehouse_id", ColumnDataType = "char(26)")]
+    public string WarehouseId { get; set; } = string.Empty;
 
     /// <summary>
     /// 库位 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "location_id")]
-    public long LocationId { get; set; }
+    [SugarColumn(ColumnName = "location_id", ColumnDataType = "char(26)")]
+    public string LocationId { get; set; } = string.Empty;
 
     /// <summary>
     /// 入库批次号。
@@ -64,8 +64,8 @@ internal sealed class InventoryChangeRecord
     /// <summary>
     /// 库存变更记录 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true)]
-    public long ChangeId { get; set; }
+    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "char(26)")]
+    public string ChangeId { get; set; } = string.Empty;
 
     /// <summary>
     /// 业务请求号。
@@ -76,8 +76,8 @@ internal sealed class InventoryChangeRecord
     /// <summary>
     /// 库存 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "inventory_id")]
-    public long InventoryId { get; set; }
+    [SugarColumn(ColumnName = "inventory_id", ColumnDataType = "char(26)")]
+    public string InventoryId { get; set; } = string.Empty;
 
     /// <summary>
     /// 变更类型：1 增加，2 减少。

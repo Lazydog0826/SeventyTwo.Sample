@@ -6,10 +6,10 @@ public enum InventoryChangeType : short
     Decrease = 2,
 }
 
-public readonly record struct InventoryDimension(long ProductId, long WarehouseId, long LocationId);
+public readonly record struct InventoryDimension(string ProductId, string WarehouseId, string LocationId);
 
 public sealed record InventoryChange(
-    long InventoryId,
+    string InventoryId,
     InventoryChangeType ChangeType,
     int Quantity,
     int BeforeQuantity,
@@ -55,21 +55,21 @@ public sealed class InventoryChangeDraft
 
 public record InventoryDraft
 {
-    protected InventoryDraft(long productId, long warehouseId, long locationId, int quantity)
+    protected InventoryDraft(string productId, string warehouseId, string locationId, int quantity)
     {
-        if (productId <= 0)
+        if (string.IsNullOrWhiteSpace(productId))
         {
-            throw new InventoryDomainException("商品 ID 必须大于 0");
+            throw new InventoryDomainException("商品 ID 不能为空");
         }
 
-        if (warehouseId <= 0)
+        if (string.IsNullOrWhiteSpace(warehouseId))
         {
-            throw new InventoryDomainException("仓库 ID 必须大于 0");
+            throw new InventoryDomainException("仓库 ID 不能为空");
         }
 
-        if (locationId <= 0)
+        if (string.IsNullOrWhiteSpace(locationId))
         {
-            throw new InventoryDomainException("货位 ID 必须大于 0");
+            throw new InventoryDomainException("货位 ID 不能为空");
         }
 
         if (quantity <= 0)
@@ -83,11 +83,11 @@ public record InventoryDraft
         Quantity = quantity;
     }
 
-    public long ProductId { get; }
+    public string ProductId { get; }
 
-    public long WarehouseId { get; }
+    public string WarehouseId { get; }
 
-    public long LocationId { get; }
+    public string LocationId { get; }
 
     public int Quantity { get; }
 }
@@ -95,9 +95,9 @@ public record InventoryDraft
 public sealed record InventoryIncreaseDraft : InventoryDraft
 {
     public InventoryIncreaseDraft(
-        long productId,
-        long warehouseId,
-        long locationId,
+        string productId,
+        string warehouseId,
+        string locationId,
         int quantity,
         string inboundBatchNo,
         DateTimeOffset changedAt
@@ -130,7 +130,7 @@ public sealed record InventoryIncreaseDraft : InventoryDraft
 
 public sealed record InventoryDecreaseDraft : InventoryDraft
 {
-    public InventoryDecreaseDraft(long productId, long warehouseId, long locationId, int quantity)
+    public InventoryDecreaseDraft(string productId, string warehouseId, string locationId, int quantity)
         : base(productId, warehouseId, locationId, quantity) { }
 }
 
@@ -139,7 +139,7 @@ public sealed class InventoryChangeService
     public InventoryChangeBatch Change(
         IReadOnlyCollection<Inventory> inventories,
         InventoryChangeDraft draft,
-        Func<long> nextInventoryId,
+        Func<string> nextInventoryId,
         DateTimeOffset changedAt
     )
     {
@@ -152,8 +152,8 @@ public sealed class InventoryChangeService
         var changedInventories = new List<Inventory>();
         var changes = new List<InventoryChange>();
         var inventoryList = inventories.ToList();
-        var newInventoryIds = new HashSet<long>();
-        var changedInventoryIds = new HashSet<long>();
+        var newInventoryIds = new HashSet<string>();
+        var changedInventoryIds = new HashSet<string>();
 
         foreach (var increase in draft.Increases)
         {

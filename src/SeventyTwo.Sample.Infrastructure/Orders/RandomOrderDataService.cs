@@ -2,6 +2,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Orders;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
 
@@ -25,7 +26,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
 
         for (var index = 0; index < count; index++)
         {
-            var orderId = Yitter.IdGenerator.YitIdHelper.NextId();
+            var orderId = Ulid.NewUlid().ToString();
             orders.Add(CreateOrder(orderId, now));
 
             var itemCount = Random.Shared.Next(1, 6);
@@ -45,13 +46,13 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
         );
     }
 
-    private OrderRecord CreateOrder(long orderId, DateTimeOffset now)
+    private OrderRecord CreateOrder(string orderId, DateTimeOffset now)
     {
         return new OrderRecord
         {
             Id = orderId,
             OrderNo = $"R{orderId}",
-            CustomerId = Random.Shared.NextInt64(1, 100_001),
+            CustomerId = Ulid.NewUlid().ToString(),
             WarehouseId = Random.Shared.Next(1, 101),
             OrderType = (OrderType)Random.Shared.Next(1, 4),
             OrderStatus = (OrderStatus)Random.Shared.Next(0, 4),
@@ -63,21 +64,22 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
             DetailAddress = $"随机路{Random.Shared.Next(1, 1001)}号",
             Remark = "接口生成的随机订单",
             Enable = true,
-            CreatedBy = 0,
+            CreatedBy = SystemIds.System,
             CreatedAt = now,
-            OrgId = 0,
-            Version = 0,
+            OrgId = SystemIds.System,
+            Version = Ulid.NewUlid().ToString(),
         };
     }
 
-    private OrderItemRecord CreateOrderItem(long orderId, int lineNo)
+    private OrderItemRecord CreateOrderItem(string orderId, int lineNo)
     {
         var quantity = Random.Shared.Next(1, 101);
         return new OrderItemRecord
         {
+            Id = Ulid.NewUlid().ToString(),
             OrderId = orderId,
             LineNo = lineNo,
-            ProductId = Random.Shared.NextInt64(1, 100_001),
+            ProductId = Ulid.NewUlid().ToString(),
             ProductName = $"随机商品{Random.Shared.Next(1, 10_001)}",
             Unit = "件",
             Quantity = quantity,

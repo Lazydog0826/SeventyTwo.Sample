@@ -56,7 +56,7 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
             throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
         }
 
-        if (request.LastDateTime.HasValue != request.LastId.HasValue)
+        if (request.LastDateTime.HasValue != (request.LastId is not null))
         {
             throw new OrderDomainException("最后时间和最后 ID 必须同时传入");
         }

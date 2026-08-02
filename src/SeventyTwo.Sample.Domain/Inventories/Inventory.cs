@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Domain;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
@@ -7,10 +7,10 @@ namespace SeventyTwo.Sample.Domain.Inventories;
 public sealed class Inventory : AggregateRoot
 {
     public Inventory(
-        long id,
-        long productId,
-        long warehouseId,
-        long locationId,
+        string id,
+        string productId,
+        string warehouseId,
+        string locationId,
         string inboundBatchNo,
         DateTimeOffset inboundAt,
         int quantity
@@ -18,34 +18,34 @@ public sealed class Inventory : AggregateRoot
         : this(id, productId, warehouseId, locationId, inboundBatchNo, inboundAt, quantity, quantity) { }
 
     public Inventory(
-        long id,
-        long productId,
-        long warehouseId,
-        long locationId,
+        string id,
+        string productId,
+        string warehouseId,
+        string locationId,
         string inboundBatchNo,
         DateTimeOffset inboundAt,
         int initialQuantity,
         int quantity
     )
     {
-        if (id <= 0)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            throw new InventoryDomainException("库存 ID 必须大于 0");
+            throw new InventoryDomainException("库存 ID 不能为空");
         }
 
-        if (productId <= 0)
+        if (string.IsNullOrWhiteSpace(productId))
         {
-            throw new InventoryDomainException("商品 ID 必须大于 0");
+            throw new InventoryDomainException("商品 ID 不能为空");
         }
 
-        if (warehouseId <= 0)
+        if (string.IsNullOrWhiteSpace(warehouseId))
         {
-            throw new InventoryDomainException("仓库 ID 必须大于 0");
+            throw new InventoryDomainException("仓库 ID 不能为空");
         }
 
-        if (locationId <= 0)
+        if (string.IsNullOrWhiteSpace(locationId))
         {
-            throw new InventoryDomainException("货位 ID 必须大于 0");
+            throw new InventoryDomainException("货位 ID 不能为空");
         }
 
         if (string.IsNullOrWhiteSpace(inboundBatchNo))
@@ -81,17 +81,17 @@ public sealed class Inventory : AggregateRoot
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    public long ProductId { get; private set; }
+    public string ProductId { get; private set; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    public long WarehouseId { get; private set; }
+    public string WarehouseId { get; private set; }
 
     /// <summary>
     /// 货位 ID。
     /// </summary>
-    public long LocationId { get; private set; }
+    public string LocationId { get; private set; }
 
     /// <summary>
     /// 入库批次号。

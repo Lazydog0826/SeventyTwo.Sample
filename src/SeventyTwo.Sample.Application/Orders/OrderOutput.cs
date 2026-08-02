@@ -13,7 +13,7 @@ public sealed record OrderOutput
     /// <summary>
     /// 订单 ID。
     /// </summary>
-    public long Id { get; init; }
+    public string Id { get; init; } = string.Empty;
 
     /// <summary>
     /// 订单编号。
@@ -23,7 +23,7 @@ public sealed record OrderOutput
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    public long CustomerId { get; init; }
+    public string CustomerId { get; init; } = string.Empty;
 
     /// <summary>
     /// 仓库 ID。
@@ -81,9 +81,9 @@ public sealed record OrderOutput
     public IReadOnlyCollection<OrderItemOutput> Items { get; init; } = [];
 
     /// <summary>
-    /// 乐观锁版本号。
+    /// 乐观锁版本 ULID。
     /// </summary>
-    public long Version { get; init; }
+    public string Version { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -91,13 +91,13 @@ public sealed record OrderOutput
 /// </summary>
 public sealed record OrderItemOutput
 {
-    public long Id { get; init; }
+    public string Id { get; init; } = string.Empty;
 
-    public long OrderId { get; init; }
+    public string OrderId { get; init; } = string.Empty;
 
     public int LineNo { get; init; }
 
-    public long ProductId { get; init; }
+    public string ProductId { get; init; } = string.Empty;
 
     public string ProductName { get; init; } = string.Empty;
 

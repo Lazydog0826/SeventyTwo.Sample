@@ -75,8 +75,8 @@ public sealed class ProductsController(IProductApplication productApplication) :
 
 public sealed record CreateProductRequest(string Name, decimal Price);
 
-public sealed record UpdateProductRequest(long Id, string Name, decimal Price, long Version);
+public sealed record UpdateProductRequest(string Id, string Name, decimal Price, string Version);
 
-public sealed record DeleteProductRequest(long Id);
+public sealed record DeleteProductRequest(string Id);
 
-public sealed record GetProductRequest(long Id);
+public sealed record GetProductRequest(string Id);

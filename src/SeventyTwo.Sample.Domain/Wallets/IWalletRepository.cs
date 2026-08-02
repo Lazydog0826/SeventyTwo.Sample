@@ -5,7 +5,7 @@ public interface IWalletRepository
     Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
-        long customerId,
+        string customerId,
         IReadOnlyCollection<WalletCurrency> walletCurrencies,
         CancellationToken cancellationToken
     );

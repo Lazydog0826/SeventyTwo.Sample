@@ -1,5 +1,6 @@
 ﻿using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Wallets;
 
 namespace SeventyTwo.Sample.Application.Wallets.BalanceChange;
@@ -38,12 +39,12 @@ public class BalanceChangeService(IWalletRepository walletRepository, IUnitOfWor
                     command.CustomerId,
                     walletList,
                     requests,
-                    Yitter.IdGenerator.YitIdHelper.NextId
+                    () => Ulid.NewUlid().ToString()
                 );
                 var createdAt = DateTimeExtension.Now();
                 foreach (var wallet in batch.NewWallets)
                 {
-                    wallet.CreatedBy = 0;
+                    wallet.CreatedBy = SystemIds.System;
                     wallet.CreatedAt = createdAt;
                 }
 

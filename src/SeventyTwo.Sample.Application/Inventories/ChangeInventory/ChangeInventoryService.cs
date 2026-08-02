@@ -1,5 +1,6 @@
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Inventories;
 
 namespace SeventyTwo.Sample.Application.Inventories.ChangeInventory;
@@ -38,13 +39,13 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
                 var batch = _inventoryChangeService.Change(
                     inventories,
                     draft,
-                    Yitter.IdGenerator.YitIdHelper.NextId,
+                    () => Ulid.NewUlid().ToString(),
                     changedAt
                 );
 
                 foreach (var inventory in batch.NewInventories)
                 {
-                    inventory.CreatedBy = 0;
+                    inventory.CreatedBy = SystemIds.System;
                     inventory.CreatedAt = changedAt;
                 }
 

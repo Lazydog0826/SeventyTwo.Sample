@@ -1,4 +1,4 @@
-using SeventyTwo.InfraKit.Core.DomainAggregateRoot;
+using SeventyTwo.Sample.Domain;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -20,11 +20,11 @@ public sealed class Product : AggregateRoot
     /// <param name="id">商品 ID。</param>
     /// <param name="name">商品名称。</param>
     /// <param name="price">商品价格。</param>
-    public Product(long id, string name, decimal price)
+    public Product(string id, string name, decimal price)
     {
-        if (id <= 0)
+        if (string.IsNullOrWhiteSpace(id))
         {
-            throw new ProductDomainException("商品 ID 必须大于 0");
+            throw new ProductDomainException("商品 ID 不能为空");
         }
 
         Id = id;
@@ -47,10 +47,10 @@ public sealed class Product : AggregateRoot
     /// </summary>
     /// <param name="name">商品名称。</param>
     /// <param name="price">商品价格。</param>
-    /// <param name="version">客户端持有的商品版本号。</param>
+    /// <param name="version">客户端持有的商品版本 ULID。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
-    public void Update(string name, decimal price, long version, long updatedBy, DateTimeOffset updatedAt)
+    public void Update(string name, decimal price, string version, string updatedBy, DateTimeOffset updatedAt)
     {
         if (version != Version)
         {
@@ -72,7 +72,7 @@ public sealed class Product : AggregateRoot
     /// </summary>
     /// <param name="deletedBy">删除人 ID。</param>
     /// <param name="deletedAt">删除时间。</param>
-    public void Delete(long deletedBy, DateTimeOffset deletedAt)
+    public void Delete(string deletedBy, DateTimeOffset deletedAt)
     {
         if (deletedAt == default)
         {

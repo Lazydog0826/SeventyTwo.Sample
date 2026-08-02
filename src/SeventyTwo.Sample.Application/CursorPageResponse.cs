@@ -27,7 +27,7 @@ public sealed class CursorPageResponse<T>
     /// <summary>
     /// 当前页第一条数据的 ID。
     /// </summary>
-    public long? FirstId { get; set; }
+    public string? FirstId { get; set; }
 
     /// <summary>
     /// 当前页最后一条数据的创建时间。
@@ -37,5 +37,5 @@ public sealed class CursorPageResponse<T>
     /// <summary>
     /// 当前页最后一条数据的 ID。
     /// </summary>
-    public long? LastId { get; set; }
+    public string? LastId { get; set; }
 }

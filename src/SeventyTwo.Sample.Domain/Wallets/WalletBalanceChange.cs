@@ -2,7 +2,7 @@
 namespace SeventyTwo.Sample.Domain.Wallets;
 
 public sealed record WalletBalanceChange(
-    long WalletId,
+    string WalletId,
     WalletChangeType ChangeType,
     Money Amount,
     Money BeforeBalance,
@@ -20,15 +20,15 @@ public sealed record WalletBalanceChangeBatch(
 public sealed class WalletBalanceChangeService
 {
     public WalletBalanceChangeBatch Change(
-        long customerId,
+        string customerId,
         IReadOnlyCollection<Wallet> wallets,
         IReadOnlyCollection<WalletBalanceChangeRequest> requests,
-        Func<long> nextWalletId
+        Func<string> nextWalletId
     )
     {
-        if (customerId <= 0)
+        if (string.IsNullOrWhiteSpace(customerId))
         {
-            throw new WalletDomainException("客户 ID 必须大于 0");
+            throw new WalletDomainException("客户 ID 不能为空");
         }
 
         if (requests.Count == 0)
