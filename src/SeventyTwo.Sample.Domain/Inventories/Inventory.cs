@@ -1,5 +1,3 @@
-using SeventyTwo.Sample.Domain;
-
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace SeventyTwo.Sample.Domain.Inventories;

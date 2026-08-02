@@ -1,5 +1,3 @@
-using SeventyTwo.Sample.Domain;
-
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 

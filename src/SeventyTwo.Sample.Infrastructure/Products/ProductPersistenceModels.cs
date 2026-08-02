@@ -10,11 +10,11 @@ internal sealed class ProductRecord : BaseEntity
     /// 商品名称。
     /// </summary>
     [SugarColumn(ColumnName = "name")]
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
     /// <summary>
     /// 商品价格。
     /// </summary>
     [SugarColumn(ColumnName = "price")]
-    public decimal Price { get; set; }
+    public decimal Price { get; init; }
 }

@@ -10,7 +10,12 @@ public interface IOrderRepository
     Task<OrderCursorPage> GetPageByCursorAsync(OrderPageRequest request, CancellationToken cancellationToken);
 }
 
-public sealed record OrderPage(IReadOnlyCollection<Order> Items, int Total, DateTimeOffset? LastDateTime, string? LastId);
+public sealed record OrderPage(
+    IReadOnlyCollection<Order> Items,
+    int Total,
+    DateTimeOffset? LastDateTime,
+    string? LastId
+);
 
 public sealed record OrderCursorPage(
     IReadOnlyCollection<Order> Items,

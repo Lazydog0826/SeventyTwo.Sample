@@ -1,3 +1,6 @@
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace SeventyTwo.Sample.Application.Products;
 
 public sealed record CreateProductInput(string Name, decimal Price);

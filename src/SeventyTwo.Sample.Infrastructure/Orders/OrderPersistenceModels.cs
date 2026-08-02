@@ -1,5 +1,5 @@
-using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.Domain.Orders;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
 // ReSharper disable EmptyConstructor
@@ -96,8 +96,13 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 订单明细主键。
     /// </summary>
-    [SugarColumn(ColumnName = "id", IsPrimaryKey = true, ColumnDataType = "char(26)", ColumnDescription = "订单明细主键")]
-    public string Id { get; set; } = string.Empty;
+    [SugarColumn(
+        ColumnName = "id",
+        IsPrimaryKey = true,
+        ColumnDataType = "char(26)",
+        ColumnDescription = "订单明细主键"
+    )]
+    public string Id { get; init; } = string.Empty;
 
     /// <summary>
     /// 所属订单 ID。

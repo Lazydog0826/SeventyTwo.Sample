@@ -1,5 +1,5 @@
-using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.Domain.Inventories;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
