@@ -60,19 +60,34 @@ public sealed class InventoryTests
     [Fact]
     public void Change_ShouldDecreaseNewestInventoryFirst()
     {
-        var olderInventory = CreateInventory(1, 5, new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero));
-        var newerInventory = CreateInventory(2, 6, new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero));
+        var olderInventory = CreateInventory(
+            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            5,
+            new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
+        );
+        var newerInventory = CreateInventory(
+            "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+            6,
+            new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
+        );
         var draft = new InventoryChangeDraft(
             "REQUEST-1",
             [],
-            [new InventoryDecreaseDraft(2, 3, 4, 8)]
+            [
+                new InventoryDecreaseDraft(
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+                    8
+                ),
+            ]
         );
         var service = new InventoryChangeService();
 
         var batch = service.Change(
             [olderInventory, newerInventory],
             draft,
-            () => 100,
+            () => "01ARZ3NDEKTSV4RRFFQ69G5FAX",
             new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
         );
 
@@ -84,12 +99,12 @@ public sealed class InventoryTests
             batch.Changes,
             change =>
             {
-                Assert.Equal(2, change.InventoryId);
+                Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAW", change.InventoryId);
                 Assert.Equal(6, change.Quantity);
             },
             change =>
             {
-                Assert.Equal(1, change.InventoryId);
+                Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAV", change.InventoryId);
                 Assert.Equal(2, change.Quantity);
             }
         );
@@ -98,27 +113,38 @@ public sealed class InventoryTests
     [Fact]
     public void Change_ShouldIncludeNewInventoryInDecreaseAllocation()
     {
-        var inventory = CreateInventory(1, 10, new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero));
+        var inventory = CreateInventory(
+            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            10,
+            new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
+        );
         var draft = new InventoryChangeDraft(
             "REQUEST-1",
             [
                 new InventoryIncreaseDraft(
-                    2,
-                    3,
-                    4,
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
                     5,
                     "BATCH-2",
                     new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
                 ),
             ],
-            [new InventoryDecreaseDraft(2, 3, 4, 7)]
+            [
+                new InventoryDecreaseDraft(
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+                    7
+                ),
+            ]
         );
         var service = new InventoryChangeService();
 
         var batch = service.Change(
             [inventory],
             draft,
-            () => 2,
+            () => "01ARZ3NDEKTSV4RRFFQ69G5FAW",
             new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
         );
 
@@ -132,18 +158,26 @@ public sealed class InventoryTests
     private Inventory CreateInventory(int quantity)
     {
         return new Inventory(
-            1,
-            2,
-            3,
-            4,
+            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+            "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+            "01ARZ3NDEKTSV4RRFFQ69G5FB0",
             "BATCH-1",
             new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero),
             quantity
         );
     }
 
-    private Inventory CreateInventory(long id, int quantity, DateTimeOffset inboundAt)
+    private Inventory CreateInventory(string id, int quantity, DateTimeOffset inboundAt)
     {
-        return new Inventory(id, 2, 3, 4, $"BATCH-{id}", inboundAt, quantity);
+        return new Inventory(
+            id,
+            "01ARZ3NDEKTSV4RRFFQ69G5FAY",
+            "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+            "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+            $"BATCH-{id}",
+            inboundAt,
+            quantity
+        );
     }
 }
