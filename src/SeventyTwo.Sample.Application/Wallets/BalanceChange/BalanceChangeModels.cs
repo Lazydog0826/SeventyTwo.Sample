@@ -29,9 +29,9 @@ public sealed class BalanceChangeCommand
         }
 
         requestNo = requestNo.Trim();
-        if (requestNo.Length > 255)
+        if (requestNo.Length > 26)
         {
-            throw new WalletDomainException("请求号长度不能超过 255 个字符");
+            throw new WalletDomainException("请求号长度不能超过 26 个字符");
         }
 
         if (details.Count == 0)

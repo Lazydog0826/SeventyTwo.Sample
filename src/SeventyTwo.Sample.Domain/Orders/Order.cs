@@ -8,7 +8,7 @@ public sealed class Order : AggregateRoot
         string id,
         string orderNo,
         string customerId,
-        int warehouseId,
+        string warehouseId,
         OrderType orderType,
         OrderStatus orderStatus,
         string? receiverName,
@@ -41,7 +41,7 @@ public sealed class Order : AggregateRoot
 
     public string CustomerId { get; private set; }
 
-    public int WarehouseId { get; private set; }
+    public string WarehouseId { get; private set; }
 
     public OrderType OrderType { get; private set; }
 

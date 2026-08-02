@@ -27,8 +27,8 @@ internal sealed class OrderRecord : BaseEntity
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "warehouse_id", ColumnDescription = "仓库id")]
-    public int WarehouseId { get; init; }
+    [SugarColumn(ColumnName = "warehouse_id", ColumnDescription = "仓库id", ColumnDataType = "char(26)")]
+    public string WarehouseId { get; init; } = string.Empty;
 
     /// <summary>
     /// 订单类型：1 销售订单，2 退货订单，3 调拨订单。
@@ -125,7 +125,7 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 下单时的商品名称快照。
     /// </summary>
-    [SugarColumn(ColumnName = "product_name", Length = 100, ColumnDescription = "商品名称快照")]
+    [SugarColumn(ColumnName = "product_name", Length = 255, ColumnDescription = "商品名称快照")]
     public string ProductName { get; init; } = string.Empty;
 
     /// <summary>
@@ -143,7 +143,7 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 下单时的商品单价。
     /// </summary>
-    [SugarColumn(ColumnName = "unit_price", Length = 14, DecimalDigits = 2, ColumnDescription = "商品单价")]
+    [SugarColumn(ColumnName = "unit_price", Length = 18, DecimalDigits = 2, ColumnDescription = "商品单价")]
     public decimal UnitPrice { get; init; }
 
     /// <summary>

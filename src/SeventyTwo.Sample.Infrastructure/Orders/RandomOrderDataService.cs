@@ -53,7 +53,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
             Id = orderId,
             OrderNo = $"R{orderId}",
             CustomerId = Ulid.NewUlid().ToString(),
-            WarehouseId = Random.Shared.Next(1, 101),
+            WarehouseId = Ulid.NewUlid().ToString(),
             OrderType = (OrderType)Random.Shared.Next(1, 4),
             OrderStatus = (OrderStatus)Random.Shared.Next(0, 4),
             ReceiverName = $"收货人{Random.Shared.Next(1, 10_001)}",

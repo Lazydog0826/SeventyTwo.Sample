@@ -36,9 +36,9 @@ public sealed class InventoryChangeDraft
             throw new InventoryDomainException("业务请求号不能为空");
         }
 
-        if (requestNo.Length > 64)
+        if (requestNo.Length > 26)
         {
-            throw new InventoryDomainException("业务请求号长度不能超过 64 个字符");
+            throw new InventoryDomainException("业务请求号长度不能超过 26 个字符");
         }
 
         RequestNo = requestNo;

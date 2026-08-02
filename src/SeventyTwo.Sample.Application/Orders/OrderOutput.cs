@@ -28,7 +28,7 @@ public sealed record OrderOutput
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    public int WarehouseId { get; init; }
+    public string WarehouseId { get; init; } = string.Empty;
 
     /// <summary>
     /// 订单类型。

@@ -38,9 +38,9 @@ internal sealed class WalletChangeRecord
     public string ChangeId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 业务请求号。
+    /// 业务请求号 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "request_no")]
+    [SugarColumn(ColumnName = "request_no", ColumnDataType = "char(26)")]
     public string RequestNo { get; set; } = string.Empty;
 
     /// <summary>
@@ -84,9 +84,9 @@ internal sealed class WalletChangeRecord
 internal sealed class WalletChangeRequest
 {
     /// <summary>
-    /// 业务请求号（唯一约束）。
+    /// 业务请求号 ULID（唯一约束）。
     /// </summary>
-    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, Length = 255)]
+    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, ColumnDataType = "char(26)")]
     public string RequestNo { get; set; } = string.Empty;
 
     /// <summary>
