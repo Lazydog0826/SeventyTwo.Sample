@@ -1,19 +1,11 @@
-using System.Net;
 using Mapster;
-using SeventyTwo.InfraKit.ApiLog;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
-using SeventyTwo.InfraKit.Core.App;
-using SeventyTwo.InfraKit.SnowFlake;
-using SeventyTwo.Sample.Domain.Inventories;
-using SeventyTwo.Sample.Domain.Orders;
-using SeventyTwo.Sample.Domain.Products;
-using SeventyTwo.Sample.Domain.Wallets;
 using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.WebApi.Authentication;
-using ApiLogSetup = SeventyTwo.InfraKit.ApiLog.Setup;
+using SeventyTwo.Sample.WebApi.Infrastructure;
 using ApplicationAssemblyMarker = SeventyTwo.Sample.Application.AssemblyMarker;
 using DomainAssemblyMarker = SeventyTwo.Sample.Domain.AssemblyMarker;
 using InfrastructureAssemblyMarker = SeventyTwo.Sample.Infrastructure.AssemblyMarker;
@@ -30,24 +22,12 @@ await HostApp.StartWebAppAsync(
     builder =>
     {
         builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(HostApp.AppDomainTypes));
-        builder.Services.AddApiLog();
         TypeAdapterConfig.GlobalSettings.Scan([.. HostApp.AppAssemblyList]);
-        builder.Services.Configure<RecordLogEvent>(options => options.Event += ApiLogSetup.WriteLogFile);
         builder.Services.AddCacheService();
+        builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+        builder.Services.AddProblemDetails();
         builder.Services.AddPersistence(builder.Configuration);
-        builder
-            .Services.AddControllers(options =>
-            {
-                options.Filters.Add<CoreActionFilter>();
-                options.Filters.Add<RecordRequestFilter>();
-            })
-            .ConfigureApiBehaviorOptions(options => options.SuppressModelStateInvalidFilter = true)
-            .AddJsonOptions(JsonConfiguration.Configure);
-
-        builder.Services.Configure<SnowFlakeConfiguration>(
-            builder.Configuration.GetSection(nameof(SnowFlakeConfiguration))
-        );
-        builder.Services.AddHostedService<SnowFlakeHostService>();
+        builder.Services.AddControllers().AddJsonOptions(JsonConfiguration.Configure);
 
         #region CAP
 
@@ -107,26 +87,7 @@ await HostApp.StartWebAppAsync(
     },
     app =>
     {
-        app.UseInfraKitExceptionHandler(
-            (_, exception) =>
-            {
-                if (exception is ProductNotFoundException)
-                {
-                    return Task.FromResult((WebApiResponse.Error(exception.Message), SaveLog: false));
-                }
-
-                var isDomainException =
-                    exception
-                    is InventoryDomainException
-                        or OrderDomainException
-                        or ProductDomainException
-                        or WalletDomainException;
-                var response = isDomainException
-                    ? WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest)
-                    : WebApiResponse.Error("服务异常");
-                return Task.FromResult((response, SaveLog: !isDomainException));
-            }
-        );
+        app.UseExceptionHandler();
         app.UseStaticFiles();
         app.UseRouting();
         app.UseAuthentication();
