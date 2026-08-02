@@ -4,7 +4,7 @@ create table if not exists orders
     id             char(26) primary key,
     order_no       varchar(32)              not null check (btrim(order_no) <> ''),
     customer_id    char(26)                 not null,
-    warehouse_id   integer                  not null check (warehouse_id > 0),
+    warehouse_id   char(26)                 not null,
     order_type     smallint                 not null check (order_type in (1, 2, 3)),
     order_status   smallint                 not null check (order_status in (0, 1, 2, 3)),
     receiver_name  varchar(50)              null,
@@ -22,7 +22,8 @@ create table if not exists orders
     updated_by     char(26)                 null,
     updated_at     timestamp with time zone null,
     org_id         char(26)                 not null,
-    version        char(26)                 not null
+    version        char(26)                 not null,
+    constraint uq_orders_order_no unique (order_no)
 );
 
 comment on table orders is '订单';
@@ -54,11 +55,6 @@ create index if not exists ix_orders_created_at_id
     on orders (created_at desc, id desc)
     where delete_at is null;
 
--- 加速通过订单编号查询未删除订单。
-create index if not exists ix_orders_order_no
-    on orders (order_no)
-    where delete_at is null;
-
 -- 加速按收货人手机号前缀查询未删除订单。
 create index if not exists ix_orders_receiver_phone
     on orders (receiver_phone varchar_pattern_ops)
@@ -71,13 +67,15 @@ create table if not exists order_items
     order_id          char(26)       not null,
     line_no           integer        not null check (line_no > 0),
     product_id        char(26)       not null,
-    product_name      varchar(100)   not null check (btrim(product_name) <> ''),
+    product_name      varchar(255)   not null check (btrim(product_name) <> ''),
     unit              varchar(20)    null,
     quantity          integer        not null check (quantity > 0),
-    unit_price        numeric(14, 2) not null check (unit_price > 0),
+    unit_price        numeric(18, 2) not null check (unit_price > 0),
     shipped_quantity  integer        not null default 0 check (shipped_quantity >= 0),
     returned_quantity integer        not null default 0 check (returned_quantity >= 0),
-    remark            varchar(300)   null
+    remark            varchar(300)   null,
+    constraint uq_order_items_order_line unique (order_id, line_no),
+    constraint fk_order_items_order foreign key (order_id) references orders (id)
 );
 
 comment on table order_items is '订单明细';
@@ -92,10 +90,6 @@ comment on column order_items.unit_price is '下单时的商品单价';
 comment on column order_items.shipped_quantity is '已发货数量';
 comment on column order_items.returned_quantity is '已退货数量';
 comment on column order_items.remark is '订单明细备注';
-
--- 加速查询订单下的明细，并保证行号顺序稳定。
-create index if not exists ix_order_items_order_id_line_no
-    on order_items (order_id, line_no);
 
 -- 加速通过商品查询关联订单明细。
 create index if not exists ix_order_items_product_id
