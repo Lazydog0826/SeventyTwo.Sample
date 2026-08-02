@@ -8,6 +8,8 @@
     <PackageReference Include="DotNetCore.CAP" />
     <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
+    <PackageReference Include="SqlSugarCore" />
+    <PackageReference Include="Ulid" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Application\SeventyTwo.Sample.Application.csproj" />
