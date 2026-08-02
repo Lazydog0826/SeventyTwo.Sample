@@ -30,7 +30,7 @@ public sealed class MapsterConfigurationTests
             "01ARZ3NDEKTSV4RRFFQ69G5FAW",
             "ORDER-1",
             "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-            3,
+            "01ARZ3NDEKTSV4RRFFQ69G5FB1",
             OrderType.Sales,
             OrderStatus.Pending,
             "收货人",
