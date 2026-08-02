@@ -1,19 +1,19 @@
 -- 钱包记录：保存客户在指定币种下的当前余额及公共审计字段。
 create table if not exists wallet_record
 (
-    id             bigint primary key,
-    customer_id    bigint                   not null check (customer_id > 0),
+    id             char(26) primary key,
+    customer_id    char(26)                 not null,
     currency       smallint                 not null check (currency in (1, 2, 3, 4, 5, 6)),
     balance_amount numeric(18, 2)           not null default 0 check (balance_amount >= 0),
     enable         boolean                  not null default true,
-    delete_by      bigint                   null,
+    delete_by      char(26)                 null,
     delete_at      timestamp with time zone null,
-    created_by     bigint                   not null,
+    created_by     char(26)                 not null,
     created_at     timestamp with time zone not null,
-    updated_by     bigint                   null,
+    updated_by     char(26)                 null,
     updated_at     timestamp with time zone null,
-    org_id         bigint                   not null,
-    version        bigint                   not null default 0,
+    org_id         char(26)                 not null,
+    version        char(26)                 not null,
     constraint uq_wallet_record_customer_currency unique (customer_id, currency)
 );
 
@@ -30,7 +30,7 @@ comment on column wallet_record.created_at is '创建时间';
 comment on column wallet_record.updated_by is '修改人标识';
 comment on column wallet_record.updated_at is '修改时间';
 comment on column wallet_record.org_id is '组织标识';
-comment on column wallet_record.version is '乐观锁版本号';
+comment on column wallet_record.version is '乐观锁版本 ULID';
 
 -- 钱包变更请求：通过唯一请求号保证变更请求的幂等性。
 create table if not exists wallet_change_request
@@ -55,9 +55,9 @@ comment on column wallet_change_lock.lock_key is '客户维度锁键';
 -- 钱包变更记录：保存每次钱包变更前后的余额及变更时间。
 create table if not exists wallet_change_record
 (
-    change_id             bigint primary key,
+    change_id             char(26) primary key,
     request_no            varchar(255)             not null,
-    wallet_id             bigint                   not null,
+    wallet_id             char(26)                 not null,
     change_type           smallint                 not null check (change_type in (1, 2)),
     amount                numeric(18, 2)           not null check (amount > 0),
     before_balance_amount numeric(18, 2)           not null check (before_balance_amount >= 0),
