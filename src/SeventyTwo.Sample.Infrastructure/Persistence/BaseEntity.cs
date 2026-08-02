@@ -11,7 +11,7 @@ public abstract class BaseEntity
     /// <summary>
     /// 主键 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "id", ColumnDescription = "主键ID", IsPrimaryKey = true, Length = 26)]
+    [SugarColumn(ColumnName = "id", ColumnDescription = "主键ID", IsPrimaryKey = true, ColumnDataType = "char(26)")]
     public string Id { get; init; } = string.Empty;
 
     /// <summary>
@@ -23,7 +23,12 @@ public abstract class BaseEntity
     /// <summary>
     /// 删除人 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "delete_by", ColumnDescription = "删除人", IsNullable = true, Length = 26)]
+    [SugarColumn(
+        ColumnName = "delete_by",
+        ColumnDescription = "删除人",
+        IsNullable = true,
+        ColumnDataType = "char(26)"
+    )]
     public string? DeleteBy { get; init; }
 
     /// <summary>
@@ -35,7 +40,7 @@ public abstract class BaseEntity
     /// <summary>
     /// 创建人 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "created_by", ColumnDescription = "创建人", Length = 26)]
+    [SugarColumn(ColumnName = "created_by", ColumnDescription = "创建人", ColumnDataType = "char(26)")]
     public string CreatedBy { get; init; } = SystemIds.System;
 
     /// <summary>
@@ -47,7 +52,12 @@ public abstract class BaseEntity
     /// <summary>
     /// 修改人 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "updated_by", ColumnDescription = "修改人", IsNullable = true, Length = 26)]
+    [SugarColumn(
+        ColumnName = "updated_by",
+        ColumnDescription = "修改人",
+        IsNullable = true,
+        ColumnDataType = "char(26)"
+    )]
     public string? UpdatedBy { get; init; }
 
     /// <summary>
@@ -59,14 +69,14 @@ public abstract class BaseEntity
     /// <summary>
     /// 组织 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "org_id", ColumnDescription = "机构ID", Length = 26)]
+    [SugarColumn(ColumnName = "org_id", ColumnDescription = "机构ID", ColumnDataType = "char(26)")]
     public string OrgId { get; init; } = SystemIds.System;
 
     /// <summary>
-    /// 乐观锁版本号。
+    /// 乐观锁版本 ULID。
     /// </summary>
-    [SugarColumn(ColumnName = "version", IsEnableUpdateVersionValidation = true, ColumnDescription = "并发更新控制")]
-    public long Version { get; init; }
+    [SugarColumn(ColumnName = "version", ColumnDescription = "并发更新控制", ColumnDataType = "char(26)")]
+    public string Version { get; init; } = Ulid.NewUlid().ToString();
 
     /// <summary>
     /// 将持久化实体的公共字段赋值给聚合根。

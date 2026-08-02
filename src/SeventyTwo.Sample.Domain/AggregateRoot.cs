@@ -52,7 +52,7 @@ public abstract class AggregateRoot
     public string OrgId { get; set; } = SystemIds.System;
 
     /// <summary>
-    /// 乐观锁版本号。
+    /// 乐观锁版本 ULID。
     /// </summary>
-    public long Version { get; set; }
+    public string Version { get; set; } = string.Empty;
 }
