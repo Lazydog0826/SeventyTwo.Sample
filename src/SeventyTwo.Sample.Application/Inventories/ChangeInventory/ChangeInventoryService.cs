@@ -11,11 +11,11 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
 {
     private readonly InventoryChangeService _inventoryChangeService = new();
 
-    public Task ChangeAsync(InventoryChangeDraft draft, CancellationToken cancellationToken)
+    public async Task ChangeAsync(InventoryChangeDraft draft, CancellationToken cancellationToken)
     {
         if (draft.Increases.Count == 0 && draft.Decreases.Count == 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         var dimensions = draft
@@ -25,7 +25,8 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
             .Distinct()
             .ToList();
 
-        return unitOfWork.ExecuteAsync(
+        await inventoryRepository.EnsureChangeLocksAsync(dimensions, cancellationToken);
+        await unitOfWork.ExecuteAsync(
             async () =>
             {
                 var registered = await inventoryRepository.TryRegisterChangeAsync(draft.RequestNo, cancellationToken);

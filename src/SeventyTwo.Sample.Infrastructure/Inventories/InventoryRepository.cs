@@ -18,29 +18,37 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         return affectedRows > 0;
     }
 
+    public async Task EnsureChangeLocksAsync(
+        IReadOnlyCollection<InventoryDimension> dimensions,
+        CancellationToken cancellationToken
+    )
+    {
+        var locks = dimensions
+            .Select(GetKey)
+            .Distinct()
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .Select(x => new InventoryChangeLock { LockKey = x })
+            .ToList();
+        await InventoryLockInitializer.EnsureCreatedAsync(db, locks, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Inventory>> GetForChangeAsync(
         IReadOnlyCollection<InventoryDimension> dimensions,
         CancellationToken cancellationToken
     )
     {
-        var keys = dimensions.Select(GetKey).Distinct().OrderBy(x => x).ToList();
-        var locks = keys.Select(x => new InventoryChangeLock { LockKey = x }).ToList();
-        await db.Insertable(locks).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
-        await db.Queryable<InventoryChangeLock>()
+        var keys = dimensions.Select(GetKey).Distinct().OrderBy(x => x, StringComparer.Ordinal).ToList();
+        var lockedKeys = await db.Queryable<InventoryChangeLock>()
             .Where(x => keys.Contains(x.LockKey))
             .OrderBy(x => x.LockKey)
             .TranLock(DbLockType.Wait)
+            .Select(x => x.LockKey)
             .ToListAsync(cancellationToken);
 
-        var sql = db.Queryable<InventoryChangeLock>()
-            .Where(x => keys.Contains(x.LockKey))
-            .OrderBy(x => x.LockKey)
-            .TranLock(DbLockType.Wait)
-            .ToSqlString();
-
-        Console.WriteLine("===");
-        Console.WriteLine(sql);
-        Console.WriteLine("===");
+        if (lockedKeys.Count != keys.Count || !lockedKeys.ToHashSet().SetEquals(keys))
+        {
+            throw new InvalidOperationException("库存维度锁获取不完整");
+        }
 
         var records = await db.Queryable<InventoryRecord>()
             .Where(x => keys.Contains(x.Key) && x.Quantity > 0)

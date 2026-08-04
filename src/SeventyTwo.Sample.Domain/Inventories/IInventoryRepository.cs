@@ -4,6 +4,11 @@ public interface IInventoryRepository
 {
     Task<bool> TryRegisterChangeAsync(string requestNo, CancellationToken cancellationToken);
 
+    Task EnsureChangeLocksAsync(
+        IReadOnlyCollection<InventoryDimension> dimensions,
+        CancellationToken cancellationToken
+    );
+
     Task<IReadOnlyList<Inventory>> GetForChangeAsync(
         IReadOnlyCollection<InventoryDimension> dimensions,
         CancellationToken cancellationToken
