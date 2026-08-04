@@ -32,6 +32,16 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             .TranLock(DbLockType.Wait)
             .ToListAsync(cancellationToken);
 
+        var sql = db.Queryable<InventoryChangeLock>()
+            .Where(x => keys.Contains(x.LockKey))
+            .OrderBy(x => x.LockKey)
+            .TranLock(DbLockType.Wait)
+            .ToSqlString();
+
+        Console.WriteLine("===");
+        Console.WriteLine(sql);
+        Console.WriteLine("===");
+
         var records = await db.Queryable<InventoryRecord>()
             .Where(x => keys.Contains(x.Key) && x.Quantity > 0)
             .OrderBy(x => x.Key)
