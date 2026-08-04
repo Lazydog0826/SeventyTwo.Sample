@@ -36,12 +36,7 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
 
                 var inventories = await inventoryRepository.GetForChangeAsync(dimensions, cancellationToken);
                 var changedAt = DateTimeExtension.Now();
-                var batch = _inventoryChangeService.Change(
-                    inventories,
-                    draft,
-                    Guid.CreateVersion7,
-                    changedAt
-                );
+                var batch = _inventoryChangeService.Change(inventories, draft, Guid.CreateVersion7, changedAt);
 
                 foreach (var inventory in batch.NewInventories)
                 {
