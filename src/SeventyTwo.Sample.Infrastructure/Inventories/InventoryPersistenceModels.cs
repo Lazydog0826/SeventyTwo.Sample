@@ -76,8 +76,8 @@ internal sealed class InventoryChangeRecord
     /// <summary>
     /// 库存 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "inventory_id", ColumnDataType = "char(26)")]
-    public string InventoryId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "inventory_id", ColumnDataType = "uuid")]
+    public Guid InventoryId { get; set; }
 
     /// <summary>
     /// 变更类型：1 增加，2 减少。

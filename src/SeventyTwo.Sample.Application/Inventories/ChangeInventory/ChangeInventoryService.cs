@@ -39,7 +39,7 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
                 var batch = _inventoryChangeService.Change(
                     inventories,
                     draft,
-                    () => Ulid.NewUlid().ToString(),
+                    Guid.CreateVersion7,
                     changedAt
                 );
 

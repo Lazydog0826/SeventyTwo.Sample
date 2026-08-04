@@ -4,9 +4,9 @@ namespace SeventyTwo.Sample.Domain.Wallets;
 
 public class Wallet : AggregateRoot
 {
-    public Wallet(string id, string customerId, WalletCurrency walletType, Money balance)
+    public Wallet(Guid id, string customerId, WalletCurrency walletType, Money balance)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (id == Guid.Empty)
         {
             throw new WalletDomainException("钱包 ID 不能为空");
         }

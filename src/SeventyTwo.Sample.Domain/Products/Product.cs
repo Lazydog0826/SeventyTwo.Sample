@@ -18,9 +18,9 @@ public sealed class Product : AggregateRoot
     /// <param name="id">商品 ID。</param>
     /// <param name="name">商品名称。</param>
     /// <param name="price">商品价格。</param>
-    public Product(string id, string name, decimal price)
+    public Product(Guid id, string name, decimal price)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (id == Guid.Empty)
         {
             throw new ProductDomainException("商品 ID 不能为空");
         }
@@ -45,10 +45,10 @@ public sealed class Product : AggregateRoot
     /// </summary>
     /// <param name="name">商品名称。</param>
     /// <param name="price">商品价格。</param>
-    /// <param name="version">客户端持有的商品版本 ULID。</param>
+    /// <param name="version">客户端持有的商品版本 UUIDv7。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
-    public void Update(string name, decimal price, string version, string updatedBy, DateTimeOffset updatedAt)
+    public void Update(string name, decimal price, Guid version, string updatedBy, DateTimeOffset updatedAt)
     {
         if (version != Version)
         {

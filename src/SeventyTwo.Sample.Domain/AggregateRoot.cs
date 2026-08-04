@@ -7,9 +7,9 @@ namespace SeventyTwo.Sample.Domain;
 public abstract class AggregateRoot
 {
     /// <summary>
-    /// 主键 ULID。
+    /// 主键 UUID。
     /// </summary>
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
 
     /// <summary>
     /// 是否启用。
@@ -52,7 +52,7 @@ public abstract class AggregateRoot
     public string OrgId { get; set; } = SystemIds.System;
 
     /// <summary>
-    /// 乐观锁版本 ULID。
+    /// 乐观锁版本 UUIDv7。
     /// </summary>
-    public string Version { get; set; } = string.Empty;
+    public Guid Version { get; set; } = Guid.CreateVersion7();
 }

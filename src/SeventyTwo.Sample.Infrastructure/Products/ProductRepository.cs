@@ -12,7 +12,7 @@ namespace SeventyTwo.Sample.Infrastructure.Products;
 public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
 {
     /// <inheritdoc />
-    public async Task<Product?> FindAsync(string id, CancellationToken cancellationToken)
+    public async Task<Product?> FindAsync(Guid id, CancellationToken cancellationToken)
     {
         var record = await db.Queryable<ProductRecord>()
             .Where(x => x.Id == id && x.DeleteAt == null)
@@ -44,7 +44,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
             OrgId = SystemIds.System,
-            Version = Ulid.NewUlid().ToString(),
+            Version = Guid.CreateVersion7(),
         };
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);
         record.AggregateRootToEntity(product);
@@ -70,7 +70,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
         }
         else
         {
-            nextVersion = Ulid.NewUlid().ToString();
+            nextVersion = Guid.CreateVersion7();
             affectedRows = await db.Updateable<ProductRecord>()
                 .SetColumns(x => new ProductRecord
                 {

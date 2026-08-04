@@ -9,10 +9,10 @@ namespace SeventyTwo.Sample.Infrastructure.Persistence;
 public abstract class BaseEntity
 {
     /// <summary>
-    /// 主键 ULID。
+    /// 主键 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "id", ColumnDescription = "主键ID", IsPrimaryKey = true, ColumnDataType = "char(26)")]
-    public string Id { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "id", ColumnDescription = "主键ID", IsPrimaryKey = true, ColumnDataType = "uuid")]
+    public Guid Id { get; init; } = Guid.CreateVersion7();
 
     /// <summary>
     /// 是否启用。
@@ -73,10 +73,10 @@ public abstract class BaseEntity
     public string OrgId { get; init; } = SystemIds.System;
 
     /// <summary>
-    /// 乐观锁版本 ULID。
+    /// 乐观锁版本 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "version", ColumnDescription = "并发更新控制", ColumnDataType = "char(26)")]
-    public string Version { get; init; } = Ulid.NewUlid().ToString();
+    [SugarColumn(ColumnName = "version", ColumnDescription = "并发更新控制", ColumnDataType = "uuid")]
+    public Guid Version { get; init; } = Guid.CreateVersion7();
 
     /// <summary>
     /// 将持久化实体的公共字段赋值给聚合根。

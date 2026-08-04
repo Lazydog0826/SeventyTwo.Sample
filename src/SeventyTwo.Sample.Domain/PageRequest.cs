@@ -26,7 +26,7 @@ public class PageRequest
     /// <summary>
     /// 最后ID（用于游标分页）
     /// </summary>
-    public string? LastId { get; set; }
+    public Guid? LastId { get; set; }
 }
 
 public enum CursorDirection

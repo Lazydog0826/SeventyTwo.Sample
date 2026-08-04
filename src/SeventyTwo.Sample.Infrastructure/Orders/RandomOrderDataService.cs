@@ -26,7 +26,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
 
         for (var index = 0; index < count; index++)
         {
-            var orderId = Ulid.NewUlid().ToString();
+            var orderId = Guid.CreateVersion7();
             orders.Add(CreateOrder(orderId, now));
 
             var itemCount = Random.Shared.Next(1, 6);
@@ -46,12 +46,12 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
         );
     }
 
-    private OrderRecord CreateOrder(string orderId, DateTimeOffset now)
+    private OrderRecord CreateOrder(Guid orderId, DateTimeOffset now)
     {
         return new OrderRecord
         {
             Id = orderId,
-            OrderNo = $"R{orderId}",
+            OrderNo = orderId.ToString("N"),
             CustomerId = Ulid.NewUlid().ToString(),
             WarehouseId = Ulid.NewUlid().ToString(),
             OrderType = (OrderType)Random.Shared.Next(1, 4),
@@ -67,11 +67,11 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
             CreatedBy = SystemIds.System,
             CreatedAt = now,
             OrgId = SystemIds.System,
-            Version = Ulid.NewUlid().ToString(),
+            Version = Guid.CreateVersion7(),
         };
     }
 
-    private OrderItemRecord CreateOrderItem(string orderId, int lineNo)
+    private OrderItemRecord CreateOrderItem(Guid orderId, int lineNo)
     {
         var quantity = Random.Shared.Next(1, 101);
         return new OrderItemRecord

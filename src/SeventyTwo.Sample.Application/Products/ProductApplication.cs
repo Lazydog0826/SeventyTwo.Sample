@@ -12,13 +12,13 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     /// <inheritdoc />
     public async Task<ProductOutput> CreateAsync(CreateProductInput input, CancellationToken cancellationToken)
     {
-        var product = new Product(Ulid.NewUlid().ToString(), input.Name, input.Price);
+        var product = new Product(Guid.CreateVersion7(), input.Name, input.Price);
         await productRepository.AddAsync(product, cancellationToken);
         return product.Adapt<ProductOutput>();
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(string id, UpdateProductInput input, CancellationToken cancellationToken)
+    public async Task UpdateAsync(Guid id, UpdateProductInput input, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
         product.Update(input.Name, input.Price, input.Version, SystemIds.System, DateTimeExtension.Now());
@@ -26,7 +26,7 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(string id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
         product.Delete(SystemIds.System, DateTimeExtension.Now());
@@ -34,7 +34,7 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     }
 
     /// <inheritdoc />
-    public async Task<ProductOutput> GetAsync(string id, CancellationToken cancellationToken)
+    public async Task<ProductOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var product = await GetRequiredAsync(id, cancellationToken);
         return product.Adapt<ProductOutput>();
@@ -66,9 +66,9 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     /// <param name="id">商品 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品聚合。</returns>
-    private async Task<Product> GetRequiredAsync(string id, CancellationToken cancellationToken)
+    private async Task<Product> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (id == Guid.Empty)
         {
             throw new ProductDomainException("商品 ID 不能为空");
         }

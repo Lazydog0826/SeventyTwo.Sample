@@ -5,7 +5,7 @@ namespace SeventyTwo.Sample.Domain.Inventories;
 public sealed class Inventory : AggregateRoot
 {
     public Inventory(
-        string id,
+        Guid id,
         string productId,
         string warehouseId,
         string locationId,
@@ -16,7 +16,7 @@ public sealed class Inventory : AggregateRoot
         : this(id, productId, warehouseId, locationId, inboundBatchNo, inboundAt, quantity, quantity) { }
 
     public Inventory(
-        string id,
+        Guid id,
         string productId,
         string warehouseId,
         string locationId,
@@ -26,7 +26,7 @@ public sealed class Inventory : AggregateRoot
         int quantity
     )
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (id == Guid.Empty)
         {
             throw new InventoryDomainException("库存 ID 不能为空");
         }

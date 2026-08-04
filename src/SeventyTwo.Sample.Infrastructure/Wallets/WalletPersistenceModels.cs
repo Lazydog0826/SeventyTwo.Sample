@@ -46,8 +46,8 @@ internal sealed class WalletChangeRecord
     /// <summary>
     /// 钱包 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "wallet_id", ColumnDataType = "char(26)")]
-    public string WalletId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "wallet_id", ColumnDataType = "uuid")]
+    public Guid WalletId { get; set; }
 
     /// <summary>
     /// 钱包变更类型。

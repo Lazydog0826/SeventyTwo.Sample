@@ -107,8 +107,8 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 所属订单 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "order_id", ColumnDescription = "订单主表id", ColumnDataType = "char(26)")]
-    public string OrderId { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "order_id", ColumnDescription = "订单主表id", ColumnDataType = "uuid")]
+    public Guid OrderId { get; init; }
 
     /// <summary>
     /// 订单内明细行号。

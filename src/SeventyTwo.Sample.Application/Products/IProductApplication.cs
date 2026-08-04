@@ -18,14 +18,14 @@ public interface IProductApplication
     /// <param name="id">商品 ID。</param>
     /// <param name="input">修改商品输入。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    Task UpdateAsync(string id, UpdateProductInput input, CancellationToken cancellationToken);
+    Task UpdateAsync(Guid id, UpdateProductInput input, CancellationToken cancellationToken);
 
     /// <summary>
     /// 软删除商品。
     /// </summary>
     /// <param name="id">商品 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    Task DeleteAsync(string id, CancellationToken cancellationToken);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 查询商品详情。
@@ -33,7 +33,7 @@ public interface IProductApplication
     /// <param name="id">商品 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品信息。</returns>
-    Task<ProductOutput> GetAsync(string id, CancellationToken cancellationToken);
+    Task<ProductOutput> GetAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 分页查询商品。

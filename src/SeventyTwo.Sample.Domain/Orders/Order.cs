@@ -5,7 +5,7 @@ namespace SeventyTwo.Sample.Domain.Orders;
 public sealed class Order : AggregateRoot
 {
     public Order(
-        string id,
+        Guid id,
         string orderNo,
         string customerId,
         string warehouseId,
@@ -66,7 +66,7 @@ public sealed class Order : AggregateRoot
 
 public sealed class OrderItem(
     string id,
-    string orderId,
+    Guid orderId,
     int lineNo,
     string productId,
     string productName,
@@ -80,7 +80,7 @@ public sealed class OrderItem(
 {
     public string Id { get; } = id;
 
-    public string OrderId { get; } = orderId;
+    public Guid OrderId { get; } = orderId;
 
     public int LineNo { get; } = lineNo;
 

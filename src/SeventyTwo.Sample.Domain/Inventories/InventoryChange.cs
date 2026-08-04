@@ -9,7 +9,7 @@ public enum InventoryChangeType : short
 public readonly record struct InventoryDimension(string ProductId, string WarehouseId, string LocationId);
 
 public sealed record InventoryChange(
-    string InventoryId,
+    Guid InventoryId,
     InventoryChangeType ChangeType,
     int Quantity,
     int BeforeQuantity,
@@ -139,7 +139,7 @@ public sealed class InventoryChangeService
     public InventoryChangeBatch Change(
         IReadOnlyCollection<Inventory> inventories,
         InventoryChangeDraft draft,
-        Func<string> nextInventoryId,
+        Func<Guid> nextInventoryId,
         DateTimeOffset changedAt
     )
     {
@@ -152,8 +152,8 @@ public sealed class InventoryChangeService
         var changedInventories = new List<Inventory>();
         var changes = new List<InventoryChange>();
         var inventoryList = inventories.ToList();
-        var newInventoryIds = new HashSet<string>();
-        var changedInventoryIds = new HashSet<string>();
+        var newInventoryIds = new HashSet<Guid>();
+        var changedInventoryIds = new HashSet<Guid>();
 
         foreach (var increase in draft.Increases)
         {

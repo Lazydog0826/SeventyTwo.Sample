@@ -2,7 +2,7 @@
 namespace SeventyTwo.Sample.Domain.Wallets;
 
 public sealed record WalletBalanceChange(
-    string WalletId,
+    Guid WalletId,
     WalletChangeType ChangeType,
     Money Amount,
     Money BeforeBalance,
@@ -23,7 +23,7 @@ public sealed class WalletBalanceChangeService
         string customerId,
         IReadOnlyCollection<Wallet> wallets,
         IReadOnlyCollection<WalletBalanceChangeRequest> requests,
-        Func<string> nextWalletId
+        Func<Guid> nextWalletId
     )
     {
         if (string.IsNullOrWhiteSpace(customerId))

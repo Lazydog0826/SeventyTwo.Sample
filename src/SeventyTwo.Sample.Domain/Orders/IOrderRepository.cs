@@ -14,7 +14,7 @@ public sealed record OrderPage(
     IReadOnlyCollection<Order> Items,
     int Total,
     DateTimeOffset? LastDateTime,
-    string? LastId
+    Guid? LastId
 );
 
 public sealed record OrderCursorPage(
@@ -22,7 +22,7 @@ public sealed record OrderCursorPage(
     bool HasPrevious,
     bool HasNext,
     DateTimeOffset? FirstDateTime,
-    string? FirstId,
+    Guid? FirstId,
     DateTimeOffset? LastDateTime,
-    string? LastId
+    Guid? LastId
 );

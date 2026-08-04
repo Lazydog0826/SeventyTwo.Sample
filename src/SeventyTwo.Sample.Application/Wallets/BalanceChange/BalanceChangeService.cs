@@ -39,7 +39,7 @@ public class BalanceChangeService(IWalletRepository walletRepository, IUnitOfWor
                     command.CustomerId,
                     walletList,
                     requests,
-                    () => Ulid.NewUlid().ToString()
+                    Guid.CreateVersion7
                 );
                 var createdAt = DateTimeExtension.Now();
                 foreach (var wallet in batch.NewWallets)
