@@ -1,7 +1,7 @@
 -- 库存记录：保存商品在指定仓库、库位及入库批次下的当前库存。
 create table if not exists inventory_record
 (
-    id               char(26) primary key,
+    id               uuid primary key,
     key              varchar(128)             not null,
     product_id       char(26)                 not null,
     warehouse_id     char(26)                 not null,
@@ -18,7 +18,7 @@ create table if not exists inventory_record
     updated_by       char(26)                 null,
     updated_at       timestamp with time zone null,
     org_id           char(26)                 not null,
-    version          char(26)                 not null
+    version          uuid                     not null
 );
 
 comment on table inventory_record is '库存记录';
@@ -39,7 +39,7 @@ comment on column inventory_record.created_at is '创建时间';
 comment on column inventory_record.updated_by is '修改人标识';
 comment on column inventory_record.updated_at is '修改时间';
 comment on column inventory_record.org_id is '组织标识';
-comment on column inventory_record.version is '乐观锁版本 ULID';
+comment on column inventory_record.version is '乐观锁版本 UUIDv7';
 
 -- 加速通过业务键查询库存记录。
 create index if not exists ix_inventory_record_key
@@ -70,7 +70,7 @@ create table if not exists inventory_change_record
 (
     change_id       char(26) primary key,
     request_no      char(26)                 not null,
-    inventory_id    char(26)                 not null,
+    inventory_id    uuid                     not null,
     change_type     smallint                 not null check (change_type in (1, 2)),
     quantity        integer                  not null check (quantity > 0),
     before_quantity integer                  not null check (before_quantity >= 0),

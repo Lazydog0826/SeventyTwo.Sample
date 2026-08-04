@@ -1,7 +1,7 @@
 -- 订单主表：保存订单基础信息、处理状态、收货信息及公共审计字段。
 create table if not exists orders
 (
-    id             char(26) primary key,
+    id             uuid primary key,
     order_no       varchar(32)              not null check (btrim(order_no) <> ''),
     customer_id    char(26)                 not null,
     warehouse_id   char(26)                 not null,
@@ -22,7 +22,7 @@ create table if not exists orders
     updated_by     char(26)                 null,
     updated_at     timestamp with time zone null,
     org_id         char(26)                 not null,
-    version        char(26)                 not null,
+    version        uuid                     not null,
     constraint uq_orders_order_no unique (order_no)
 );
 
@@ -48,7 +48,7 @@ comment on column orders.created_at is '创建时间';
 comment on column orders.updated_by is '修改人标识';
 comment on column orders.updated_at is '修改时间';
 comment on column orders.org_id is '组织标识';
-comment on column orders.version is '乐观锁版本 ULID';
+comment on column orders.version is '乐观锁版本 UUIDv7';
 
 -- 支持按创建时间和订单标识倒序分页查询未删除订单。
 create index if not exists ix_orders_created_at_id
@@ -64,7 +64,7 @@ create index if not exists ix_orders_receiver_phone
 create table if not exists order_items
 (
     id                char(26) primary key,
-    order_id          char(26)       not null,
+    order_id          uuid           not null,
     line_no           integer        not null check (line_no > 0),
     product_id        char(26)       not null,
     product_name      varchar(255)   not null check (btrim(product_name) <> ''),
