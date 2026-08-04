@@ -60,13 +60,15 @@ public sealed class InventoryTests
     [Fact]
     public void Change_ShouldDecreaseNewestInventoryFirst()
     {
+        var olderInventoryId = Guid.CreateVersion7();
+        var newerInventoryId = Guid.CreateVersion7();
         var olderInventory = CreateInventory(
-            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            olderInventoryId,
             5,
             new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
         );
         var newerInventory = CreateInventory(
-            "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+            newerInventoryId,
             6,
             new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
         );
@@ -87,7 +89,7 @@ public sealed class InventoryTests
         var batch = service.Change(
             [olderInventory, newerInventory],
             draft,
-            () => "01ARZ3NDEKTSV4RRFFQ69G5FAX",
+            Guid.CreateVersion7,
             new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
         );
 
@@ -99,12 +101,12 @@ public sealed class InventoryTests
             batch.Changes,
             change =>
             {
-                Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAW", change.InventoryId);
+                Assert.Equal(newerInventoryId, change.InventoryId);
                 Assert.Equal(6, change.Quantity);
             },
             change =>
             {
-                Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAV", change.InventoryId);
+                Assert.Equal(olderInventoryId, change.InventoryId);
                 Assert.Equal(2, change.Quantity);
             }
         );
@@ -114,7 +116,7 @@ public sealed class InventoryTests
     public void Change_ShouldIncludeNewInventoryInDecreaseAllocation()
     {
         var inventory = CreateInventory(
-            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            Guid.CreateVersion7(),
             10,
             new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
         );
@@ -144,7 +146,7 @@ public sealed class InventoryTests
         var batch = service.Change(
             [inventory],
             draft,
-            () => "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+            Guid.CreateVersion7,
             new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
         );
 
@@ -158,7 +160,7 @@ public sealed class InventoryTests
     private Inventory CreateInventory(int quantity)
     {
         return new Inventory(
-            "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            Guid.CreateVersion7(),
             "01ARZ3NDEKTSV4RRFFQ69G5FAY",
             "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
             "01ARZ3NDEKTSV4RRFFQ69G5FB0",
@@ -168,7 +170,7 @@ public sealed class InventoryTests
         );
     }
 
-    private Inventory CreateInventory(string id, int quantity, DateTimeOffset inboundAt)
+    private Inventory CreateInventory(Guid id, int quantity, DateTimeOffset inboundAt)
     {
         return new Inventory(
             id,

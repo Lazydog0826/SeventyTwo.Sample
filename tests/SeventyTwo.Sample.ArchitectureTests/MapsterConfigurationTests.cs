@@ -21,13 +21,15 @@ public sealed class MapsterConfigurationTests
         configuration.Compile();
 
         var createInput = new CreateProductRequest("商品", 1m).Adapt<CreateProductInput>(configuration);
-        const string version = "01ARZ3NDEKTSV4RRFFQ69G5FB0";
-        var product = new Product("01ARZ3NDEKTSV4RRFFQ69G5FAV", "商品", 1m) { Version = version };
-        var updateInput = new UpdateProductRequest("01ARZ3NDEKTSV4RRFFQ69G5FAV", "商品", 2m, version)
+        var version = Guid.CreateVersion7();
+        var productId = Guid.CreateVersion7();
+        var orderId = Guid.CreateVersion7();
+        var product = new Product(productId, "商品", 1m) { Version = version };
+        var updateInput = new UpdateProductRequest(productId, "商品", 2m, version)
             .Adapt<UpdateProductInput>(configuration);
         var output = product.Adapt<ProductOutput>(configuration);
         var orderOutput = new Order(
-            "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+            orderId,
             "ORDER-1",
             "01ARZ3NDEKTSV4RRFFQ69G5FAY",
             "01ARZ3NDEKTSV4RRFFQ69G5FB1",
@@ -43,7 +45,7 @@ public sealed class MapsterConfigurationTests
             [
                 new OrderItem(
                     "01ARZ3NDEKTSV4RRFFQ69G5FAX",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAW",
+                    orderId,
                     1,
                     "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
                     "商品",
@@ -59,11 +61,11 @@ public sealed class MapsterConfigurationTests
 
         Assert.Equal(new CreateProductInput("商品", 1m), createInput);
         Assert.Equal(new UpdateProductInput("商品", 2m, version), updateInput);
-        Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAV", output.Id);
+        Assert.Equal(productId, output.Id);
         Assert.Equal("商品", output.Name);
         Assert.Equal(1m, output.Price);
         Assert.Equal(product.Version, output.Version);
-        Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAW", orderOutput.Id);
+        Assert.Equal(orderId, orderOutput.Id);
         Assert.Equal("ORDER-1", orderOutput.OrderNo);
         var orderItemOutput = Assert.Single(orderOutput.Items);
         Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAX", orderItemOutput.Id);
