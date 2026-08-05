@@ -4,6 +4,8 @@ using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Inventories;
 using SqlSugar;
 
+// ReSharper disable InvertIf
+
 // ReSharper disable MemberCanBeMadeStatic.Local
 
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
@@ -70,23 +72,30 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
     )
     {
         var keys = dimensions.Select(GetKey).Distinct().OrderBy(x => x, StringComparer.Ordinal).ToList();
-        var lockedKeys = await db.Queryable<InventoryChangeLock>()
-            .Where(x => keys.Contains(x.LockKey))
-            .OrderBy(x => x.LockKey)
-            .TranLock(DbLockType.Wait)
-            .Select(x => x.LockKey)
-            .ToListAsync(cancellationToken);
 
-        if (lockedKeys.Count != keys.Count || !lockedKeys.ToHashSet().SetEquals(keys))
+        // 需要扣减时才上锁和查询，纯新增不需要
+        if (keys.Any())
         {
-            throw new InvalidOperationException("库存维度锁获取不完整");
+            var lockedKeys = await db.Queryable<InventoryChangeLock>()
+                .Where(x => keys.Contains(x.LockKey))
+                .OrderBy(x => x.LockKey)
+                .TranLock(DbLockType.Wait)
+                .Select(x => x.LockKey)
+                .ToListAsync(cancellationToken);
+
+            if (lockedKeys.Count != keys.Count || !lockedKeys.ToHashSet().SetEquals(keys))
+            {
+                throw new InvalidOperationException("库存维度锁获取不完整");
+            }
+
+            var records = await db.Queryable<InventoryRecord>()
+                .Where(x => keys.Contains(x.Key) && x.Quantity > 0)
+                .OrderBy(x => x.Key)
+                .ToListAsync(cancellationToken);
+            return records.Adapt<List<Inventory>>();
         }
 
-        var records = await db.Queryable<InventoryRecord>()
-            .Where(x => keys.Contains(x.Key) && x.Quantity > 0)
-            .OrderBy(x => x.Key)
-            .ToListAsync(cancellationToken);
-        return records.Adapt<List<Inventory>>();
+        return [];
     }
 
     public async Task SaveChangeAsync(

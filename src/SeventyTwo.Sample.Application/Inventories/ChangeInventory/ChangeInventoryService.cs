@@ -19,13 +19,16 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
         }
 
         var dimensions = draft
-            .Increases.Cast<InventoryDraft>()
-            .Concat(draft.Decreases)
-            .Select(x => new InventoryDimension(x.ProductId, x.WarehouseId, x.LocationId))
+            .Decreases.Select(x => new InventoryDimension(x.ProductId, x.WarehouseId, x.LocationId))
             .Distinct()
             .ToList();
 
-        await inventoryRepository.EnsureChangeLocksAsync(dimensions, cancellationToken);
+        // 扣减才需要确保维度锁，纯新增不需要
+        if (dimensions.Any())
+        {
+            await inventoryRepository.EnsureChangeLocksAsync(dimensions, cancellationToken);
+        }
+
         await unitOfWork.ExecuteAsync(
             async () =>
             {
