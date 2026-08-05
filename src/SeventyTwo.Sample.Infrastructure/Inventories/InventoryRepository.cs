@@ -12,9 +12,39 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
     public async Task<bool> TryRegisterChangeAsync(string requestNo, CancellationToken cancellationToken)
     {
         var newRequest = new InventoryChangeRequest { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
-        var affectedRows = await db.Insertable(newRequest)
-            .PostgreSQLConflictNothing(["request_no"])
-            .ExecuteCommandAsync(cancellationToken);
+        // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
+        var affectedRows = await (
+            db.CurrentConnectionConfig.DbType switch
+            {
+                DbType.PostgreSQL => db.Insertable(newRequest)
+                    .PostgreSQLConflictNothing(["request_no"])
+                    .ExecuteCommandAsync(cancellationToken),
+                DbType.MySql => db.Insertable(newRequest).MySqlIgnore().ExecuteCommandAsync(cancellationToken),
+                DbType.SqlServer => db.Ado.ExecuteCommandAsync(
+                    """
+                    if not exists (
+                        select 1
+                        from inventory_change_request with (updlock, holdlock)
+                        where request_no = @RequestNo
+                    )
+                    begin
+                        insert into inventory_change_request (request_no, request_at)
+                        values (@RequestNo, @RequestAt);
+                    end;
+                    """,
+                    new[]
+                    {
+                        new SugarParameter("@RequestNo", newRequest.RequestNo, System.Data.DbType.AnsiString)
+                        {
+                            Size = 26,
+                        },
+                        new SugarParameter("@RequestAt", newRequest.RequestAt),
+                    },
+                    cancellationToken
+                ),
+                _ => throw new NotSupportedException($"不支持的数据库类型：{db.CurrentConnectionConfig.DbType}"),
+            }
+        );
         return affectedRows > 0;
     }
 
