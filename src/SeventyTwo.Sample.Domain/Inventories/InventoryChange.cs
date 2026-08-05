@@ -1,3 +1,4 @@
+// ReSharper disable MemberCanBeMadeStatic.Global
 namespace SeventyTwo.Sample.Domain.Inventories;
 
 public enum InventoryChangeType : short

@@ -7,10 +7,12 @@ internal static class InventoryLockInitializer
 {
     public static Task EnsureCreatedAsync(
         ISqlSugarClient db,
-        List<InventoryChangeLock> locks,
+        IReadOnlyCollection<string> keys,
         CancellationToken cancellationToken
     )
     {
+        var locks = keys.Select(x => new InventoryChangeLock { LockKey = x }).ToList();
+
         // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
         return db.CurrentConnectionConfig.DbType switch
         {

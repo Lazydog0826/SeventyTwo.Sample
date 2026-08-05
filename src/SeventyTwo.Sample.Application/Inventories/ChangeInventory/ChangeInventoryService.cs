@@ -1,13 +1,24 @@
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Inventories;
 
+// ReSharper disable ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+// ReSharper disable InvertIf
+
 namespace SeventyTwo.Sample.Application.Inventories.ChangeInventory;
 
 [AutofacDependency(typeof(IChangeInventoryService))]
-public sealed class ChangeInventoryService(IInventoryRepository inventoryRepository, IUnitOfWork unitOfWork)
-    : IChangeInventoryService
+public sealed class ChangeInventoryService(
+    IInventoryRepository inventoryRepository,
+    IUnitOfWork unitOfWork,
+    IRedisCacheService redisCacheService,
+    IOptions<CacheConfiguration> cacheConfiguration,
+    IMemoryCache memoryCache
+) : IChangeInventoryService
 {
     private readonly InventoryChangeService _inventoryChangeService = new();
 
@@ -18,16 +29,21 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
             return;
         }
 
-        var dimensions = draft
+        var allKeys = draft
             .Decreases.Select(x => new InventoryDimension(x.ProductId, x.WarehouseId, x.LocationId))
+            .Select(GetKey)
             .Distinct()
             .ToList();
 
+        var keys = await CheckInventoriesKeyExistAsync(allKeys);
+
         // 扣减才需要确保维度锁，纯新增不需要
-        if (dimensions.Any())
+        if (keys.Any())
         {
-            await inventoryRepository.EnsureChangeLocksAsync(dimensions, cancellationToken);
+            await inventoryRepository.EnsureChangeLocksAsync(keys, cancellationToken);
         }
+
+        await SetInventoriesKeyCacheAsync(keys);
 
         await unitOfWork.ExecuteAsync(
             async () =>
@@ -38,7 +54,7 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
                     return;
                 }
 
-                var inventories = await inventoryRepository.GetForChangeAsync(dimensions, cancellationToken);
+                var inventories = await inventoryRepository.GetForChangeAsync(allKeys, cancellationToken);
                 var changedAt = DateTimeExtension.Now();
                 var batch = _inventoryChangeService.Change(inventories, draft, Guid.CreateVersion7, changedAt);
 
@@ -57,6 +73,82 @@ public sealed class ChangeInventoryService(IInventoryRepository inventoryReposit
                 );
             },
             cancellationToken
+        );
+    }
+
+    private static string GetKey(InventoryDimension dimension)
+    {
+        return $"{dimension.WarehouseId}:{dimension.LocationId}:{dimension.ProductId}";
+    }
+
+    private string GetCacheKey(string key)
+    {
+        return cacheConfiguration.Value.Data("Inventories", $"DimKey:{key}");
+    }
+
+    private async Task<List<string>> CheckInventoriesKeyExistAsync(List<string> keys)
+    {
+        var noExistList = new List<string>();
+
+        foreach (var key in keys)
+        {
+            if (CanUseRedis())
+            {
+                try
+                {
+                    var isExist = await redisCacheService.IsExistAsync(GetCacheKey(key));
+                    if (!isExist)
+                    {
+                        noExistList.Add(key);
+                    }
+                }
+                catch
+                {
+                    noExistList.Add(key);
+                    // redis 错误后 60 秒内不再使用 redis
+                    SetRedisCircuitBreaker();
+                }
+            }
+            else
+            {
+                noExistList.Add(key);
+            }
+        }
+
+        return noExistList;
+    }
+
+    private async Task SetInventoriesKeyCacheAsync(List<string> keys)
+    {
+        var timeSpan = TimeSpan.FromDays(1);
+        foreach (var key in keys)
+        {
+            if (CanUseRedis())
+            {
+                try
+                {
+                    await redisCacheService.SetCacheAsync(GetCacheKey(key), 0, timeSpan);
+                }
+                catch
+                {
+                    // redis 错误后 60 秒内不再使用 redis
+                    SetRedisCircuitBreaker();
+                }
+            }
+        }
+    }
+
+    private bool CanUseRedis()
+    {
+        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"));
+        return DateTimeOffset.UtcNow.UtcTicks >= disabledUntil;
+    }
+
+    private void SetRedisCircuitBreaker()
+    {
+        memoryCache.Set(
+            cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"),
+            DateTimeOffset.UtcNow.UtcTicks + TimeSpan.FromMinutes(1).Ticks
         );
     }
 }

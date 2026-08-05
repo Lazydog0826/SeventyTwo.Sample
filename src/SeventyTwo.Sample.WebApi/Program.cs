@@ -23,6 +23,7 @@ await HostApp.StartWebAppAsync(
     {
         builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(HostApp.AppDomainTypes));
         TypeAdapterConfig.GlobalSettings.Scan([.. HostApp.AppAssemblyList]);
+        builder.Services.AddMemoryCache();
         builder.Services.AddCacheService();
         builder.Services.AddExceptionHandler<ApiExceptionHandler>();
         builder.Services.AddProblemDetails();

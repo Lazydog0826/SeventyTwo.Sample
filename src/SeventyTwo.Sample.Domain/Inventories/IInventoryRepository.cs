@@ -13,21 +13,18 @@ public interface IInventoryRepository
     /// <summary>
     /// 确保指定库存维度对应的变更锁记录存在。
     /// </summary>
-    /// <param name="dimensions">库存维度集合。</param>
+    /// <param name="keys">库存维度集合。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    Task EnsureChangeLocksAsync(
-        IReadOnlyCollection<InventoryDimension> dimensions,
-        CancellationToken cancellationToken
-    );
+    Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken);
 
     /// <summary>
     /// 获取指定库存维度的变更锁，并查询可用库存。
     /// </summary>
-    /// <param name="dimensions">库存维度集合。</param>
+    /// <param name="keys">库存维度集合。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>可用于库存变更的库存集合。</returns>
     Task<IReadOnlyList<Inventory>> GetForChangeAsync(
-        IReadOnlyCollection<InventoryDimension> dimensions,
+        IReadOnlyCollection<string> keys,
         CancellationToken cancellationToken
     );
 

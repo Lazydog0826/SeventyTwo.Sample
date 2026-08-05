@@ -52,44 +52,36 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         return affectedRows > 0;
     }
 
-    public async Task EnsureChangeLocksAsync(
-        IReadOnlyCollection<InventoryDimension> dimensions,
-        CancellationToken cancellationToken
-    )
+    public async Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
     {
-        var locks = dimensions
-            .Select(GetKey)
-            .Distinct()
-            .OrderBy(x => x, StringComparer.Ordinal)
-            .Select(x => new InventoryChangeLock { LockKey = x })
-            .ToList();
-        await InventoryLockInitializer.EnsureCreatedAsync(db, locks, cancellationToken);
+        var orderKeys = OrderBy(keys);
+        await InventoryLockInitializer.EnsureCreatedAsync(db, orderKeys, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Inventory>> GetForChangeAsync(
-        IReadOnlyCollection<InventoryDimension> dimensions,
+        IReadOnlyCollection<string> keys,
         CancellationToken cancellationToken
     )
     {
-        var keys = dimensions.Select(GetKey).Distinct().OrderBy(x => x, StringComparer.Ordinal).ToList();
+        var orderKeys = OrderBy(keys);
 
         // 需要扣减时才上锁和查询，纯新增不需要
-        if (keys.Any())
+        if (orderKeys.Any())
         {
             var lockedKeys = await db.Queryable<InventoryChangeLock>()
-                .Where(x => keys.Contains(x.LockKey))
+                .Where(x => orderKeys.Contains(x.LockKey))
                 .OrderBy(x => x.LockKey)
                 .TranLock(DbLockType.Wait)
                 .Select(x => x.LockKey)
                 .ToListAsync(cancellationToken);
 
-            if (lockedKeys.Count != keys.Count || !lockedKeys.ToHashSet().SetEquals(keys))
+            if (lockedKeys.Count != orderKeys.Count || !lockedKeys.ToHashSet().SetEquals(orderKeys))
             {
                 throw new InvalidOperationException("库存维度锁获取不完整");
             }
 
             var records = await db.Queryable<InventoryRecord>()
-                .Where(x => keys.Contains(x.Key) && x.Quantity > 0)
+                .Where(x => orderKeys.Contains(x.Key) && x.Quantity > 0)
                 .OrderBy(x => x.Key)
                 .ToListAsync(cancellationToken);
             return records.Adapt<List<Inventory>>();
@@ -137,8 +129,13 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         }
     }
 
-    private string GetKey(InventoryDimension dimension)
+    /// <summary>
+    /// 固定排序规则
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <returns></returns>
+    private static List<string> OrderBy(IReadOnlyCollection<string> keys)
     {
-        return $"{dimension.WarehouseId}:{dimension.LocationId}:{dimension.ProductId}";
+        return [.. keys.OrderBy(x => x, StringComparer.Ordinal)];
     }
 }
