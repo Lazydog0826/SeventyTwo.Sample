@@ -1,23 +1,44 @@
-﻿using SeventyTwo.InfraKit.Autofac;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Wallets;
 
+// ReSharper disable InvertIf
+
 namespace SeventyTwo.Sample.Application.Wallets.BalanceChange;
 
 [AutofacDependency(typeof(IBalanceChangeService))]
-public class BalanceChangeService(IWalletRepository walletRepository, IUnitOfWork unitOfWork) : IBalanceChangeService
+public sealed class BalanceChangeService(
+    IWalletRepository walletRepository,
+    IUnitOfWork unitOfWork,
+    IRedisCacheService redisCacheService,
+    IOptions<CacheConfiguration> cacheConfiguration,
+    IMemoryCache memoryCache
+) : IBalanceChangeService
 {
     private readonly WalletBalanceChangeService _walletBalanceChangeService = new();
 
-    public Task BalanceChangeAsync(BalanceChangeCommand command, CancellationToken cancellationToken)
+    public async Task BalanceChangeAsync(BalanceChangeCommand command, CancellationToken cancellationToken)
     {
         var walletTypes = command.Details.Select(x => x.WalletType).Distinct().ToList();
         var requests = command
             .Details.Select(x => new WalletBalanceChangeRequest(x.WalletType, x.ChangeType, x.Amount))
             .ToList();
 
-        return unitOfWork.ExecuteAsync(
+        var allKeys = new List<string> { command.CustomerId };
+        var keys = await CheckWalletKeysExistAsync(allKeys);
+
+        if (keys.Any())
+        {
+            await walletRepository.EnsureChangeLocksAsync(keys, cancellationToken);
+        }
+
+        await SetWalletKeysCacheAsync(keys);
+
+        await unitOfWork.ExecuteAsync(
             async () =>
             {
                 var registered = await walletRepository.TryRegisterBalanceChangeAsync(
@@ -32,6 +53,7 @@ public class BalanceChangeService(IWalletRepository walletRepository, IUnitOfWor
                 var walletList = await walletRepository.GetForBalanceChangeAsync(
                     command.CustomerId,
                     walletTypes,
+                    allKeys,
                     cancellationToken
                 );
 
@@ -57,6 +79,77 @@ public class BalanceChangeService(IWalletRepository walletRepository, IUnitOfWor
                 );
             },
             cancellationToken
+        );
+    }
+
+    private string GetCacheKey(string key)
+    {
+        return cacheConfiguration.Value.Data("Wallets", $"CustomerKey:{key}");
+    }
+
+    private async Task<List<string>> CheckWalletKeysExistAsync(List<string> keys)
+    {
+        var noExistList = new List<string>();
+
+        foreach (var key in keys)
+        {
+            if (CanUseRedis())
+            {
+                try
+                {
+                    var isExist = await redisCacheService.IsExistAsync(GetCacheKey(key));
+                    if (!isExist)
+                    {
+                        noExistList.Add(key);
+                    }
+                }
+                catch
+                {
+                    noExistList.Add(key);
+                    // redis 错误后 60 秒内不再使用 redis
+                    SetRedisCircuitBreaker();
+                }
+            }
+            else
+            {
+                noExistList.Add(key);
+            }
+        }
+
+        return noExistList;
+    }
+
+    private async Task SetWalletKeysCacheAsync(List<string> keys)
+    {
+        var timeSpan = TimeSpan.FromDays(1);
+        foreach (var key in keys)
+        {
+            if (CanUseRedis())
+            {
+                try
+                {
+                    await redisCacheService.SetCacheAsync(GetCacheKey(key), 0, timeSpan);
+                }
+                catch
+                {
+                    // redis 错误后 60 秒内不再使用 redis
+                    SetRedisCircuitBreaker();
+                }
+            }
+        }
+    }
+
+    private bool CanUseRedis()
+    {
+        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"));
+        return DateTimeOffset.UtcNow.UtcTicks >= disabledUntil;
+    }
+
+    private void SetRedisCircuitBreaker()
+    {
+        memoryCache.Set(
+            cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"),
+            DateTimeOffset.UtcNow.UtcTicks + TimeSpan.FromMinutes(1).Ticks
         );
     }
 }
