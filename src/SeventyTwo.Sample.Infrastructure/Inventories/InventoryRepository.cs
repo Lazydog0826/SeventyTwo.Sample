@@ -4,6 +4,8 @@ using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain.Inventories;
 using SqlSugar;
 
+// ReSharper disable MemberCanBeMadeStatic.Local
+
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
 
 [AutofacDependency(typeof(IInventoryRepository))]
