@@ -1,4 +1,6 @@
 using Mapster;
+using Serilog;
+using Serilog.Events;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
@@ -21,6 +23,14 @@ await HostApp.StartWebAppAsync(
     ],
     builder =>
     {
+        builder.Host.UseSerilog(
+            (_, configuration) =>
+                configuration
+                    .MinimumLevel.Information()
+                    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                    .Enrich.FromLogContext()
+                    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30)
+        );
         builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(HostApp.AppDomainTypes));
         TypeAdapterConfig.GlobalSettings.Scan([.. HostApp.AppAssemblyList]);
         builder.Services.AddMemoryCache();
