@@ -4,7 +4,8 @@ using SeventyTwo.Sample.Infrastructure.Organizations;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
-const string connectionString = "";
+const string connectionString =
+    "Host=xuniji.com;Port=5432;Database=SeventyTwo.Sample;Username=postgres;Password=123456";
 const string organizationCode = "DefaultOrg";
 const string organizationName = "测试机构";
 const string userName = "superadmin";
