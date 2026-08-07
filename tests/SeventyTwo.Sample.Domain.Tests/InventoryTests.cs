@@ -4,6 +4,10 @@ namespace SeventyTwo.Sample.Domain.Tests;
 
 public sealed class InventoryTests
 {
+    private static readonly Guid ProductId = Guid.CreateVersion7();
+    private static readonly Guid WarehouseId = Guid.CreateVersion7();
+    private static readonly Guid LocationId = Guid.CreateVersion7();
+
     [Fact]
     public void Increase_ShouldReturnBeforeAndAfterQuantity()
     {
@@ -73,13 +77,13 @@ public sealed class InventoryTests
             new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
         );
         var draft = new InventoryChangeDraft(
-            "REQUEST-1",
+            Guid.CreateVersion7(),
             [],
             [
                 new InventoryDecreaseDraft(
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+                    ProductId,
+                    WarehouseId,
+                    LocationId,
                     8
                 ),
             ]
@@ -121,12 +125,12 @@ public sealed class InventoryTests
             new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
         );
         var draft = new InventoryChangeDraft(
-            "REQUEST-1",
+            Guid.CreateVersion7(),
             [
                 new InventoryIncreaseDraft(
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+                    ProductId,
+                    WarehouseId,
+                    LocationId,
                     5,
                     "BATCH-2",
                     new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
@@ -134,9 +138,9 @@ public sealed class InventoryTests
             ],
             [
                 new InventoryDecreaseDraft(
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
-                    "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+                    ProductId,
+                    WarehouseId,
+                    LocationId,
                     7
                 ),
             ]
@@ -161,9 +165,9 @@ public sealed class InventoryTests
     {
         return new Inventory(
             Guid.CreateVersion7(),
-            "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-            "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
-            "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+            ProductId,
+            WarehouseId,
+            LocationId,
             "BATCH-1",
             new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero),
             quantity
@@ -174,9 +178,9 @@ public sealed class InventoryTests
     {
         return new Inventory(
             id,
-            "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-            "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
-            "01ARZ3NDEKTSV4RRFFQ69G5FB0",
+            ProductId,
+            WarehouseId,
+            LocationId,
             $"BATCH-{id}",
             inboundAt,
             quantity

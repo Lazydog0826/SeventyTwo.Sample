@@ -21,14 +21,14 @@ internal sealed class OrderRecord : BaseEntity
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "customer_id", ColumnDescription = "客户id", ColumnDataType = "char(26)")]
-    public string CustomerId { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "customer_id", ColumnDescription = "客户id", ColumnDataType = "uuid")]
+    public Guid CustomerId { get; init; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "warehouse_id", ColumnDescription = "仓库id", ColumnDataType = "char(26)")]
-    public string WarehouseId { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "warehouse_id", ColumnDescription = "仓库id", ColumnDataType = "uuid")]
+    public Guid WarehouseId { get; init; }
 
     /// <summary>
     /// 订单类型：1 销售订单，2 退货订单，3 调拨订单。
@@ -99,10 +99,10 @@ internal sealed class OrderItemRecord
     [SugarColumn(
         ColumnName = "id",
         IsPrimaryKey = true,
-        ColumnDataType = "char(26)",
+        ColumnDataType = "uuid",
         ColumnDescription = "订单明细主键"
     )]
-    public string Id { get; init; } = string.Empty;
+    public Guid Id { get; init; }
 
     /// <summary>
     /// 所属订单 ID。
@@ -119,8 +119,8 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "product_id", ColumnDescription = "商品id", ColumnDataType = "char(26)")]
-    public string ProductId { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "product_id", ColumnDescription = "商品id", ColumnDataType = "uuid")]
+    public Guid ProductId { get; init; }
 
     /// <summary>
     /// 下单时的商品名称快照。

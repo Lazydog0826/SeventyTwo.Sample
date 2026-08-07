@@ -23,12 +23,12 @@ public sealed record OrderOutput
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    public string CustomerId { get; init; } = string.Empty;
+    public Guid CustomerId { get; init; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    public string WarehouseId { get; init; } = string.Empty;
+    public Guid WarehouseId { get; init; }
 
     /// <summary>
     /// 订单类型。
@@ -91,13 +91,13 @@ public sealed record OrderOutput
 /// </summary>
 public sealed record OrderItemOutput
 {
-    public string Id { get; init; } = string.Empty;
+    public Guid Id { get; init; }
 
     public Guid OrderId { get; init; }
 
     public int LineNo { get; init; }
 
-    public string ProductId { get; init; } = string.Empty;
+    public Guid ProductId { get; init; }
 
     public string ProductName { get; init; } = string.Empty;
 

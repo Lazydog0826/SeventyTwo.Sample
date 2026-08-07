@@ -13,7 +13,7 @@ namespace SeventyTwo.Sample.Infrastructure.Inventories;
 [AutofacDependency(typeof(IInventoryRepository))]
 public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryRepository
 {
-    public async Task<bool> TryRegisterChangeAsync(string requestNo, CancellationToken cancellationToken)
+    public async Task<bool> TryRegisterChangeAsync(Guid requestNo, CancellationToken cancellationToken)
     {
         var newRequest = new InventoryChangeRequest { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
         var affectedRows = await db.Insertable(newRequest)
@@ -62,7 +62,7 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
     }
 
     public async Task SaveChangeAsync(
-        string requestNo,
+        Guid requestNo,
         IReadOnlyCollection<Inventory> newInventories,
         IReadOnlyCollection<Inventory> changedInventories,
         IReadOnlyCollection<InventoryChange> changes,
@@ -86,7 +86,7 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
             var changeRecords = changes
                 .Select(x => new InventoryChangeRecord
                 {
-                    ChangeId = Ulid.NewUlid().ToString(),
+                    ChangeId = Guid.CreateVersion7(),
                     RequestNo = requestNo,
                     InventoryId = x.InventoryId,
                     ChangeType = x.ChangeType,

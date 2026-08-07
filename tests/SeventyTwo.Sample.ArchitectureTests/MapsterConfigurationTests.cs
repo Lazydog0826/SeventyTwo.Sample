@@ -24,6 +24,7 @@ public sealed class MapsterConfigurationTests
         var version = Guid.CreateVersion7();
         var productId = Guid.CreateVersion7();
         var orderId = Guid.CreateVersion7();
+        var orderItemId = Guid.CreateVersion7();
         var product = new Product(productId, "商品", 1m) { Version = version };
         var updateInput = new UpdateProductRequest(productId, "商品", 2m, version)
             .Adapt<UpdateProductInput>(configuration);
@@ -31,8 +32,8 @@ public sealed class MapsterConfigurationTests
         var orderOutput = new Order(
             orderId,
             "ORDER-1",
-            "01ARZ3NDEKTSV4RRFFQ69G5FAY",
-            "01ARZ3NDEKTSV4RRFFQ69G5FB1",
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
             OrderType.Sales,
             OrderStatus.Pending,
             "收货人",
@@ -44,10 +45,10 @@ public sealed class MapsterConfigurationTests
             "备注",
             [
                 new OrderItem(
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAX",
+                    orderItemId,
                     orderId,
                     1,
-                    "01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+                    Guid.CreateVersion7(),
                     "商品",
                     "件",
                     3,
@@ -68,7 +69,7 @@ public sealed class MapsterConfigurationTests
         Assert.Equal(orderId, orderOutput.Id);
         Assert.Equal("ORDER-1", orderOutput.OrderNo);
         var orderItemOutput = Assert.Single(orderOutput.Items);
-        Assert.Equal("01ARZ3NDEKTSV4RRFFQ69G5FAX", orderItemOutput.Id);
+        Assert.Equal(orderItemId, orderItemOutput.Id);
         Assert.Equal("商品", orderItemOutput.ProductName);
     }
 }

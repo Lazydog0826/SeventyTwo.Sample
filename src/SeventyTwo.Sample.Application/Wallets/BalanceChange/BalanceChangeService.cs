@@ -28,7 +28,7 @@ public sealed class BalanceChangeService(
             .Details.Select(x => new WalletBalanceChangeRequest(x.WalletType, x.ChangeType, x.Amount))
             .ToList();
 
-        var allKeys = new List<string> { command.CustomerId };
+        var allKeys = new List<string> { command.CustomerId.ToString() };
         var keys = await CheckWalletKeysExistAsync(allKeys);
 
         if (keys.Any())

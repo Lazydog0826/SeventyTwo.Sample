@@ -29,8 +29,8 @@ public sealed class WalletsController(IWalletApplication walletApplication) : Co
 }
 
 public sealed record BalanceChangeRequest(
-    string CustomerId,
-    string RequestNo,
+    Guid CustomerId,
+    Guid RequestNo,
     IReadOnlyCollection<BalanceChangeDetailRequest> Details
 );
 

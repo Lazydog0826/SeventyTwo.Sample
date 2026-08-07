@@ -40,18 +40,18 @@ public sealed class InventoriesController(IInventoryApplication inventoryApplica
 }
 
 public sealed record ChangeInventoryRequest(
-    string RequestNo,
+    Guid RequestNo,
     IReadOnlyCollection<InventoryIncreaseRequest> Increases,
     IReadOnlyCollection<InventoryDecreaseRequest> Decreases
 );
 
 public sealed record InventoryIncreaseRequest(
-    string ProductId,
-    string WarehouseId,
-    string LocationId,
+    Guid ProductId,
+    Guid WarehouseId,
+    Guid LocationId,
     int Quantity,
     string InboundBatchNo,
     DateTimeOffset ChangedAt
 );
 
-public sealed record InventoryDecreaseRequest(string ProductId, string WarehouseId, string LocationId, int Quantity);
+public sealed record InventoryDecreaseRequest(Guid ProductId, Guid WarehouseId, Guid LocationId, int Quantity);

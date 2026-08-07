@@ -2,19 +2,19 @@
 
 public interface IWalletRepository
 {
-    Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken);
+    Task<bool> TryRegisterBalanceChangeAsync(Guid requestNo, CancellationToken cancellationToken);
 
     Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
-        string customerId,
+        Guid customerId,
         IReadOnlyCollection<WalletCurrency> walletCurrencies,
         IReadOnlyCollection<string> keys,
         CancellationToken cancellationToken
     );
 
     Task SaveBalanceChangeAsync(
-        string requestNo,
+        Guid requestNo,
         IReadOnlyCollection<Wallet> newWallets,
         IReadOnlyCollection<Wallet> changedWallets,
         IReadOnlyCollection<WalletBalanceChange> changes,

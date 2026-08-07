@@ -17,9 +17,9 @@ public abstract class AggregateRoot
     public bool Enable { get; set; } = true;
 
     /// <summary>
-    /// 删除人 ULID。
+    /// 删除人 UUIDv7。
     /// </summary>
-    public string? DeleteBy { get; set; }
+    public Guid? DeleteBy { get; set; }
 
     /// <summary>
     /// 删除时间。
@@ -27,9 +27,9 @@ public abstract class AggregateRoot
     public DateTimeOffset? DeleteAt { get; set; }
 
     /// <summary>
-    /// 创建人 ULID。
+    /// 创建人 UUIDv7。
     /// </summary>
-    public string CreatedBy { get; set; } = SystemIds.System;
+    public Guid CreatedBy { get; set; } = SystemIds.System;
 
     /// <summary>
     /// 创建时间。
@@ -37,9 +37,9 @@ public abstract class AggregateRoot
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// 修改人 ULID。
+    /// 修改人 UUIDv7。
     /// </summary>
-    public string? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 
     /// <summary>
     /// 修改时间。
@@ -47,9 +47,9 @@ public abstract class AggregateRoot
     public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
-    /// 组织 ULID。
+    /// 组织 UUIDv7。
     /// </summary>
-    public string OrgId { get; set; } = SystemIds.System;
+    public Guid OrgId { get; set; } = Guid.Empty;
 
     /// <summary>
     /// 乐观锁版本 UUIDv7。

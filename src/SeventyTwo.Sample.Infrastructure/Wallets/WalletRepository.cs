@@ -9,7 +9,7 @@ namespace SeventyTwo.Sample.Infrastructure.Wallets;
 [AutofacDependency(typeof(IWalletRepository))]
 public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
 {
-    public async Task<bool> TryRegisterBalanceChangeAsync(string requestNo, CancellationToken cancellationToken)
+    public async Task<bool> TryRegisterBalanceChangeAsync(Guid requestNo, CancellationToken cancellationToken)
     {
         var newRequest = new WalletChangeRequest { RequestNo = requestNo, RequestAt = DateTimeExtension.Now() };
         var affectedRows = await db.Insertable(newRequest)
@@ -26,7 +26,7 @@ public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
     }
 
     public async Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(
-        string customerId,
+        Guid customerId,
         IReadOnlyCollection<WalletCurrency> walletCurrencies,
         IReadOnlyCollection<string> keys,
         CancellationToken cancellationToken
@@ -56,7 +56,7 @@ public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
     }
 
     public async Task SaveBalanceChangeAsync(
-        string requestNo,
+        Guid requestNo,
         IReadOnlyCollection<Wallet> newWallets,
         IReadOnlyCollection<Wallet> changedWallets,
         IReadOnlyCollection<WalletBalanceChange> changes,
@@ -81,7 +81,7 @@ public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
             var changeRecordEntities = changes
                 .Select(x => new WalletChangeRecord
                 {
-                    ChangeId = Ulid.NewUlid().ToString(),
+                    ChangeId = Guid.CreateVersion7(),
                     RequestNo = requestNo,
                     WalletId = x.WalletId,
                     ChangeType = x.ChangeType,

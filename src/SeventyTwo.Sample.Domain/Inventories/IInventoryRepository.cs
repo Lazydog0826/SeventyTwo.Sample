@@ -8,7 +8,7 @@ public interface IInventoryRepository
     /// <param name="requestNo">业务请求号。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>首次登记返回 <see langword="true"/>；请求已登记返回 <see langword="false"/>。</returns>
-    Task<bool> TryRegisterChangeAsync(string requestNo, CancellationToken cancellationToken);
+    Task<bool> TryRegisterChangeAsync(Guid requestNo, CancellationToken cancellationToken);
 
     /// <summary>
     /// 确保指定库存维度对应的变更锁记录存在。
@@ -37,7 +37,7 @@ public interface IInventoryRepository
     /// <param name="changes">库存变更明细集合。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     Task SaveChangeAsync(
-        string requestNo,
+        Guid requestNo,
         IReadOnlyCollection<Inventory> newInventories,
         IReadOnlyCollection<Inventory> changedInventories,
         IReadOnlyCollection<InventoryChange> changes,

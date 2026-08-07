@@ -4,14 +4,14 @@ namespace SeventyTwo.Sample.Domain.Wallets;
 
 public class Wallet : AggregateRoot
 {
-    public Wallet(Guid id, string customerId, WalletCurrency walletType, Money balance)
+    public Wallet(Guid id, Guid customerId, WalletCurrency walletType, Money balance)
     {
         if (id == Guid.Empty)
         {
             throw new WalletDomainException("钱包 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(customerId))
+        if (customerId == Guid.Empty)
         {
             throw new WalletDomainException("客户 ID 不能为空");
         }
@@ -27,7 +27,7 @@ public class Wallet : AggregateRoot
         Balance = balance;
     }
 
-    public string CustomerId { get; private set; }
+    public Guid CustomerId { get; private set; }
 
     public WalletCurrency WalletType { get; private set; }
 

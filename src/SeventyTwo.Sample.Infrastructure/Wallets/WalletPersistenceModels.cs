@@ -12,8 +12,8 @@ internal sealed class WalletRecord : BaseEntity
     /// <summary>
     /// 客户 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "customer_id", ColumnDataType = "char(26)")]
-    public string CustomerId { get; init; } = string.Empty;
+    [SugarColumn(ColumnName = "customer_id", ColumnDataType = "uuid")]
+    public Guid CustomerId { get; init; }
 
     /// <summary>
     /// 钱包币种。
@@ -34,14 +34,14 @@ internal sealed class WalletChangeRecord
     /// <summary>
     /// 钱包变更记录 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "char(26)")]
-    public string ChangeId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "uuid")]
+    public Guid ChangeId { get; set; }
 
     /// <summary>
-    /// 业务请求号 ULID。
+    /// 业务请求号 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "request_no", ColumnDataType = "char(26)")]
-    public string RequestNo { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "request_no", ColumnDataType = "uuid")]
+    public Guid RequestNo { get; set; }
 
     /// <summary>
     /// 钱包 ID。
@@ -84,10 +84,10 @@ internal sealed class WalletChangeRecord
 internal sealed class WalletChangeRequest
 {
     /// <summary>
-    /// 业务请求号 ULID（唯一约束）。
+    /// 业务请求号 UUIDv7（唯一约束）。
     /// </summary>
-    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, ColumnDataType = "char(26)")]
-    public string RequestNo { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, ColumnDataType = "uuid")]
+    public Guid RequestNo { get; set; }
 
     /// <summary>
     /// 请求时间。

@@ -18,20 +18,20 @@ internal sealed class InventoryRecord : BaseEntity
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "product_id", ColumnDataType = "char(26)")]
-    public string ProductId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "product_id", ColumnDataType = "uuid")]
+    public Guid ProductId { get; set; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "warehouse_id", ColumnDataType = "char(26)")]
-    public string WarehouseId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "warehouse_id", ColumnDataType = "uuid")]
+    public Guid WarehouseId { get; set; }
 
     /// <summary>
     /// 库位 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "location_id", ColumnDataType = "char(26)")]
-    public string LocationId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "location_id", ColumnDataType = "uuid")]
+    public Guid LocationId { get; set; }
 
     /// <summary>
     /// 入库批次号。
@@ -64,14 +64,14 @@ internal sealed class InventoryChangeRecord
     /// <summary>
     /// 库存变更记录 ID。
     /// </summary>
-    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "char(26)")]
-    public string ChangeId { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "change_id", IsPrimaryKey = true, ColumnDataType = "uuid")]
+    public Guid ChangeId { get; set; }
 
     /// <summary>
-    /// 业务请求号 ULID。
+    /// 业务请求号 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "request_no", ColumnDataType = "char(26)")]
-    public string RequestNo { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "request_no", ColumnDataType = "uuid")]
+    public Guid RequestNo { get; set; }
 
     /// <summary>
     /// 库存 ID。
@@ -114,10 +114,10 @@ internal sealed class InventoryChangeRecord
 internal sealed class InventoryChangeRequest
 {
     /// <summary>
-    /// 业务请求号 ULID（唯一约束）
+    /// 业务请求号 UUIDv7（唯一约束）
     /// </summary>
-    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, ColumnDataType = "char(26)")]
-    public string RequestNo { get; set; } = string.Empty;
+    [SugarColumn(ColumnName = "request_no", IsPrimaryKey = true, ColumnDataType = "uuid")]
+    public Guid RequestNo { get; set; }
 
     /// <summary>
     /// 请求时间。

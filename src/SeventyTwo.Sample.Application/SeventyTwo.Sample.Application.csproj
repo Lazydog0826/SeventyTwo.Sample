@@ -7,7 +7,6 @@
   <ItemGroup>
     <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
-    <PackageReference Include="Ulid" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Domain\SeventyTwo.Sample.Domain.csproj" />

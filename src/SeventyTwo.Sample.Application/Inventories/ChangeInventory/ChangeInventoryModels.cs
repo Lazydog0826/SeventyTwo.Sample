@@ -1,18 +1,18 @@
 namespace SeventyTwo.Sample.Application.Inventories.ChangeInventory;
 
 public sealed record ChangeInventoryInput(
-    string RequestNo,
+    Guid RequestNo,
     IReadOnlyCollection<InventoryIncreaseInput> Increases,
     IReadOnlyCollection<InventoryDecreaseInput> Decreases
 );
 
 public sealed record InventoryIncreaseInput(
-    string ProductId,
-    string WarehouseId,
-    string LocationId,
+    Guid ProductId,
+    Guid WarehouseId,
+    Guid LocationId,
     int Quantity,
     string InboundBatchNo,
     DateTimeOffset ChangedAt
 );
 
-public sealed record InventoryDecreaseInput(string ProductId, string WarehouseId, string LocationId, int Quantity);
+public sealed record InventoryDecreaseInput(Guid ProductId, Guid WarehouseId, Guid LocationId, int Quantity);

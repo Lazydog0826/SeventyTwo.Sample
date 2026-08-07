@@ -48,7 +48,7 @@ public sealed class Product : AggregateRoot
     /// <param name="version">客户端持有的商品版本 UUIDv7。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
-    public void Update(string name, decimal price, Guid version, string updatedBy, DateTimeOffset updatedAt)
+    public void Update(string name, decimal price, Guid version, Guid updatedBy, DateTimeOffset updatedAt)
     {
         if (version != Version)
         {
@@ -70,7 +70,7 @@ public sealed class Product : AggregateRoot
     /// </summary>
     /// <param name="deletedBy">删除人 ID。</param>
     /// <param name="deletedAt">删除时间。</param>
-    public void Delete(string deletedBy, DateTimeOffset deletedAt)
+    public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
     {
         if (deletedAt == default)
         {

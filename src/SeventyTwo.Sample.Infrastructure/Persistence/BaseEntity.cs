@@ -21,15 +21,15 @@ public abstract class BaseEntity
     public bool Enable { get; init; } = true;
 
     /// <summary>
-    /// 删除人 ULID。
+    /// 删除人 UUIDv7。
     /// </summary>
     [SugarColumn(
         ColumnName = "delete_by",
         ColumnDescription = "删除人",
         IsNullable = true,
-        ColumnDataType = "char(26)"
+        ColumnDataType = "uuid"
     )]
-    public string? DeleteBy { get; init; }
+    public Guid? DeleteBy { get; init; }
 
     /// <summary>
     /// 删除时间。
@@ -38,10 +38,10 @@ public abstract class BaseEntity
     public DateTimeOffset? DeleteAt { get; init; }
 
     /// <summary>
-    /// 创建人 ULID。
+    /// 创建人 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "created_by", ColumnDescription = "创建人", ColumnDataType = "char(26)")]
-    public string CreatedBy { get; init; } = SystemIds.System;
+    [SugarColumn(ColumnName = "created_by", ColumnDescription = "创建人", ColumnDataType = "uuid")]
+    public Guid CreatedBy { get; init; } = SystemIds.System;
 
     /// <summary>
     /// 创建时间。
@@ -50,15 +50,15 @@ public abstract class BaseEntity
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
     /// <summary>
-    /// 修改人 ULID。
+    /// 修改人 UUIDv7。
     /// </summary>
     [SugarColumn(
         ColumnName = "updated_by",
         ColumnDescription = "修改人",
         IsNullable = true,
-        ColumnDataType = "char(26)"
+        ColumnDataType = "uuid"
     )]
-    public string? UpdatedBy { get; init; }
+    public Guid? UpdatedBy { get; init; }
 
     /// <summary>
     /// 修改时间。
@@ -67,10 +67,10 @@ public abstract class BaseEntity
     public DateTimeOffset? UpdatedAt { get; init; }
 
     /// <summary>
-    /// 组织 ULID。
+    /// 组织 UUIDv7。
     /// </summary>
-    [SugarColumn(ColumnName = "org_id", ColumnDescription = "机构ID", ColumnDataType = "char(26)")]
-    public string OrgId { get; init; } = SystemIds.System;
+    [SugarColumn(ColumnName = "org_id", ColumnDescription = "机构ID", ColumnDataType = "uuid")]
+    public Guid OrgId { get; init; } = Guid.Empty;
 
     /// <summary>
     /// 乐观锁版本 UUIDv7。

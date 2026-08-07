@@ -20,13 +20,13 @@ public sealed record WalletBalanceChangeBatch(
 public sealed class WalletBalanceChangeService
 {
     public WalletBalanceChangeBatch Change(
-        string customerId,
+        Guid customerId,
         IReadOnlyCollection<Wallet> wallets,
         IReadOnlyCollection<WalletBalanceChangeRequest> requests,
         Func<Guid> nextWalletId
     )
     {
-        if (string.IsNullOrWhiteSpace(customerId))
+        if (customerId == Guid.Empty)
         {
             throw new WalletDomainException("客户 ID 不能为空");
         }

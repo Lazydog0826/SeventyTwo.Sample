@@ -6,9 +6,9 @@ public sealed class Inventory : AggregateRoot
 {
     public Inventory(
         Guid id,
-        string productId,
-        string warehouseId,
-        string locationId,
+        Guid productId,
+        Guid warehouseId,
+        Guid locationId,
         string inboundBatchNo,
         DateTimeOffset inboundAt,
         int quantity
@@ -17,9 +17,9 @@ public sealed class Inventory : AggregateRoot
 
     public Inventory(
         Guid id,
-        string productId,
-        string warehouseId,
-        string locationId,
+        Guid productId,
+        Guid warehouseId,
+        Guid locationId,
         string inboundBatchNo,
         DateTimeOffset inboundAt,
         int initialQuantity,
@@ -31,17 +31,17 @@ public sealed class Inventory : AggregateRoot
             throw new InventoryDomainException("库存 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(productId))
+        if (productId == Guid.Empty)
         {
             throw new InventoryDomainException("商品 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(warehouseId))
+        if (warehouseId == Guid.Empty)
         {
             throw new InventoryDomainException("仓库 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(locationId))
+        if (locationId == Guid.Empty)
         {
             throw new InventoryDomainException("货位 ID 不能为空");
         }
@@ -79,17 +79,17 @@ public sealed class Inventory : AggregateRoot
     /// <summary>
     /// 商品 ID。
     /// </summary>
-    public string ProductId { get; private set; }
+    public Guid ProductId { get; private set; }
 
     /// <summary>
     /// 仓库 ID。
     /// </summary>
-    public string WarehouseId { get; private set; }
+    public Guid WarehouseId { get; private set; }
 
     /// <summary>
     /// 货位 ID。
     /// </summary>
-    public string LocationId { get; private set; }
+    public Guid LocationId { get; private set; }
 
     /// <summary>
     /// 入库批次号。

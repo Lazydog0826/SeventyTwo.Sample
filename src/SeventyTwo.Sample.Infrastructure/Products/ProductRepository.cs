@@ -43,7 +43,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             Enable = true,
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
-            OrgId = SystemIds.System,
+            OrgId = Guid.Empty,
             Version = Guid.CreateVersion7(),
         };
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);

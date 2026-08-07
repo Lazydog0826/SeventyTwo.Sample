@@ -7,7 +7,7 @@ public enum InventoryChangeType : short
     Decrease = 2,
 }
 
-public readonly record struct InventoryDimension(string ProductId, string WarehouseId, string LocationId);
+public readonly record struct InventoryDimension(Guid ProductId, Guid WarehouseId, Guid LocationId);
 
 public sealed record InventoryChange(
     Guid InventoryId,
@@ -27,19 +27,14 @@ public sealed record InventoryChangeBatch(
 public sealed class InventoryChangeDraft
 {
     public InventoryChangeDraft(
-        string requestNo,
+        Guid requestNo,
         List<InventoryIncreaseDraft> increases,
         List<InventoryDecreaseDraft> decreases
     )
     {
-        if (string.IsNullOrWhiteSpace(requestNo))
+        if (requestNo == Guid.Empty)
         {
             throw new InventoryDomainException("业务请求号不能为空");
-        }
-
-        if (requestNo.Length > 26)
-        {
-            throw new InventoryDomainException("业务请求号长度不能超过 26 个字符");
         }
 
         RequestNo = requestNo;
@@ -47,7 +42,7 @@ public sealed class InventoryChangeDraft
         Decreases = decreases.ToList().AsReadOnly();
     }
 
-    public string RequestNo { get; }
+    public Guid RequestNo { get; }
 
     public IReadOnlyList<InventoryIncreaseDraft> Increases { get; }
 
@@ -56,19 +51,19 @@ public sealed class InventoryChangeDraft
 
 public record InventoryDraft
 {
-    protected InventoryDraft(string productId, string warehouseId, string locationId, int quantity)
+    protected InventoryDraft(Guid productId, Guid warehouseId, Guid locationId, int quantity)
     {
-        if (string.IsNullOrWhiteSpace(productId))
+        if (productId == Guid.Empty)
         {
             throw new InventoryDomainException("商品 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(warehouseId))
+        if (warehouseId == Guid.Empty)
         {
             throw new InventoryDomainException("仓库 ID 不能为空");
         }
 
-        if (string.IsNullOrWhiteSpace(locationId))
+        if (locationId == Guid.Empty)
         {
             throw new InventoryDomainException("货位 ID 不能为空");
         }
@@ -84,11 +79,11 @@ public record InventoryDraft
         Quantity = quantity;
     }
 
-    public string ProductId { get; }
+    public Guid ProductId { get; }
 
-    public string WarehouseId { get; }
+    public Guid WarehouseId { get; }
 
-    public string LocationId { get; }
+    public Guid LocationId { get; }
 
     public int Quantity { get; }
 }
@@ -96,9 +91,9 @@ public record InventoryDraft
 public sealed record InventoryIncreaseDraft : InventoryDraft
 {
     public InventoryIncreaseDraft(
-        string productId,
-        string warehouseId,
-        string locationId,
+        Guid productId,
+        Guid warehouseId,
+        Guid locationId,
         int quantity,
         string inboundBatchNo,
         DateTimeOffset changedAt
@@ -131,7 +126,7 @@ public sealed record InventoryIncreaseDraft : InventoryDraft
 
 public sealed record InventoryDecreaseDraft : InventoryDraft
 {
-    public InventoryDecreaseDraft(string productId, string warehouseId, string locationId, int quantity)
+    public InventoryDecreaseDraft(Guid productId, Guid warehouseId, Guid locationId, int quantity)
         : base(productId, warehouseId, locationId, quantity) { }
 }
 

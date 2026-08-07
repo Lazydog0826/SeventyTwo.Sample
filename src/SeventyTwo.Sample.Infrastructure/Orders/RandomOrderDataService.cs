@@ -52,8 +52,8 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
         {
             Id = orderId,
             OrderNo = orderId.ToString("N"),
-            CustomerId = Ulid.NewUlid().ToString(),
-            WarehouseId = Ulid.NewUlid().ToString(),
+            CustomerId = Guid.CreateVersion7(),
+            WarehouseId = Guid.CreateVersion7(),
             OrderType = (OrderType)Random.Shared.Next(1, 4),
             OrderStatus = (OrderStatus)Random.Shared.Next(0, 4),
             ReceiverName = $"收货人{Random.Shared.Next(1, 10_001)}",
@@ -66,7 +66,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
             Enable = true,
             CreatedBy = SystemIds.System,
             CreatedAt = now,
-            OrgId = SystemIds.System,
+            OrgId = Guid.Empty,
             Version = Guid.CreateVersion7(),
         };
     }
@@ -76,10 +76,10 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
         var quantity = Random.Shared.Next(1, 101);
         return new OrderItemRecord
         {
-            Id = Ulid.NewUlid().ToString(),
+            Id = Guid.CreateVersion7(),
             OrderId = orderId,
             LineNo = lineNo,
-            ProductId = Ulid.NewUlid().ToString(),
+            ProductId = Guid.CreateVersion7(),
             ProductName = $"随机商品{Random.Shared.Next(1, 10_001)}",
             Unit = "件",
             Quantity = quantity,

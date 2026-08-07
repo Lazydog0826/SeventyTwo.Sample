@@ -7,8 +7,8 @@ public sealed class Order : AggregateRoot
     public Order(
         Guid id,
         string orderNo,
-        string customerId,
-        string warehouseId,
+        Guid customerId,
+        Guid warehouseId,
         OrderType orderType,
         OrderStatus orderStatus,
         string? receiverName,
@@ -39,9 +39,9 @@ public sealed class Order : AggregateRoot
 
     public string OrderNo { get; private set; }
 
-    public string CustomerId { get; private set; }
+    public Guid CustomerId { get; private set; }
 
-    public string WarehouseId { get; private set; }
+    public Guid WarehouseId { get; private set; }
 
     public OrderType OrderType { get; private set; }
 
@@ -65,10 +65,10 @@ public sealed class Order : AggregateRoot
 }
 
 public sealed class OrderItem(
-    string id,
+    Guid id,
     Guid orderId,
     int lineNo,
-    string productId,
+    Guid productId,
     string productName,
     string? unit,
     int quantity,
@@ -78,13 +78,13 @@ public sealed class OrderItem(
     string? remark
 )
 {
-    public string Id { get; } = id;
+    public Guid Id { get; } = id;
 
     public Guid OrderId { get; } = orderId;
 
     public int LineNo { get; } = lineNo;
 
-    public string ProductId { get; } = productId;
+    public Guid ProductId { get; } = productId;
 
     public string ProductName { get; } = productName;
 
