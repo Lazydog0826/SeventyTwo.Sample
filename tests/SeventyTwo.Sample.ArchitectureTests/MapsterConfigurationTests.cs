@@ -26,8 +26,9 @@ public sealed class MapsterConfigurationTests
         var orderId = Guid.CreateVersion7();
         var orderItemId = Guid.CreateVersion7();
         var product = new Product(productId, "商品", 1m) { Version = version };
-        var updateInput = new UpdateProductRequest(productId, "商品", 2m, version)
-            .Adapt<UpdateProductInput>(configuration);
+        var updateInput = new UpdateProductRequest(productId, "商品", 2m, version).Adapt<UpdateProductInput>(
+            configuration
+        );
         var output = product.Adapt<ProductOutput>(configuration);
         var orderOutput = new Order(
             orderId,
@@ -43,21 +44,7 @@ public sealed class MapsterConfigurationTests
             "区",
             "地址",
             "备注",
-            [
-                new OrderItem(
-                    orderItemId,
-                    orderId,
-                    1,
-                    Guid.CreateVersion7(),
-                    "商品",
-                    "件",
-                    3,
-                    4m,
-                    2,
-                    1,
-                    "明细备注"
-                ),
-            ]
+            [new OrderItem(orderItemId, orderId, 1, Guid.CreateVersion7(), "商品", "件", 3, 4m, 2, 1, "明细备注")]
         ).Adapt<OrderOutput>(configuration);
 
         Assert.Equal(new CreateProductInput("商品", 1m), createInput);

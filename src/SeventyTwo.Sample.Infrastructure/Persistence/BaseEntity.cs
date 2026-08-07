@@ -23,12 +23,7 @@ public abstract class BaseEntity
     /// <summary>
     /// 删除人 UUIDv7。
     /// </summary>
-    [SugarColumn(
-        ColumnName = "delete_by",
-        ColumnDescription = "删除人",
-        IsNullable = true,
-        ColumnDataType = "uuid"
-    )]
+    [SugarColumn(ColumnName = "delete_by", ColumnDescription = "删除人", IsNullable = true, ColumnDataType = "uuid")]
     public Guid? DeleteBy { get; init; }
 
     /// <summary>
@@ -52,12 +47,7 @@ public abstract class BaseEntity
     /// <summary>
     /// 修改人 UUIDv7。
     /// </summary>
-    [SugarColumn(
-        ColumnName = "updated_by",
-        ColumnDescription = "修改人",
-        IsNullable = true,
-        ColumnDataType = "uuid"
-    )]
+    [SugarColumn(ColumnName = "updated_by", ColumnDescription = "修改人", IsNullable = true, ColumnDataType = "uuid")]
     public Guid? UpdatedBy { get; init; }
 
     /// <summary>

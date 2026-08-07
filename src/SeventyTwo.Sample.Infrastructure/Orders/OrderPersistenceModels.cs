@@ -96,12 +96,7 @@ internal sealed class OrderItemRecord
     /// <summary>
     /// 订单明细主键。
     /// </summary>
-    [SugarColumn(
-        ColumnName = "id",
-        IsPrimaryKey = true,
-        ColumnDataType = "uuid",
-        ColumnDescription = "订单明细主键"
-    )]
+    [SugarColumn(ColumnName = "id", IsPrimaryKey = true, ColumnDataType = "uuid", ColumnDescription = "订单明细主键")]
     public Guid Id { get; init; }
 
     /// <summary>

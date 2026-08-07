@@ -39,12 +39,8 @@ public sealed class InventoryTests
     {
         var inventory = CreateInventory(10);
 
-        var increaseException = Assert.Throws<InventoryDomainException>(() =>
-            inventory.Increase(quantity)
-        );
-        var decreaseException = Assert.Throws<InventoryDomainException>(() =>
-            inventory.Decrease(quantity)
-        );
+        var increaseException = Assert.Throws<InventoryDomainException>(() => inventory.Increase(quantity));
+        var decreaseException = Assert.Throws<InventoryDomainException>(() => inventory.Decrease(quantity));
 
         Assert.Equal("库存变更数量必须大于 0", increaseException.Message);
         Assert.Equal("库存变更数量必须大于 0", decreaseException.Message);
@@ -79,14 +75,7 @@ public sealed class InventoryTests
         var draft = new InventoryChangeDraft(
             Guid.CreateVersion7(),
             [],
-            [
-                new InventoryDecreaseDraft(
-                    ProductId,
-                    WarehouseId,
-                    LocationId,
-                    8
-                ),
-            ]
+            [new InventoryDecreaseDraft(ProductId, WarehouseId, LocationId, 8)]
         );
         var service = new InventoryChangeService();
 
@@ -136,14 +125,7 @@ public sealed class InventoryTests
                     new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
                 ),
             ],
-            [
-                new InventoryDecreaseDraft(
-                    ProductId,
-                    WarehouseId,
-                    LocationId,
-                    7
-                ),
-            ]
+            [new InventoryDecreaseDraft(ProductId, WarehouseId, LocationId, 7)]
         );
         var service = new InventoryChangeService();
 
@@ -176,14 +158,6 @@ public sealed class InventoryTests
 
     private Inventory CreateInventory(Guid id, int quantity, DateTimeOffset inboundAt)
     {
-        return new Inventory(
-            id,
-            ProductId,
-            WarehouseId,
-            LocationId,
-            $"BATCH-{id}",
-            inboundAt,
-            quantity
-        );
+        return new Inventory(id, ProductId, WarehouseId, LocationId, $"BATCH-{id}", inboundAt, quantity);
     }
 }
