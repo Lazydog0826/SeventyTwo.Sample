@@ -6,13 +6,13 @@ create table if not exists data_dictionary
     name        varchar(255)             not null check (btrim(name) <> ''),
     description varchar(255)             null,
     enable      boolean                  not null default true,
-    delete_by   char(26)                 null,
+    delete_by   uuid                     null,
     delete_at   timestamp with time zone null,
-    created_by  char(26)                 not null,
+    created_by  uuid                     not null,
     created_at  timestamp with time zone not null,
-    updated_by  char(26)                 null,
+    updated_by  uuid                     null,
     updated_at  timestamp with time zone null,
-    org_id      char(26)                 not null,
+    org_id      uuid                     not null,
     version     uuid                     not null,
     constraint uq_data_dictionary_org_code unique (org_id, code)
 );

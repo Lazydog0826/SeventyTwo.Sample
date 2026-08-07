@@ -3,8 +3,8 @@ create table if not exists orders
 (
     id             uuid primary key,
     order_no       varchar(32)              not null check (btrim(order_no) <> ''),
-    customer_id    char(26)                 not null,
-    warehouse_id   char(26)                 not null,
+    customer_id    uuid                     not null,
+    warehouse_id   uuid                     not null,
     order_type     smallint                 not null check (order_type in (1, 2, 3)),
     order_status   smallint                 not null check (order_status in (0, 1, 2, 3)),
     receiver_name  varchar(50)              null,
@@ -15,13 +15,13 @@ create table if not exists orders
     detail_address varchar(200)             null,
     remark         varchar(500)             null,
     enable         boolean                  not null default true,
-    delete_by      char(26)                 null,
+    delete_by      uuid                     null,
     delete_at      timestamp with time zone null,
-    created_by     char(26)                 not null,
+    created_by     uuid                     not null,
     created_at     timestamp with time zone not null,
-    updated_by     char(26)                 null,
+    updated_by     uuid                     null,
     updated_at     timestamp with time zone null,
-    org_id         char(26)                 not null,
+    org_id         uuid                     not null,
     version        uuid                     not null,
     constraint uq_orders_order_no unique (order_no)
 );
@@ -63,10 +63,10 @@ create index if not exists ix_orders_receiver_phone
 -- 订单明细表：保存订单内的商品、数量、价格及履约数量。
 create table if not exists order_items
 (
-    id                char(26) primary key,
+    id                uuid primary key,
     order_id          uuid           not null,
     line_no           integer        not null check (line_no > 0),
-    product_id        char(26)       not null,
+    product_id        uuid           not null,
     product_name      varchar(255)   not null check (btrim(product_name) <> ''),
     unit              varchar(20)    null,
     quantity          integer        not null check (quantity > 0),

@@ -2,17 +2,17 @@
 create table if not exists wallet_record
 (
     id             uuid primary key,
-    customer_id    char(26)                 not null,
+    customer_id    uuid                     not null,
     currency       smallint                 not null check (currency in (1, 2, 3, 4, 5, 6)),
     balance_amount numeric(18, 2)           not null default 0 check (balance_amount >= 0),
     enable         boolean                  not null default true,
-    delete_by      char(26)                 null,
+    delete_by      uuid                     null,
     delete_at      timestamp with time zone null,
-    created_by     char(26)                 not null,
+    created_by     uuid                     not null,
     created_at     timestamp with time zone not null,
-    updated_by     char(26)                 null,
+    updated_by     uuid                     null,
     updated_at     timestamp with time zone null,
-    org_id         char(26)                 not null,
+    org_id         uuid                     not null,
     version        uuid                     not null,
     constraint uq_wallet_record_customer_currency unique (customer_id, currency)
 );
@@ -35,12 +35,12 @@ comment on column wallet_record.version is '乐观锁版本 UUIDv7';
 -- 钱包变更请求：通过唯一请求号保证变更请求的幂等性。
 create table if not exists wallet_change_request
 (
-    request_no char(26) primary key,
+    request_no uuid primary key,
     request_at timestamp with time zone not null
 );
 
 comment on table wallet_change_request is '钱包变更请求';
-comment on column wallet_change_request.request_no is '具有唯一性的变更请求号 ULID';
+comment on column wallet_change_request.request_no is '具有唯一性的变更请求号 UUIDv7';
 comment on column wallet_change_request.request_at is '请求时间';
 
 -- 钱包变更锁：按客户维度串行处理钱包余额变更。
@@ -55,8 +55,8 @@ comment on column wallet_change_lock.lock_key is '客户维度锁键';
 -- 钱包变更记录：保存每次钱包变更前后的余额及变更时间。
 create table if not exists wallet_change_record
 (
-    change_id             char(26) primary key,
-    request_no            char(26)                 not null,
+    change_id             uuid primary key,
+    request_no            uuid                     not null,
     wallet_id             uuid                     not null,
     change_type           smallint                 not null check (change_type in (1, 2)),
     amount                numeric(18, 2)           not null check (amount > 0),
@@ -71,7 +71,7 @@ create table if not exists wallet_change_record
 
 comment on table wallet_change_record is '钱包变更记录';
 comment on column wallet_change_record.change_id is '钱包变更标识';
-comment on column wallet_change_record.request_no is '关联的变更请求号 ULID';
+comment on column wallet_change_record.request_no is '关联的变更请求号 UUIDv7';
 comment on column wallet_change_record.wallet_id is '关联的钱包标识';
 comment on column wallet_change_record.change_type is '变更类型：1 表示增加，2 表示减少';
 comment on column wallet_change_record.amount is '本次变更金额';
