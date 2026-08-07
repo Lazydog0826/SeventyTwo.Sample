@@ -7,6 +7,7 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Inventories;
 
 [SugarTable("inventory_record")]
+[SugarIndex("ix_inventory_record_key", nameof(Key), OrderByType.Asc)]
 internal sealed class InventoryRecord : BaseEntity
 {
     /// <summary>
@@ -59,6 +60,16 @@ internal sealed class InventoryRecord : BaseEntity
 }
 
 [SugarTable("inventory_change_record")]
+[SugarIndex("ix_inventory_change_record_request_no", nameof(RequestNo), OrderByType.Asc)]
+[SugarIndex(
+    "ix_inventory_change_record_inventory_changed_at",
+    nameof(InventoryId),
+    OrderByType.Asc,
+    nameof(ChangedAt),
+    OrderByType.Asc,
+    nameof(ChangeId),
+    OrderByType.Asc
+)]
 internal sealed class InventoryChangeRecord
 {
     /// <summary>

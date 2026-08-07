@@ -6,6 +6,8 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Organizations;
 
 [SugarTable("organization")]
+[SugarIndex("uq_organization_org_code", nameof(OrgId), OrderByType.Asc, nameof(Code), OrderByType.Asc, true)]
+[SugarIndex("ix_organization_parent_id", nameof(ParentId), OrderByType.Asc)]
 internal sealed class OrganizationRecord : BaseEntity
 {
     /// <summary>
@@ -28,6 +30,15 @@ internal sealed class OrganizationRecord : BaseEntity
 }
 
 [SugarTable("organization_member")]
+[SugarIndex(
+    "uq_organization_member_organization_user",
+    nameof(OrganizationId),
+    OrderByType.Asc,
+    nameof(UserId),
+    OrderByType.Asc,
+    true
+)]
+[SugarIndex("ix_organization_member_user_id", nameof(UserId), OrderByType.Asc)]
 internal sealed class OrganizationMemberRecord : BaseEntity
 {
     /// <summary>

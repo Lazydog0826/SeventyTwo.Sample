@@ -8,6 +8,9 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Orders;
 
 [SugarTable("orders")]
+[SugarIndex("uq_orders_order_no", nameof(OrderNo), OrderByType.Asc, true)]
+[SugarIndex("ix_orders_created_at_id", nameof(CreatedAt), OrderByType.Desc, nameof(Id), OrderByType.Desc)]
+[SugarIndex("ix_orders_receiver_phone", nameof(ReceiverPhone), OrderByType.Asc)]
 internal sealed class OrderRecord : BaseEntity
 {
     public OrderRecord() { }
@@ -89,6 +92,8 @@ internal sealed class OrderRecord : BaseEntity
 }
 
 [SugarTable("order_items")]
+[SugarIndex("uq_order_items_order_line", nameof(OrderId), OrderByType.Asc, nameof(LineNo), OrderByType.Asc, true)]
+[SugarIndex("ix_order_items_product_id", nameof(ProductId), OrderByType.Asc)]
 internal sealed class OrderItemRecord
 {
     public OrderItemRecord() { }

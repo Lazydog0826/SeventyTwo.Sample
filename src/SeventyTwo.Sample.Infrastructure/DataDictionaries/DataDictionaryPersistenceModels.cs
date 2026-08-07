@@ -8,6 +8,7 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.DataDictionaries;
 
 [SugarTable("data_dictionary")]
+[SugarIndex("uq_data_dictionary_org_code", nameof(OrgId), OrderByType.Asc, nameof(Code), OrderByType.Asc, true)]
 internal sealed class DataDictionaryRecord : BaseEntity
 {
     /// <summary>
@@ -33,6 +34,23 @@ internal sealed class DataDictionaryRecord : BaseEntity
 }
 
 [SugarTable("data_dictionary_item")]
+[SugarIndex(
+    "uq_data_dictionary_item_dictionary_value",
+    nameof(DictionaryId),
+    OrderByType.Asc,
+    nameof(Value),
+    OrderByType.Asc,
+    true
+)]
+[SugarIndex(
+    "ix_data_dictionary_item_dictionary_sort_order",
+    nameof(DictionaryId),
+    OrderByType.Asc,
+    nameof(SortOrder),
+    OrderByType.Asc,
+    nameof(Id),
+    OrderByType.Asc
+)]
 internal sealed class DataDictionaryItemRecord
 {
     /// <summary>

@@ -6,6 +6,14 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Users;
 
 [SugarTable("user_account")]
+[SugarIndex("uq_user_account_username", nameof(Username), OrderByType.Asc, true)]
+[SugarIndex(
+    "ix_user_account_username_password_hash",
+    nameof(Username),
+    OrderByType.Asc,
+    nameof(PasswordHash),
+    OrderByType.Asc
+)]
 internal sealed class UserAccountRecord : BaseEntity
 {
     /// <summary>

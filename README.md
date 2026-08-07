@@ -9,11 +9,11 @@ src/
 ├── SeventyTwo.Sample.Domain          # 领域模型、聚合根和仓储接口
 ├── SeventyTwo.Sample.Application     # 应用服务和输入输出模型
 ├── SeventyTwo.Sample.Infrastructure  # 数据访问、消息订阅和基础设施实现
+├── SeventyTwo.Sample.DataSetup       # 数据库结构及初始数据初始化服务
 └── SeventyTwo.Sample.WebApi          # HTTP 接口、认证和应用启动入口
 tests/
 ├── SeventyTwo.Sample.Domain.Tests        # 领域测试
 └── SeventyTwo.Sample.ArchitectureTests  # 架构与映射配置测试
-scripts/                               # PostgreSQL 初始化脚本
 ```
 
 ## 技术栈
@@ -37,16 +37,13 @@ scripts/                               # PostgreSQL 初始化脚本
 
 ## 初始化数据库
 
-创建 PostgreSQL 数据库 `SeventyTwo.Sample`，然后依次执行 `scripts` 目录下的脚本：
+创建 PostgreSQL 数据库 `SeventyTwo.Sample`，在 `src/SeventyTwo.Sample.DataSetup/Program.cs` 中填写连接字符串，然后运行初始化服务：
 
 ```powershell
-psql -d "SeventyTwo.Sample" -f scripts/products.sql
-psql -d "SeventyTwo.Sample" -f scripts/orders.sql
-psql -d "SeventyTwo.Sample" -f scripts/inventories.sql
-psql -d "SeventyTwo.Sample" -f scripts/wallets.sql
+dotnet run --project src/SeventyTwo.Sample.DataSetup
 ```
 
-如 PostgreSQL 连接参数与本机默认值不同，请通过 `psql` 的 `-h`、`-p` 和 `-U` 参数指定。
+初始化服务通过 SqlSugar Code First 创建表和索引，并写入测试机构及超级管理员。
 
 ## 配置
 

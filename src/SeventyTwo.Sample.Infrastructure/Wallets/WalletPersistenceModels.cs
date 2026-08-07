@@ -7,6 +7,14 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Wallets;
 
 [SugarTable("wallet_record")]
+[SugarIndex(
+    "uq_wallet_record_customer_currency",
+    nameof(CustomerId),
+    OrderByType.Asc,
+    nameof(Currency),
+    OrderByType.Asc,
+    true
+)]
 internal sealed class WalletRecord : BaseEntity
 {
     /// <summary>
@@ -29,6 +37,16 @@ internal sealed class WalletRecord : BaseEntity
 }
 
 [SugarTable("wallet_change_record")]
+[SugarIndex("ix_wallet_change_record_request_no", nameof(RequestNo), OrderByType.Asc)]
+[SugarIndex(
+    "ix_wallet_change_record_wallet_changed_at",
+    nameof(WalletId),
+    OrderByType.Asc,
+    nameof(ChangedAt),
+    OrderByType.Asc,
+    nameof(ChangeId),
+    OrderByType.Asc
+)]
 internal sealed class WalletChangeRecord
 {
     /// <summary>
