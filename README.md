@@ -58,8 +58,7 @@ Copy-Item src/SeventyTwo.Sample.WebApi/appsettings.sample.json src/SeventyTwo.Sa
 
 根据本地环境修改 `appsettings.json` 中的以下配置：
 
-- `ConnectionStrings:Type`：业务数据库类型，支持 `PostgreSQL`、`MySql` 和 `SqlServer`
-- `ConnectionStrings:PostgreSQL/MySql/SqlServer`：各数据库的连接字符串
+- `ConnectionStrings:PostgreSQL`：PostgreSQL 连接字符串
 - `CapConfiguration`：CAP 使用的 PostgreSQL 和 RabbitMQ 配置
 - `CapDashboardAuthenticationConfiguration`：CAP Dashboard 登录凭据
 - `CacheConfiguration`：Redis 连接配置
