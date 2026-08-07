@@ -18,10 +18,11 @@ public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
         return affectedRows > 0;
     }
 
-    public async Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
+    public Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
     {
         var orderKeys = OrderBy(keys);
-        await WalletLockInitializer.EnsureCreatedAsync(db, orderKeys, cancellationToken);
+        var locks = orderKeys.Select(x => new WalletChangeLock { LockKey = x }).ToList();
+        return db.Insertable(locks).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Wallet>> GetForBalanceChangeAsync(

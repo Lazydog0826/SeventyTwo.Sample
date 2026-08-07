@@ -22,10 +22,11 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
         return affectedRows > 0;
     }
 
-    public async Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
+    public Task EnsureChangeLocksAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
     {
         var orderKeys = OrderBy(keys);
-        await InventoryLockInitializer.EnsureCreatedAsync(db, orderKeys, cancellationToken);
+        var locks = orderKeys.Select(x => new InventoryChangeLock { LockKey = x }).ToList();
+        return db.Insertable(locks).PostgreSQLConflictNothing(["lock_key"]).ExecuteCommandAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Inventory>> GetForChangeAsync(
