@@ -1,3 +1,3 @@
 ﻿namespace SeventyTwo.Sample.Domain.Wallets;
 
-public class WalletDomainException(string messages) : Exception(messages) { }
+public class WalletDomainException(string messages) : DomainException(messages) { }

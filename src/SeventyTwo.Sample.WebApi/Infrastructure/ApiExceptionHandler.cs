@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Core;
-using SeventyTwo.Sample.Domain.Inventories;
-using SeventyTwo.Sample.Domain.Orders;
-using SeventyTwo.Sample.Domain.Products;
-using SeventyTwo.Sample.Domain.Wallets;
+using SeventyTwo.Sample.Domain;
 
 namespace SeventyTwo.Sample.WebApi.Infrastructure;
 
@@ -19,22 +16,14 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
         CancellationToken cancellationToken
     )
     {
-        var isDomainException =
-            exception
-            is InventoryDomainException
-                or OrderDomainException
-                or ProductDomainException
-                or WalletDomainException;
-
-        if (!isDomainException && exception is not ProductNotFoundException)
+        if (exception is not DomainException)
         {
             logger.LogError(exception, "处理接口请求时发生未处理异常");
         }
 
         var response = exception switch
         {
-            ProductNotFoundException => WebApiResponse.Error(exception.Message),
-            _ when isDomainException => WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest),
+            DomainException => WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest),
             _ => WebApiResponse.Error("服务异常"),
         };
 
