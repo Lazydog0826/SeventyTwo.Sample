@@ -3,7 +3,7 @@
 
 namespace SeventyTwo.Sample.Domain.DataDictionaries;
 
-public sealed class DataDictionaryItem : AggregateRoot
+public sealed class DataDictionaryItem
 {
     private DataDictionaryItem() { }
 
@@ -30,6 +30,8 @@ public sealed class DataDictionaryItem : AggregateRoot
         Label = RequireText(label, "数据字典项文本不能为空");
         SortOrder = sortOrder;
     }
+
+    public Guid Id { get; private set; }
 
     public Guid DictionaryId { get; private set; }
 
