@@ -5,6 +5,7 @@ using Serilog.Events;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
+using SeventyTwo.Sample.Infrastructure.Authentication;
 using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -36,6 +37,7 @@ await HostApp.StartWebAppAsync(
         TypeAdapterConfig.GlobalSettings.Scan([.. HostApp.AppAssemblyList]);
         builder.Services.AddMemoryCache();
         builder.Services.AddCacheService();
+        builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(nameof(JwtConfiguration)));
         builder.Services.AddExceptionHandler<ApiExceptionHandler>();
         builder.Services.AddProblemDetails();
         builder.Services.AddPersistence(builder.Configuration);

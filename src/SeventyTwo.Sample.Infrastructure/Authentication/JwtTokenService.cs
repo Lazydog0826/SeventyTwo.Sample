@@ -22,10 +22,20 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     );
 
     /// <inheritdoc />
-    public TokenPair Generate(User user)
+    public TokenPair Generate(User user, Guid sessionId)
     {
-        var accessToken = Generate(user, "access", TimeSpan.FromMinutes(_configuration.AccessTokenExpirationMinutes));
-        var refreshToken = Generate(user, "refresh", TimeSpan.FromDays(_configuration.RefreshTokenExpirationDays));
+        var accessToken = Generate(
+            user,
+            sessionId.ToString(),
+            "access",
+            TimeSpan.FromMinutes(_configuration.AccessTokenExpirationMinutes)
+        );
+        var refreshToken = Generate(
+            user,
+            sessionId.ToString(),
+            "refresh",
+            TimeSpan.FromDays(_configuration.RefreshTokenExpirationDays)
+        );
 
         return new TokenPair(accessToken, refreshToken);
     }
@@ -88,10 +98,11 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     /// 为指定用户生成指定类型和有效期的 JWT。
     /// </summary>
     /// <param name="user">用户。</param>
+    /// <param name="sessionId"></param>
     /// <param name="tokenType">令牌类型。</param>
     /// <param name="lifetime">令牌有效时长。</param>
     /// <returns>签名并加密后的 JWT 字符串。</returns>
-    private string Generate(User user, string tokenType, TimeSpan lifetime)
+    private string Generate(User user, string sessionId, string tokenType, TimeSpan lifetime)
     {
         var now = DateTime.UtcNow;
         var claims = new[]
@@ -101,6 +112,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("token_type", tokenType),
+            new Claim("session_id", sessionId),
         };
         var signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.SigningKey)),

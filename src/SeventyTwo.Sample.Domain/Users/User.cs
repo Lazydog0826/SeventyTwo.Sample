@@ -1,6 +1,7 @@
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
+// ReSharper disable ClassNeverInstantiated.Global
 namespace SeventyTwo.Sample.Domain.Users;
 
 public sealed class User : AggregateRoot
@@ -29,14 +30,29 @@ public sealed class User : AggregateRoot
         Email = NormalizeOptional(email);
     }
 
+    /// <summary>
+    /// 用户名。
+    /// </summary>
     public string Username { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 密码摘要。
+    /// </summary>
     public string PasswordHash { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 用户姓名。
+    /// </summary>
     public string DisplayName { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 手机号码。
+    /// </summary>
     public string? Phone { get; private set; }
 
+    /// <summary>
+    /// 电子邮箱。
+    /// </summary>
     public string? Email { get; private set; }
 
     private static string RequireText(string value, string message)

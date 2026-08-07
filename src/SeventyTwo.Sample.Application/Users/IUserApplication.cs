@@ -1,5 +1,29 @@
+// ReSharper disable ClassNeverInstantiated.Global
 namespace SeventyTwo.Sample.Application.Users;
 
-public interface IUserApplication { }
+/// <summary>
+/// 用户应用服务。
+/// </summary>
+public interface IUserApplication
+{
+    /// <summary>
+    /// 用户登录。
+    /// </summary>
+    /// <param name="request">登录输入。</param>
+    /// <returns>登录令牌。</returns>
+    Task<LoginOutput> LoginAsync(LoginInput request);
+}
 
+/// <summary>
+/// 用户登录输入。
+/// </summary>
+/// <param name="Account">用户名。</param>
+/// <param name="Password">密码。</param>
+public sealed record LoginInput(string Account, string Password);
+
+/// <summary>
+/// 用户登录输出。
+/// </summary>
+/// <param name="AccessToken">访问令牌。</param>
+/// <param name="RefreshToken">刷新令牌。</param>
 public sealed record LoginOutput(string AccessToken, string RefreshToken);

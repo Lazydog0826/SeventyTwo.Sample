@@ -13,8 +13,9 @@ public interface ITokenService
     /// 为指定用户生成访问令牌和刷新令牌。
     /// </summary>
     /// <param name="user">用户。</param>
+    /// <param name="sessionId"></param>
     /// <returns>令牌对。</returns>
-    TokenPair Generate(User user);
+    TokenPair Generate(User user, Guid sessionId);
 
     /// <summary>
     /// 验证令牌并获取令牌数据。

@@ -1,7 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Users;
+
+// ReSharper disable NotAccessedPositionalProperty.Global
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
@@ -12,8 +15,8 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     [HttpPost("Login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest)
     {
-        await Task.CompletedTask;
-        return WebApiResponse.Query(new { rqRequest.Account, rqRequest.Password });
+        var data = await userApplication.LoginAsync(rqRequest.Adapt<LoginInput>());
+        return WebApiResponse.Query(data.AccessToken);
     }
 }
 

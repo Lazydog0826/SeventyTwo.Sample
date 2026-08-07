@@ -9,6 +9,7 @@
     <PackageVersion Include="DotNetCore.CAP.RabbitMQ" Version="10.0.2" />
     <PackageVersion Include="Mapster" Version="10.0.11" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
     <PackageVersion Include="SeventyTwo.InfraKit" Version="10.8.1" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />

@@ -9,6 +9,7 @@
     <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
     <PackageReference Include="SqlSugarCore" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Application\SeventyTwo.Sample.Application.csproj" />
