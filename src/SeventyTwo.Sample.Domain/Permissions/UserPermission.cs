@@ -3,15 +3,15 @@
 
 namespace SeventyTwo.Sample.Domain.Permissions;
 
-public sealed class UserRole : AggregateRoot
+public sealed class UserPermission : AggregateRoot
 {
-    private UserRole() { }
+    private UserPermission() { }
 
-    public UserRole(Guid id, Guid organizationId, Guid userId, Guid roleId)
+    public UserPermission(Guid id, Guid organizationId, Guid userId, Guid permissionId)
     {
         if (id == Guid.Empty)
         {
-            throw new PermissionDomainException("用户角色 ID 不能为空");
+            throw new PermissionDomainException("用户权限 ID 不能为空");
         }
 
         if (organizationId == Guid.Empty)
@@ -24,20 +24,20 @@ public sealed class UserRole : AggregateRoot
             throw new PermissionDomainException("用户 ID 不能为空");
         }
 
-        if (roleId == Guid.Empty)
+        if (permissionId == Guid.Empty)
         {
-            throw new PermissionDomainException("角色 ID 不能为空");
+            throw new PermissionDomainException("权限 ID 不能为空");
         }
 
         Id = id;
         OrganizationId = organizationId;
         UserId = userId;
-        RoleId = roleId;
+        PermissionId = permissionId;
     }
 
     public Guid OrganizationId { get; private set; }
 
     public Guid UserId { get; private set; }
 
-    public Guid RoleId { get; private set; }
+    public Guid PermissionId { get; private set; }
 }

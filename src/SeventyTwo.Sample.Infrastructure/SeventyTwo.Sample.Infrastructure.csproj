@@ -14,4 +14,7 @@
     <ProjectReference Include="..\SeventyTwo.Sample.Application\SeventyTwo.Sample.Application.csproj" />
     <ProjectReference Include="..\SeventyTwo.Sample.Domain\SeventyTwo.Sample.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SeventyTwo.Sample.DataSetup" />
+  </ItemGroup>
 </Project>
