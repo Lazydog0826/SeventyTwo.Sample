@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Events;
 using SeventyTwo.InfraKit.Autofac;
@@ -39,6 +40,17 @@ await HostApp.StartWebAppAsync(
         builder.Services.AddProblemDetails();
         builder.Services.AddPersistence(builder.Configuration);
         builder.Services.AddControllers().AddJsonOptions(JsonConfiguration.Configure);
+        builder.Services.Configure<ApiBehaviorOptions>(options =>
+        {
+            options.InvalidModelStateResponseFactory = context =>
+            {
+                var message = string.Join(
+                    "；",
+                    context.ModelState.Values.SelectMany(value => value.Errors).Select(error => error.ErrorMessage)
+                );
+                throw new ApiValidationException(message);
+            };
+        });
 
         #region CAP
 

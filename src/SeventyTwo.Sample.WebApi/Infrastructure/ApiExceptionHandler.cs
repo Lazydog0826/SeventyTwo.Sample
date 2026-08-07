@@ -16,14 +16,17 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
         CancellationToken cancellationToken
     )
     {
-        if (exception is not DomainException)
+        if (exception is not DomainException and not ApiValidationException)
         {
             logger.LogError(exception, "处理接口请求时发生未处理异常");
         }
 
         var response = exception switch
         {
-            DomainException => WebApiResponse.Error(exception.Message, HttpStatusCode.BadRequest),
+            DomainException or ApiValidationException => WebApiResponse.Error(
+                exception.Message,
+                HttpStatusCode.BadRequest
+            ),
             _ => WebApiResponse.Error("服务异常"),
         };
 
