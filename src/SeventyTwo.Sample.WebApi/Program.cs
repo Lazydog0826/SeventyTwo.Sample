@@ -76,9 +76,7 @@ builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(a
 
 #region 跨域服务
 
-var corsConfiguration = builder.Configuration
-    .GetRequiredSection(nameof(CorsConfiguration))
-    .Get<CorsConfiguration>()!;
+var corsConfiguration = builder.Configuration.GetRequiredSection(nameof(CorsConfiguration)).Get<CorsConfiguration>()!;
 builder.Services.AddAppCors(
     builder.Environment.IsDevelopment(),
     corsConfiguration.Origins,
