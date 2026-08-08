@@ -7,16 +7,11 @@ public sealed class UserPermission : AggregateRoot
 {
     private UserPermission() { }
 
-    public UserPermission(Guid id, Guid organizationId, Guid userId, Guid permissionId)
+    public UserPermission(Guid id, Guid userId, Guid permissionId)
     {
         if (id == Guid.Empty)
         {
             throw new PermissionDomainException("用户权限 ID 不能为空");
-        }
-
-        if (organizationId == Guid.Empty)
-        {
-            throw new PermissionDomainException("机构 ID 不能为空");
         }
 
         if (userId == Guid.Empty)
@@ -30,15 +25,9 @@ public sealed class UserPermission : AggregateRoot
         }
 
         Id = id;
-        OrganizationId = organizationId;
         UserId = userId;
         PermissionId = permissionId;
     }
-
-    /// <summary>
-    /// 机构 ID。
-    /// </summary>
-    public Guid OrganizationId { get; private set; }
 
     /// <summary>
     /// 用户 ID。

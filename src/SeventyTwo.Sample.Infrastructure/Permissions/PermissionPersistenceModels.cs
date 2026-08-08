@@ -8,7 +8,7 @@ using SqlSugar;
 namespace SeventyTwo.Sample.Infrastructure.Permissions;
 
 [SugarTable("permission")]
-[SugarIndex("uq_permission_org_code", nameof(OrgId), OrderByType.Asc, nameof(Code), OrderByType.Asc, true)]
+[SugarIndex("uq_permission_code", nameof(Code), OrderByType.Asc, true)]
 [SugarIndex("ix_permission_parent_id", nameof(ParentId), OrderByType.Asc)]
 internal sealed class PermissionRecord : BaseEntity
 {
@@ -29,6 +29,12 @@ internal sealed class PermissionRecord : BaseEntity
     /// </summary>
     [SugarColumn(ColumnName = "type")]
     public PermissionType Type { get; init; }
+
+    /// <summary>
+    /// 图标。
+    /// </summary>
+    [SugarColumn(ColumnName = "icon", IsNullable = true)]
+    public string? Icon { get; init; }
 
     /// <summary>
     /// Vue 组件路径。
@@ -63,9 +69,7 @@ internal sealed class PermissionRecord : BaseEntity
 
 [SugarTable("user_permission")]
 [SugarIndex(
-    "uq_user_permission_organization_user_permission",
-    nameof(OrganizationId),
-    OrderByType.Asc,
+    "uq_user_permission_user_permission",
     nameof(UserId),
     OrderByType.Asc,
     nameof(PermissionId),
@@ -76,12 +80,6 @@ internal sealed class PermissionRecord : BaseEntity
 [SugarIndex("ix_user_permission_permission_id", nameof(PermissionId), OrderByType.Asc)]
 internal sealed class UserPermissionRecord : BaseEntity
 {
-    /// <summary>
-    /// 机构 ID。
-    /// </summary>
-    [SugarColumn(ColumnName = "organization_id", ColumnDataType = "uuid")]
-    public Guid OrganizationId { get; init; }
-
     /// <summary>
     /// 用户 ID。
     /// </summary>

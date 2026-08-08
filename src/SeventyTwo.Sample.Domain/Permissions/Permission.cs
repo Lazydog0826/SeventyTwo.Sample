@@ -12,6 +12,7 @@ public sealed class Permission : AggregateRoot
         string code,
         string title,
         PermissionType type,
+        string? icon,
         string? vueComponentPath,
         string? routePath,
         string? routeName,
@@ -48,11 +49,13 @@ public sealed class Permission : AggregateRoot
         switch (type)
         {
             case PermissionType.Directory:
+                Icon = RequireText(icon, "目录图标不能为空");
                 VueComponentPath = NormalizeOptionalText(vueComponentPath);
                 RoutePath = RequireText(routePath, "目录路由路径不能为空");
                 RouteName = RequireText(routeName, "目录路由名称不能为空");
                 break;
             case PermissionType.Page:
+                Icon = NormalizeOptionalText(icon);
                 VueComponentPath = RequireText(vueComponentPath, "页面 Vue 组件路径不能为空");
                 RoutePath = RequireText(routePath, "页面路由路径不能为空");
                 RouteName = RequireText(routeName, "页面路由名称不能为空");
@@ -63,6 +66,7 @@ public sealed class Permission : AggregateRoot
                     throw new PermissionDomainException("按钮的上级权限不能为空");
                 }
 
+                Icon = NormalizeOptionalText(icon);
                 VueComponentPath = NormalizeOptionalText(vueComponentPath);
                 RoutePath = NormalizeOptionalText(routePath);
                 RouteName = NormalizeOptionalText(routeName);
@@ -91,6 +95,11 @@ public sealed class Permission : AggregateRoot
     /// 权限类型。
     /// </summary>
     public PermissionType Type { get; private set; }
+
+    /// <summary>
+    /// 图标。
+    /// </summary>
+    public string? Icon { get; private set; }
 
     /// <summary>
     /// Vue 组件路径。

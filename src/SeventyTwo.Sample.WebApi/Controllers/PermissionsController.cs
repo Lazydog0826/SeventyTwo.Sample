@@ -1,0 +1,22 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using SeventyTwo.Sample.Application.Permissions;
+
+namespace SeventyTwo.Sample.WebApi.Controllers;
+
+[ApiController]
+[Route("api/permissions")]
+public sealed class PermissionsController(IPermissionApplication permissionApplication) : ControllerBase
+{
+    /// <summary>
+    /// 获取当前登录用户的权限。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>目录和页面权限列表以及按钮权限编码集合。</returns>
+    [HttpGet]
+    public Task<PermissionOutput> GetAsync(CancellationToken cancellationToken)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        return permissionApplication.GetByUserIdAsync(userId, cancellationToken);
+    }
+}

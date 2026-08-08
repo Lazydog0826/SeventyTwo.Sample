@@ -63,6 +63,10 @@ await HostApp.StartWebAppAsync(
         builder.Services.AddExceptionHandler<ApiExceptionHandler>();
         builder.Services.AddProblemDetails();
 
+        // 根据接口上的 PermissionAttribute 动态构建授权策略，并校验当前用户的权限编码。
+        builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
         // 注册数据库上下文、仓储等持久化基础设施。
         builder.Services.AddPersistence(builder.Configuration);
 

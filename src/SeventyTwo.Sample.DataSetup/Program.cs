@@ -41,6 +41,7 @@ try
 
     var organizationId = Guid.CreateVersion7();
     var userId = Guid.CreateVersion7();
+    var permissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
 
     db.Insertable(
@@ -77,6 +78,7 @@ try
     db.Insertable(
             new PermissionRecord
             {
+                Id = permissionId,
                 Code = "Home",
                 Title = "首页",
                 Type = PermissionType.Page,
@@ -86,6 +88,14 @@ try
                 ParentId = null,
                 MetaData = new PermissionMetaData(true, true),
                 OrgId = organizationId,
+            }
+        )
+        .ExecuteCommand();
+    db.Insertable(
+            new UserPermissionRecord
+            {
+                UserId = userId,
+                PermissionId = permissionId,
             }
         )
         .ExecuteCommand();
