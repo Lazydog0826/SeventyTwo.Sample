@@ -8,6 +8,13 @@ namespace SeventyTwo.Sample.Application.Users;
 public interface IUserApplication
 {
     /// <summary>
+    /// 获取用户信息。
+    /// </summary>
+    /// <param name="id">用户 ID。</param>
+    /// <returns>用户信息。</returns>
+    Task<UserOutput> GetAsync(Guid id);
+
+    /// <summary>
     /// 用户登录。
     /// </summary>
     /// <param name="request">登录输入。</param>
@@ -42,3 +49,13 @@ public sealed record LoginInput(string Account, string Password);
 /// <param name="RefreshToken">刷新令牌。</param>
 /// <param name="ExpireTime"></param>
 public sealed record LoginOutput(string AccessToken, string RefreshToken, DateTime ExpireTime);
+
+/// <summary>
+/// 用户信息输出。
+/// </summary>
+/// <param name="Id">用户 ID。</param>
+/// <param name="Username">用户名。</param>
+/// <param name="DisplayName">用户姓名。</param>
+/// <param name="Phone">手机号码。</param>
+/// <param name="Email">电子邮箱。</param>
+public sealed record UserOutput(Guid Id, string Username, string DisplayName, string? Phone, string? Email);

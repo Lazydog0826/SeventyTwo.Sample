@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,17 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 [Route("api/users")]
 public sealed class UsersController(IUserApplication userApplication) : ControllerBase
 {
+    /// <summary>
+    /// 获取当前登录用户信息。
+    /// </summary>
+    /// <returns>当前登录用户信息。</returns>
+    [HttpGet("Info")]
+    public Task<UserOutput> GetInfoAsync()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        return userApplication.GetAsync(userId);
+    }
+
     [HttpPost("Login")]
     [AllowAnonymous]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest)

@@ -24,6 +24,24 @@ public sealed class UserApplication(
     IOptions<CacheConfiguration> cacheConfiguration
 ) : IUserApplication
 {
+    private static readonly TimeSpan UserInfoCacheDuration = TimeSpan.FromMinutes(10);
+
+    /// <inheritdoc />
+    public async Task<UserOutput> GetAsync(Guid id)
+    {
+        var cacheKey = cacheConfiguration.Value.Data("Users", $"Info:{id}");
+        var cachedUser = await redisCacheService.GetCacheAsync<UserOutput>(cacheKey);
+        if (cachedUser != null)
+        {
+            return cachedUser;
+        }
+
+        var user = await userRepository.GetAsync(id) ?? throw new UserDomainException("用户不存在");
+        var output = user.Adapt<UserOutput>();
+        await redisCacheService.SetCacheAsync(cacheKey, output, UserInfoCacheDuration);
+        return output;
+    }
+
     /// <inheritdoc />
     public async Task<LoginOutput> LoginAsync(LoginInput request)
     {
