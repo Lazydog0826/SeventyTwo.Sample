@@ -55,10 +55,18 @@ Copy-Item src/SeventyTwo.Sample.WebApi/appsettings.sample.json src/SeventyTwo.Sa
 
 根据本地环境修改 `appsettings.json` 中的以下配置：
 
+- `JwtConfiguration`：配置签发者、接收者、至少 32 字节的签名密钥，以及 Base64 编码的 64 字节加密密钥
 - `ConnectionStrings:PostgreSQL`：PostgreSQL 连接字符串
 - `CapConfiguration`：CAP 使用的 PostgreSQL 和 RabbitMQ 配置
 - `CapDashboardAuthenticationConfiguration`：CAP Dashboard 登录凭据
 - `CacheConfiguration`：Redis 连接配置
+
+可使用以下命令生成随机 JWT 密钥：
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)) # SigningKey
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64)) # EncryptionKey
+```
 
 `appsettings.json` 已加入 `.gitignore`，不会提交本地凭据。
 

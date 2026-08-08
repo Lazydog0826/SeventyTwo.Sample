@@ -22,7 +22,7 @@ public sealed class JwtConfiguration
     public string SigningKey { get; init; } = string.Empty;
 
     /// <summary>
-    /// 获取用于 A256GCM 加密的 Base64 密钥，解码后必须为 32 字节。
+    /// 获取用于 A256CBC-HS512 加密的 Base64 密钥，解码后必须为 64 字节。
     /// </summary>
     public string EncryptionKey { get; init; } = string.Empty;
 

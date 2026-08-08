@@ -55,7 +55,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
                     RequireSignedTokens = true,
                     RequireExpirationTime = true,
                     ValidateLifetime = true,
-                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256, SecurityAlgorithms.Aes256CbcHmacSha512],
                 },
                 out _
             );
@@ -128,10 +128,10 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     /// <summary>
     /// 根据 Base64 编码的密钥创建 JWT 加密凭据。
     /// </summary>
-    /// <param name="encryptionKey">Base64 编码的 32 字节加密密钥。</param>
+    /// <param name="encryptionKey">Base64 编码的 64 字节加密密钥。</param>
     /// <returns>JWT 加密凭据。</returns>
     /// <exception cref="InvalidOperationException">
-    /// 密钥不是有效的 Base64 编码，或解码后长度不是 32 字节。
+    /// 密钥不是有效的 Base64 编码，或解码后长度不是 64 字节。
     /// </exception>
     private static EncryptingCredentials CreateEncryptingCredentials(string encryptionKey)
     {
@@ -145,15 +145,15 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             throw new InvalidOperationException("JWT EncryptionKey 必须是 Base64 编码。", exception);
         }
 
-        if (keyBytes.Length != 32)
+        if (keyBytes.Length != 64)
         {
-            throw new InvalidOperationException("JWT EncryptionKey 解码后必须为 32 字节。");
+            throw new InvalidOperationException("JWT EncryptionKey 解码后必须为 64 字节。");
         }
 
         return new EncryptingCredentials(
             new SymmetricSecurityKey(keyBytes),
             JwtConstants.DirectKeyUseAlg,
-            SecurityAlgorithms.Aes256Gcm
+            SecurityAlgorithms.Aes256CbcHmacSha512
         );
     }
 }
