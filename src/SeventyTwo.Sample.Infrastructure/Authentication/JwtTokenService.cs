@@ -4,7 +4,6 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SeventyTwo.InfraKit.Autofac;
-using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain.Users;
 
