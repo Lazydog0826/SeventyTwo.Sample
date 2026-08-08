@@ -43,16 +43,21 @@ builder.Services.AddHealthChecks();
 
 #region 日志
 
-// 使用 Serilog 接管宿主日志：默认记录 Information 及以上级别；
-// 将 ASP.NET Core 框架日志提高到 Warning，减少请求管道产生的冗余日志；
-// 同时附加日志上下文，并按天写入文件，最多保留最近 30 个日志文件。
+// 使用 Serilog 接管宿主日志：控制台记录 Information 及以上级别，
+// 文件仅记录 Error 及以上级别，并按天滚动，最多保留最近 30 个日志文件。
 builder.Host.UseSerilog(
     (_, configuration) =>
         configuration
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
-            .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30)
+            .WriteTo.Console()
+            .WriteTo.File(
+                "logs/log-.txt",
+                restrictedToMinimumLevel: LogEventLevel.Error,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 30
+            )
 );
 
 #endregion
