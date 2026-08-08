@@ -75,6 +75,7 @@ public sealed class UserPermissionChecker(
                 if (await database.SetContainsAsync(cacheKey, LoadedMarker))
                 {
                     await database.KeyExpireAsync(cacheKey, SlidingExpiration);
+                    operationCancellationToken.ThrowIfCancellationRequested();
                     return;
                 }
 
@@ -98,7 +99,7 @@ public sealed class UserPermissionChecker(
             timeout: LockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
             renewalDuration: LockExpiration,
-            maxRenewalTime: LockExpiration,
+            executionTimeout: LockExpiration,
             cancellationToken: cancellationToken
         );
         return (database, cacheKey);

@@ -6,6 +6,7 @@ using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Wallets;
 
+// ReSharper disable ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
 // ReSharper disable InvertIf
 
 namespace SeventyTwo.Sample.Application.Wallets.BalanceChange;
@@ -97,7 +98,7 @@ public sealed class BalanceChangeService(
             {
                 try
                 {
-                    var isExist = await redisCacheService.IsExistAsync(GetCacheKey(key));
+                    var isExist = await redisCacheService.GetDatabase().KeyExistsAsync(GetCacheKey(key));
                     if (!isExist)
                     {
                         noExistList.Add(key);
@@ -128,7 +129,7 @@ public sealed class BalanceChangeService(
             {
                 try
                 {
-                    await redisCacheService.SetCacheAsync(GetCacheKey(key), 0, timeSpan);
+                    await redisCacheService.GetDatabase().StringSetAsync(GetCacheKey(key), 0, timeSpan);
                 }
                 catch
                 {

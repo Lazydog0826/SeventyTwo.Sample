@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -30,15 +31,20 @@ public sealed class UserApplication(
     public async Task<UserOutput> GetAsync(Guid id)
     {
         var cacheKey = cacheConfiguration.Value.Data("Users", $"Info:{id}");
-        var cachedUser = await redisCacheService.GetCacheAsync<UserOutput>(cacheKey);
-        if (cachedUser != null)
+        var database = redisCacheService.GetDatabase();
+        var cachedValue = await database.StringGetAsync(cacheKey);
+        if (cachedValue.HasValue)
         {
-            return cachedUser;
+            var cachedUser = JsonSerializer.Deserialize<UserOutput>(cachedValue.ToString());
+            if (cachedUser != null)
+            {
+                return cachedUser;
+            }
         }
 
         var user = await userRepository.GetAsync(id) ?? throw new UserDomainException("用户不存在");
         var output = user.Adapt<UserOutput>();
-        await redisCacheService.SetCacheAsync(cacheKey, output, UserInfoCacheDuration);
+        await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), UserInfoCacheDuration);
         return output;
     }
 

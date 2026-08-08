@@ -96,7 +96,7 @@ public sealed class ChangeInventoryService(
             {
                 try
                 {
-                    var isExist = await redisCacheService.IsExistAsync(GetCacheKey(key));
+                    var isExist = await redisCacheService.GetDatabase().KeyExistsAsync(GetCacheKey(key));
                     if (!isExist)
                     {
                         noExistList.Add(key);
@@ -127,7 +127,7 @@ public sealed class ChangeInventoryService(
             {
                 try
                 {
-                    await redisCacheService.SetCacheAsync(GetCacheKey(key), 0, timeSpan);
+                    await redisCacheService.GetDatabase().StringSetAsync(GetCacheKey(key), 0, timeSpan);
                 }
                 catch
                 {
