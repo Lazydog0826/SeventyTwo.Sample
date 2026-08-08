@@ -82,7 +82,7 @@ try
                 Code = "Home",
                 Title = "首页",
                 Type = PermissionType.Page,
-                VueComponentPath = "src/views/home.vue",
+                VueComponentPath = "/src/views/home.vue",
                 RoutePath = "/home",
                 RouteName = "home",
                 ParentId = null,

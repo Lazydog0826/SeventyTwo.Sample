@@ -74,6 +74,20 @@ builder.Host.UseAutofac(containerBuilder => containerBuilder.AutoAddDependency(a
 
 #endregion
 
+#region 跨域服务
+
+var corsConfiguration = builder.Configuration
+    .GetRequiredSection(nameof(CorsConfiguration))
+    .Get<CorsConfiguration>()!;
+builder.Services.AddAppCors(
+    builder.Environment.IsDevelopment(),
+    corsConfiguration.Origins,
+    corsConfiguration.Headers,
+    corsConfiguration.Methods
+);
+
+#endregion
+
 #region 对象映射
 
 // 扫描应用程序集中的 Mapster 映射配置，并注册到全局配置中。
@@ -272,6 +286,12 @@ app.UseStaticFiles();
 
 // 根据已注册的端点匹配当前请求，为后续认证、授权及端点执行提供路由信息。
 app.UseRouting();
+
+#endregion
+
+#region 跨域
+
+app.UseCors();
 
 #endregion
 
