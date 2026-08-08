@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain.Users;
 
@@ -17,6 +18,7 @@ namespace SeventyTwo.Sample.Infrastructure.Authentication;
 public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : ITokenService
 {
     private readonly JwtConfiguration _configuration = options.Value;
+    private readonly SymmetricSecurityKey _signingKey = new(Encoding.UTF8.GetBytes(options.Value.SigningKey));
     private readonly EncryptingCredentials _encryptingCredentials = CreateEncryptingCredentials(
         options.Value.EncryptionKey
     );
@@ -24,20 +26,12 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     /// <inheritdoc />
     public TokenPair Generate(User user, Guid sessionId)
     {
-        var accessToken = Generate(
-            user,
-            sessionId.ToString(),
-            "access",
-            TimeSpan.FromMinutes(_configuration.AccessTokenExpirationMinutes)
-        );
-        var refreshToken = Generate(
-            user,
-            sessionId.ToString(),
-            "refresh",
-            TimeSpan.FromDays(_configuration.RefreshTokenExpirationDays)
-        );
-
-        return new TokenPair(accessToken, refreshToken);
+        var now = DateTime.UtcNow;
+        var accessTokenExpireTime = now.Add(TimeSpan.FromMinutes(_configuration.AccessTokenExpirationMinutes));
+        var refreshTokenExpireTime = now.Add(TimeSpan.FromDays(_configuration.RefreshTokenExpirationDays));
+        var accessToken = Generate(user, sessionId.ToString(), "access", accessTokenExpireTime);
+        var refreshToken = Generate(user, sessionId.ToString(), "refresh", refreshTokenExpireTime);
+        return new TokenPair(accessToken, refreshToken, refreshTokenExpireTime);
     }
 
     /// <inheritdoc />
@@ -57,7 +51,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
                     ValidateAudience = true,
                     ValidAudience = _configuration.Audience,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.SigningKey)),
+                    IssuerSigningKey = _signingKey,
                     TokenDecryptionKey = _encryptingCredentials.Key,
                     RequireSignedTokens = true,
                     RequireExpirationTime = true,
@@ -71,17 +65,19 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             var username = principal.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value;
             var displayName = principal.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
             var tokenType = principal.FindFirst("token_type")?.Value;
+            var sessionIdValue = principal.FindFirst("session_id")?.Value;
             if (
                 !Guid.TryParse(userIdValue, out var userId)
                 || string.IsNullOrWhiteSpace(username)
                 || string.IsNullOrWhiteSpace(displayName)
                 || string.IsNullOrWhiteSpace(tokenType)
+                || !Guid.TryParse(sessionIdValue, out var sessionId)
             )
             {
                 return false;
             }
 
-            payload = new TokenPayload(userId, username, displayName, tokenType);
+            payload = new TokenPayload(userId, username, displayName, tokenType, sessionId);
             return true;
         }
         catch (SecurityTokenException)
@@ -102,7 +98,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     /// <param name="tokenType">令牌类型。</param>
     /// <param name="lifetime">令牌有效时长。</param>
     /// <returns>签名并加密后的 JWT 字符串。</returns>
-    private string Generate(User user, string sessionId, string tokenType, TimeSpan lifetime)
+    private string Generate(User user, string sessionId, string tokenType, DateTime lifetime)
     {
         var now = DateTime.UtcNow;
         var claims = new[]
@@ -114,10 +110,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             new Claim("token_type", tokenType),
             new Claim("session_id", sessionId),
         };
-        var signingCredentials = new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.SigningKey)),
-            SecurityAlgorithms.HmacSha256
-        );
+        var signingCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
         var descriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
@@ -125,7 +118,7 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             Audience = _configuration.Audience,
             NotBefore = now,
             IssuedAt = now,
-            Expires = now.Add(lifetime),
+            Expires = lifetime,
             SigningCredentials = signingCredentials,
             EncryptingCredentials = _encryptingCredentials,
         };

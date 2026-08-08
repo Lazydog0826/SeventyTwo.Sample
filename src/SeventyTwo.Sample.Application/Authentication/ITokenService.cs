@@ -31,7 +31,8 @@ public interface ITokenService
 /// </summary>
 /// <param name="AccessToken">访问令牌。</param>
 /// <param name="RefreshToken">刷新令牌。</param>
-public sealed record TokenPair(string AccessToken, string RefreshToken);
+/// <param name="ExpireTime"></param>
+public sealed record TokenPair(string AccessToken, string RefreshToken, DateTime ExpireTime);
 
 /// <summary>
 /// JWT 中的用户和令牌类型数据。
@@ -40,4 +41,5 @@ public sealed record TokenPair(string AccessToken, string RefreshToken);
 /// <param name="Username">用户名。</param>
 /// <param name="DisplayName">用户显示名称。</param>
 /// <param name="TokenType">令牌类型。</param>
-public sealed record TokenPayload(Guid UserId, string Username, string DisplayName, string TokenType);
+/// <param name="SessionId">登录会话 ID。</param>
+public sealed record TokenPayload(Guid UserId, string Username, string DisplayName, string TokenType, Guid SessionId);

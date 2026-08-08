@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Serilog.Events;
@@ -67,6 +68,9 @@ await HostApp.StartWebAppAsync(
         builder
             .Services.AddAuthorization(options =>
             {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder(BusinessJwtAuthenticationDefaults.Scheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
                 options.AddPolicy(
                     CapDashboardAuthenticationDefaults.Policy,
                     policy =>
@@ -75,7 +79,15 @@ await HostApp.StartWebAppAsync(
                             .RequireAuthenticatedUser()
                 );
             })
-            .AddAuthentication()
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = BusinessJwtAuthenticationDefaults.Scheme;
+                options.DefaultChallengeScheme = BusinessJwtAuthenticationDefaults.Scheme;
+            })
+            .AddScheme<BusinessJwtAuthenticationOptions, BusinessJwtAuthenticationHandler>(
+                BusinessJwtAuthenticationDefaults.Scheme,
+                _ => { }
+            )
             .AddScheme<CapDashboardBasicAuthenticationOptions, CapDashboardBasicAuthenticationHandler>(
                 CapDashboardAuthenticationDefaults.BasicScheme,
                 options =>

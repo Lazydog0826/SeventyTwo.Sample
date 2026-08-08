@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Core;
+using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain;
 
 namespace SeventyTwo.Sample.WebApi.Infrastructure;
@@ -16,13 +17,14 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
         CancellationToken cancellationToken
     )
     {
-        if (exception is not DomainException and not ApiValidationException)
+        if (exception is not DomainException and not ApiValidationException and not TokenAuthenticationException)
         {
             logger.LogError(exception, "处理接口请求时发生未处理异常");
         }
 
         var response = exception switch
         {
+            TokenAuthenticationException => WebApiResponse.Error(exception.Message, HttpStatusCode.Unauthorized),
             DomainException or ApiValidationException => WebApiResponse.Error(
                 exception.Message,
                 HttpStatusCode.BadRequest

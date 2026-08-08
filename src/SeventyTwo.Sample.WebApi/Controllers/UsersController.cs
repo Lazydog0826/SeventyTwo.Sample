@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Users;
@@ -13,10 +14,54 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 public sealed class UsersController(IUserApplication userApplication) : ControllerBase
 {
     [HttpPost("Login")]
+    [AllowAnonymous]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest)
     {
         var data = await userApplication.LoginAsync(rqRequest.Adapt<LoginInput>());
+        SetRefreshTokenCookie(data);
         return WebApiResponse.Query(data.AccessToken);
+    }
+
+    [HttpPost("RefreshToken")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshTokenAsync()
+    {
+        var data = await userApplication.RefreshTokenAsync(Request.Cookies["refresh_token"] ?? string.Empty);
+        SetRefreshTokenCookie(data);
+        return WebApiResponse.Query(data.AccessToken);
+    }
+
+    [HttpPost("Logout")]
+    [AllowAnonymous]
+    public async Task LogoutAsync()
+    {
+        await userApplication.LogoutAsync(Request.Cookies["refresh_token"] ?? string.Empty);
+        Response.Cookies.Delete(
+            "refresh_token",
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Path = "/",
+            }
+        );
+    }
+
+    private void SetRefreshTokenCookie(LoginOutput data)
+    {
+        Response.Cookies.Append(
+            "refresh_token",
+            data.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Expires = data.ExpireTime,
+                Path = "/",
+            }
+        );
     }
 }
 
