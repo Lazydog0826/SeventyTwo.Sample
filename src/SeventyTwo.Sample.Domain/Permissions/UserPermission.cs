@@ -35,9 +35,18 @@ public sealed class UserPermission : AggregateRoot
         PermissionId = permissionId;
     }
 
+    /// <summary>
+    /// 机构 ID。
+    /// </summary>
     public Guid OrganizationId { get; private set; }
 
+    /// <summary>
+    /// 用户 ID。
+    /// </summary>
     public Guid UserId { get; private set; }
 
+    /// <summary>
+    /// 权限 ID。
+    /// </summary>
     public Guid PermissionId { get; private set; }
 }

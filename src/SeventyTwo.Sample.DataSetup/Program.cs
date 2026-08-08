@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
+using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Infrastructure;
 using SeventyTwo.Sample.Infrastructure.Organizations;
+using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
@@ -72,9 +74,24 @@ try
             }
         )
         .ExecuteCommand();
+    db.Insertable(
+            new PermissionRecord
+            {
+                Code = "Home",
+                Title = "首页",
+                Type = PermissionType.Page,
+                VueComponentPath = "src/views/home.vue",
+                RoutePath = "/home",
+                RouteName = "home",
+                ParentId = null,
+                MetaData = new PermissionMetaData(true, true),
+                OrgId = organizationId,
+            }
+        )
+        .ExecuteCommand();
 
     db.Ado.CommitTran();
-    Console.WriteLine("测试机构和超级管理员初始化完成。");
+    Console.WriteLine("测试机构、超级管理员和首页权限初始化完成。");
 }
 catch
 {

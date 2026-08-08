@@ -7,29 +7,122 @@ public sealed class Permission : AggregateRoot
 {
     private Permission() { }
 
-    public Permission(Guid id, string code, string name)
+    public Permission(
+        Guid id,
+        string code,
+        string title,
+        PermissionType type,
+        string? vueComponentPath,
+        string? routePath,
+        string? routeName,
+        Guid? parentId,
+        PermissionMetaData? metaData = null
+    )
     {
         if (id == Guid.Empty)
         {
             throw new PermissionDomainException("权限 ID 不能为空");
         }
 
-        Id = id;
-        Code = RequireText(code, "权限编码不能为空");
-        Name = RequireText(name, "权限名称不能为空");
-    }
-
-    public string Code { get; private set; } = string.Empty;
-
-    public string Name { get; private set; } = string.Empty;
-
-    private static string RequireText(string value, string message)
-    {
-        if (string.IsNullOrWhiteSpace(value))
+        if (!Enum.IsDefined(type))
         {
-            throw new PermissionDomainException(message);
+            throw new PermissionDomainException("权限类型无效");
         }
 
-        return value.Trim();
+        if (parentId == Guid.Empty)
+        {
+            throw new PermissionDomainException("上级权限 ID 不能为空");
+        }
+
+        if (parentId == id)
+        {
+            throw new PermissionDomainException("权限不能以自身作为上级权限");
+        }
+
+        Id = id;
+        Code = RequireText(code, "权限编码不能为空");
+        Title = RequireText(title, "权限标题不能为空");
+        Type = type;
+        ParentId = parentId;
+
+        switch (type)
+        {
+            case PermissionType.Directory:
+                VueComponentPath = NormalizeOptionalText(vueComponentPath);
+                RoutePath = RequireText(routePath, "目录路由路径不能为空");
+                RouteName = RequireText(routeName, "目录路由名称不能为空");
+                break;
+            case PermissionType.Page:
+                VueComponentPath = RequireText(vueComponentPath, "页面 Vue 组件路径不能为空");
+                RoutePath = RequireText(routePath, "页面路由路径不能为空");
+                RouteName = RequireText(routeName, "页面路由名称不能为空");
+                break;
+            case PermissionType.Button:
+                if (parentId is null)
+                {
+                    throw new PermissionDomainException("按钮的上级权限不能为空");
+                }
+
+                VueComponentPath = NormalizeOptionalText(vueComponentPath);
+                RoutePath = NormalizeOptionalText(routePath);
+                RouteName = NormalizeOptionalText(routeName);
+                break;
+            default:
+                throw new PermissionDomainException("权限类型无效");
+        }
+
+        MetaData = type == PermissionType.Button
+            ? metaData ?? default
+            : metaData ?? throw new PermissionDomainException("路由元数据不能为空");
+    }
+
+    /// <summary>
+    /// 权限编码。
+    /// </summary>
+    public string Code { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// 权限标题。
+    /// </summary>
+    public string Title { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// 权限类型。
+    /// </summary>
+    public PermissionType Type { get; private set; }
+
+    /// <summary>
+    /// Vue 组件路径。
+    /// </summary>
+    public string? VueComponentPath { get; private set; }
+
+    /// <summary>
+    /// 路由路径。
+    /// </summary>
+    public string? RoutePath { get; private set; }
+
+    /// <summary>
+    /// 路由名称。
+    /// </summary>
+    public string? RouteName { get; private set; }
+
+    /// <summary>
+    /// 上级权限 ID。
+    /// </summary>
+    public Guid? ParentId { get; private set; }
+
+    /// <summary>
+    /// 路由元数据。
+    /// </summary>
+    public PermissionMetaData MetaData { get; private set; }
+
+    private static string RequireText(string? value, string message)
+    {
+        return string.IsNullOrWhiteSpace(value) ? throw new PermissionDomainException(message) : value.Trim();
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }
