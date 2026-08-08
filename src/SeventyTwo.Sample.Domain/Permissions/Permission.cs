@@ -71,9 +71,10 @@ public sealed class Permission : AggregateRoot
                 throw new PermissionDomainException("权限类型无效");
         }
 
-        MetaData = type == PermissionType.Button
-            ? metaData ?? default
-            : metaData ?? throw new PermissionDomainException("路由元数据不能为空");
+        MetaData =
+            type == PermissionType.Button
+                ? metaData ?? default
+                : metaData ?? throw new PermissionDomainException("路由元数据不能为空");
     }
 
     /// <summary>
