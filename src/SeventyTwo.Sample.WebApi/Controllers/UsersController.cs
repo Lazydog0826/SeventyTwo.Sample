@@ -10,6 +10,10 @@ using SeventyTwo.Sample.Application.Users;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
+/// <summary>
+/// 用户接口。
+/// </summary>
+/// <param name="userApplication">用户应用服务。</param>
 [ApiController]
 [Route("api/users")]
 public sealed class UsersController(IUserApplication userApplication) : ControllerBase
@@ -25,6 +29,11 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
         return userApplication.GetAsync(userId);
     }
 
+    /// <summary>
+    /// 用户登录。
+    /// </summary>
+    /// <param name="rqRequest">登录请求。</param>
+    /// <returns>访问令牌。</returns>
     [HttpPost("Login")]
     [AllowAnonymous]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest)
@@ -34,6 +43,10 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
         return WebApiResponse.Query(data.AccessToken);
     }
 
+    /// <summary>
+    /// 刷新访问令牌。
+    /// </summary>
+    /// <returns>新的访问令牌。</returns>
     [HttpPost("RefreshToken")]
     [AllowAnonymous]
     public async Task<IActionResult> RefreshTokenAsync()
@@ -43,6 +56,9 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
         return WebApiResponse.Query(data.AccessToken);
     }
 
+    /// <summary>
+    /// 退出登录。
+    /// </summary>
     [HttpPost("Logout")]
     [AllowAnonymous]
     public async Task LogoutAsync()
@@ -77,6 +93,11 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     }
 }
 
+/// <summary>
+/// 用户登录请求。
+/// </summary>
+/// <param name="Account">账号。</param>
+/// <param name="Password">密码。</param>
 public sealed record LoginRequest(
     [Required(ErrorMessage = "账号不能为空")]
     [StringLength(50, MinimumLength = 3, ErrorMessage = "账号长度必须为 3～50 个字符")]

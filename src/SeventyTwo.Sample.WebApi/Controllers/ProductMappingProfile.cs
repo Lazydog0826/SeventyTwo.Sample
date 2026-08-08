@@ -3,6 +3,9 @@ using SeventyTwo.Sample.Application.Products;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
+/// <summary>
+/// 对象映射配置
+/// </summary>
 public sealed class ProductMappingProfile : IRegister
 {
     /// <summary>

@@ -7,6 +7,11 @@ using SeventyTwo.Sample.Domain.Orders;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
+/// <summary>
+/// 订单接口。
+/// </summary>
+/// <param name="randomOrderDataService">随机订单数据服务。</param>
+/// <param name="orderApplication">订单应用服务。</param>
 [ApiController]
 [Route("api/orders")]
 public sealed class OrdersController(IRandomOrderDataService randomOrderDataService, IOrderApplication orderApplication)
@@ -63,4 +68,8 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     }
 }
 
+/// <summary>
+/// 随机订单生成请求。
+/// </summary>
+/// <param name="Count">生成数量。</param>
 public sealed record RandomOrdersRequest(int Count);

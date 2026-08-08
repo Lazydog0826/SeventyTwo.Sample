@@ -4,6 +4,10 @@ using SeventyTwo.Sample.Application.Permissions;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
+/// <summary>
+/// 权限接口。
+/// </summary>
+/// <param name="permissionApplication">权限应用服务。</param>
 [ApiController]
 [Route("api/permissions")]
 public sealed class PermissionsController(IPermissionApplication permissionApplication) : ControllerBase
