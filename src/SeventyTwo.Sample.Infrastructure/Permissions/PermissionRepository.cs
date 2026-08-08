@@ -10,21 +10,16 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     /// <inheritdoc />
     public async Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken)
     {
-        var records = await db
-            .Queryable<PermissionRecord>()
+        var records = await db.Queryable<PermissionRecord>()
             .Where(permission => permission.Enable && permission.DeleteAt == null)
             .ToListAsync(cancellationToken);
         return [.. records.Select(ToDomain)];
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<string>> GetCodesByUserIdAsync(
-        Guid userId,
-        CancellationToken cancellationToken
-    )
+    public async Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        return await db
-            .Queryable<UserPermissionRecord, PermissionRecord>(
+        return await db.Queryable<UserPermissionRecord, PermissionRecord>(
                 (userPermission, permission) =>
                     new JoinQueryInfos(JoinType.Inner, userPermission.PermissionId == permission.Id)
             )

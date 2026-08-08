@@ -1,5 +1,8 @@
 using SeventyTwo.Sample.Domain.Permissions;
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable NotAccessedPositionalProperty.Global
+
 namespace SeventyTwo.Sample.Application.Permissions;
 
 /// <summary>
@@ -21,10 +24,7 @@ public interface IPermissionApplication
 /// </summary>
 /// <param name="Menus">目录和页面权限列表。</param>
 /// <param name="ButtonCodes">按钮权限编码集合。</param>
-public sealed record PermissionOutput(
-    IReadOnlyList<PermissionMenuOutput> Menus,
-    IReadOnlyList<string> ButtonCodes
-);
+public sealed record PermissionOutput(IReadOnlyList<PermissionMenuOutput> Menus, IReadOnlyList<string> ButtonCodes);
 
 /// <summary>
 /// 目录或页面权限。

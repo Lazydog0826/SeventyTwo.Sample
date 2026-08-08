@@ -91,14 +91,7 @@ try
             }
         )
         .ExecuteCommand();
-    db.Insertable(
-            new UserPermissionRecord
-            {
-                UserId = userId,
-                PermissionId = permissionId,
-            }
-        )
-        .ExecuteCommand();
+    db.Insertable(new UserPermissionRecord { UserId = userId, PermissionId = permissionId }).ExecuteCommand();
 
     db.Ado.CommitTran();
     Console.WriteLine("测试机构、超级管理员和首页权限初始化完成。");

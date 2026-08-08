@@ -63,5 +63,4 @@ public sealed class PermissionApplication(
             new MemoryCacheEntryOptions { SlidingExpiration = AllPermissionsSlidingExpiration }
         );
     }
-
 }
