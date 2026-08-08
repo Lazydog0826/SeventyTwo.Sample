@@ -43,7 +43,7 @@ builder.Services.AddHealthChecks();
 
 #region 日志
 
-// 使用 Serilog 接管宿主日志：控制台记录 Information 及以上级别，
+// 使用 Serilog 接管宿主日志：控制台仅记录 Information 级别，
 // 文件仅记录 Error 及以上级别，并按天滚动，最多保留最近 30 个日志文件。
 builder.Host.UseSerilog(
     (_, configuration) =>
@@ -51,7 +51,11 @@ builder.Host.UseSerilog(
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
-            .WriteTo.Console()
+            .WriteTo.Logger(consoleConfiguration =>
+                consoleConfiguration
+                    .Filter.ByIncludingOnly(logEvent => logEvent.Level == LogEventLevel.Information)
+                    .WriteTo.Console()
+            )
             .WriteTo.File(
                 "logs/log-.txt",
                 restrictedToMinimumLevel: LogEventLevel.Error,

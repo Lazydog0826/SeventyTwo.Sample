@@ -31,9 +31,6 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
     )
     {
         var request = httpContext.Request;
-
-        var routeValues = request.RouteValues.ToDictionary(item => item.Key, item => item.Value?.ToString());
-
         request.Headers.TryGetValue("requestNo", out var requestNo);
 
         if (exception is not DomainException and not ApiValidationException and not TokenAuthenticationException)
@@ -46,15 +43,11 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
                 TraceId: {TraceId}
                 Method: {Method}
                 Path: {Path}
-                RouteValues: {@RouteValues}
-                ExceptionData: {@ExceptionData}
                 """,
                 requestNo,
                 httpContext.TraceIdentifier,
                 request.Method,
-                request.Path.Value,
-                routeValues,
-                exception.Data
+                request.Path.Value
             );
         }
 
