@@ -31,28 +31,34 @@ internal sealed class PermissionRecord : BaseEntity
     public PermissionType Type { get; init; }
 
     /// <summary>
+    /// 排序号。
+    /// </summary>
+    [SugarColumn(ColumnName = "sort_order")]
+    public int SortOrder { get; init; }
+
+    /// <summary>
     /// 图标。
     /// </summary>
-    [SugarColumn(ColumnName = "icon", IsNullable = true)]
-    public string? Icon { get; init; }
+    [SugarColumn(ColumnName = "icon")]
+    public string Icon { get; init; } = string.Empty;
 
     /// <summary>
     /// Vue 组件路径。
     /// </summary>
-    [SugarColumn(ColumnName = "vue_component_path", IsNullable = true)]
-    public string? VueComponentPath { get; init; }
+    [SugarColumn(ColumnName = "vue_component_path")]
+    public string VueComponentPath { get; init; } = string.Empty;
 
     /// <summary>
     /// 路由路径。
     /// </summary>
-    [SugarColumn(ColumnName = "route_path", IsNullable = true)]
-    public string? RoutePath { get; init; }
+    [SugarColumn(ColumnName = "route_path")]
+    public string RoutePath { get; init; } = string.Empty;
 
     /// <summary>
     /// 路由名称。
     /// </summary>
-    [SugarColumn(ColumnName = "route_name", IsNullable = true)]
-    public string? RouteName { get; init; }
+    [SugarColumn(ColumnName = "route_name")]
+    public string RouteName { get; init; } = string.Empty;
 
     /// <summary>
     /// 上级权限 ID。

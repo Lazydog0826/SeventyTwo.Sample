@@ -39,13 +39,15 @@ public sealed record PermissionMenuOutput
 
     public PermissionType Type { get; init; }
 
-    public string? Icon { get; init; }
+    public int SortOrder { get; init; }
 
-    public string? VueComponentPath { get; init; }
+    public string Icon { get; init; } = string.Empty;
 
-    public string? RoutePath { get; init; }
+    public string VueComponentPath { get; init; } = string.Empty;
 
-    public string? RouteName { get; init; }
+    public string RoutePath { get; init; } = string.Empty;
+
+    public string RouteName { get; init; } = string.Empty;
 
     public PermissionMetaData MetaData { get; init; }
 

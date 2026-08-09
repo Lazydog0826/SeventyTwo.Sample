@@ -41,7 +41,9 @@ try
 
     var organizationId = Guid.CreateVersion7();
     var userId = Guid.CreateVersion7();
-    var permissionId = Guid.CreateVersion7();
+    var homePermissionId = Guid.CreateVersion7();
+    var permissionsPermissionId = Guid.CreateVersion7();
+    var permissionsListPermissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
 
     db.Insertable(
@@ -78,10 +80,11 @@ try
     db.Insertable(
             new PermissionRecord
             {
-                Id = permissionId,
+                Id = homePermissionId,
                 Code = "Home",
                 Title = "首页",
                 Type = PermissionType.Page,
+                SortOrder = 0,
                 VueComponentPath = "/src/views/home.vue",
                 RoutePath = "/home",
                 RouteName = "home",
@@ -91,10 +94,54 @@ try
             }
         )
         .ExecuteCommand();
-    db.Insertable(new UserPermissionRecord { UserId = userId, PermissionId = permissionId }).ExecuteCommand();
+    db.Insertable(
+            new[]
+            {
+                new PermissionRecord
+                {
+                    Id = permissionsPermissionId,
+                    Code = "Permissions",
+                    Title = "权限管理",
+                    Type = PermissionType.Directory,
+                    SortOrder = 100,
+                    Icon = "UserShield",
+                    VueComponentPath = string.Empty,
+                    RoutePath = string.Empty,
+                    RouteName = string.Empty,
+                    ParentId = null,
+                    MetaData = new PermissionMetaData(true, true),
+                    OrgId = organizationId,
+                },
+                new PermissionRecord
+                {
+                    Id = permissionsListPermissionId,
+                    Code = "Permissions.List",
+                    Title = "列表",
+                    Type = PermissionType.Page,
+                    SortOrder = 101,
+                    Icon = string.Empty,
+                    VueComponentPath = "/src/views/permissions/list.vue",
+                    RoutePath = "/permissions/list",
+                    RouteName = "Permissions.List",
+                    ParentId = permissionsPermissionId,
+                    MetaData = new PermissionMetaData(true, true),
+                    OrgId = organizationId,
+                },
+            }
+        )
+        .ExecuteCommand();
+    db.Insertable(
+            new[]
+            {
+                new UserPermissionRecord { UserId = userId, PermissionId = homePermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsPermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsListPermissionId },
+            }
+        )
+        .ExecuteCommand();
 
     db.Ado.CommitTran();
-    Console.WriteLine("测试机构、超级管理员和首页权限初始化完成。");
+    Console.WriteLine("测试机构、超级管理员和权限初始化完成。");
 }
 catch
 {

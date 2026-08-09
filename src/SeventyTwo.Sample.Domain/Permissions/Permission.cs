@@ -12,6 +12,7 @@ public sealed class Permission : AggregateRoot
         string code,
         string title,
         PermissionType type,
+        int sortOrder,
         string? icon,
         string? vueComponentPath,
         string? routePath,
@@ -30,6 +31,11 @@ public sealed class Permission : AggregateRoot
             throw new PermissionDomainException("权限类型无效");
         }
 
+        if (sortOrder < 0)
+        {
+            throw new PermissionDomainException("权限排序号不能小于 0");
+        }
+
         if (parentId == Guid.Empty)
         {
             throw new PermissionDomainException("上级权限 ID 不能为空");
@@ -44,6 +50,7 @@ public sealed class Permission : AggregateRoot
         Code = RequireText(code, "权限编码不能为空");
         Title = RequireText(title, "权限标题不能为空");
         Type = type;
+        SortOrder = sortOrder;
         ParentId = parentId;
 
         switch (type)
@@ -51,8 +58,8 @@ public sealed class Permission : AggregateRoot
             case PermissionType.Directory:
                 Icon = RequireText(icon, "目录图标不能为空");
                 VueComponentPath = NormalizeOptionalText(vueComponentPath);
-                RoutePath = RequireText(routePath, "目录路由路径不能为空");
-                RouteName = RequireText(routeName, "目录路由名称不能为空");
+                RoutePath = NormalizeOptionalText(routePath);
+                RouteName = NormalizeOptionalText(routeName);
                 break;
             case PermissionType.Page:
                 Icon = NormalizeOptionalText(icon);
@@ -97,24 +104,29 @@ public sealed class Permission : AggregateRoot
     public PermissionType Type { get; private set; }
 
     /// <summary>
+    /// 排序号。
+    /// </summary>
+    public int SortOrder { get; private set; }
+
+    /// <summary>
     /// 图标。
     /// </summary>
-    public string? Icon { get; private set; }
+    public string Icon { get; private set; } = string.Empty;
 
     /// <summary>
     /// Vue 组件路径。
     /// </summary>
-    public string? VueComponentPath { get; private set; }
+    public string VueComponentPath { get; private set; } = string.Empty;
 
     /// <summary>
     /// 路由路径。
     /// </summary>
-    public string? RoutePath { get; private set; }
+    public string RoutePath { get; private set; } = string.Empty;
 
     /// <summary>
     /// 路由名称。
     /// </summary>
-    public string? RouteName { get; private set; }
+    public string RouteName { get; private set; } = string.Empty;
 
     /// <summary>
     /// 上级权限 ID。
@@ -131,8 +143,8 @@ public sealed class Permission : AggregateRoot
         return string.IsNullOrWhiteSpace(value) ? throw new PermissionDomainException(message) : value.Trim();
     }
 
-    private static string? NormalizeOptionalText(string? value)
+    private static string NormalizeOptionalText(string? value)
     {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 }

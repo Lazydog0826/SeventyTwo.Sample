@@ -1,3 +1,4 @@
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Domain.Permissions;
 using SqlSugar;
@@ -12,8 +13,9 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     {
         var records = await db.Queryable<PermissionRecord>()
             .Where(permission => permission.Enable && permission.DeleteAt == null)
+            .OrderBy(permission => permission.SortOrder)
             .ToListAsync(cancellationToken);
-        return [.. records.Select(ToDomain)];
+        return records.Adapt<List<Permission>>();
     }
 
     /// <inheritdoc />
@@ -33,23 +35,5 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
             )
             .Select((userPermission, permission) => permission.Code)
             .ToListAsync(cancellationToken);
-    }
-
-    private static Permission ToDomain(PermissionRecord record)
-    {
-        var permission = new Permission(
-            record.Id,
-            record.Code,
-            record.Title,
-            record.Type,
-            record.Icon,
-            record.VueComponentPath,
-            record.RoutePath,
-            record.RouteName,
-            record.ParentId,
-            record.MetaData
-        );
-        record.AggregateRootToEntity(permission);
-        return permission;
     }
 }

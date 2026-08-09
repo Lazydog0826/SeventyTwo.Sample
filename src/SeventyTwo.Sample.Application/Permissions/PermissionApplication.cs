@@ -29,6 +29,7 @@ public sealed class PermissionApplication(
                 Code = x.Code,
                 Title = x.Title,
                 Type = x.Type,
+                SortOrder = x.SortOrder,
                 Icon = x.Icon,
                 VueComponentPath = x.VueComponentPath,
                 RoutePath = x.RoutePath,
