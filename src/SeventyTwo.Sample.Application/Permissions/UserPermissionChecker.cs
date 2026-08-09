@@ -21,6 +21,22 @@ public sealed class UserPermissionChecker(
     private static readonly TimeSpan LockRenewalInterval = TimeSpan.FromSeconds(10);
 
     /// <inheritdoc />
+    public async Task InvalidateAsync(IReadOnlyCollection<Guid> userIds)
+    {
+        if (userIds.Count == 0)
+        {
+            return;
+        }
+
+        var database = redisCacheService.GetDatabase();
+        var keys = userIds
+            .Distinct()
+            .Select(userId => (RedisKey)cacheConfiguration.Value.Data("Permissions", $"UserCodeSet:{userId}"))
+            .ToArray();
+        await database.KeyDeleteAsync(keys);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetCodesAsync(Guid userId, CancellationToken cancellationToken)
     {
         var (database, cacheKey) = await EnsureLoadedAsync(userId, cancellationToken);

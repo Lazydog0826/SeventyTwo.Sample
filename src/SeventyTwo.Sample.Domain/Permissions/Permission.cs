@@ -26,6 +26,62 @@ public sealed class Permission : AggregateRoot
             throw new PermissionDomainException("权限 ID 不能为空");
         }
 
+        Id = id;
+        SetInfo(code, title, type, sortOrder, icon, vueComponentPath, routePath, routeName, parentId, metaData);
+    }
+
+    /// <summary>
+    /// 修改权限信息，并校验客户端持有的并发版本。
+    /// </summary>
+    /// <param name="version">客户端读取权限时获得的版本。</param>
+    /// <param name="updatedBy">修改人 ID。</param>
+    /// <param name="updatedAt">修改时间。</param>
+    public void Update(
+        string code,
+        string title,
+        PermissionType type,
+        bool enable,
+        int sortOrder,
+        string? icon,
+        string? vueComponentPath,
+        string? routePath,
+        string? routeName,
+        Guid? parentId,
+        PermissionMetaData? metaData,
+        Guid version,
+        Guid updatedBy,
+        DateTimeOffset updatedAt
+    )
+    {
+        if (version != Version)
+        {
+            throw new PermissionDomainException("权限数据已变更，请刷新后重试");
+        }
+
+        if (updatedAt == default)
+        {
+            throw new PermissionDomainException("权限修改时间不能为空");
+        }
+
+        SetInfo(code, title, type, sortOrder, icon, vueComponentPath, routePath, routeName, parentId, metaData);
+        Enable = enable;
+        UpdatedBy = updatedBy;
+        UpdatedAt = updatedAt;
+    }
+
+    private void SetInfo(
+        string code,
+        string title,
+        PermissionType type,
+        int sortOrder,
+        string? icon,
+        string? vueComponentPath,
+        string? routePath,
+        string? routeName,
+        Guid? parentId,
+        PermissionMetaData? metaData
+    )
+    {
         if (!Enum.IsDefined(type))
         {
             throw new PermissionDomainException("权限类型无效");
@@ -41,12 +97,11 @@ public sealed class Permission : AggregateRoot
             throw new PermissionDomainException("上级权限 ID 不能为空");
         }
 
-        if (parentId == id)
+        if (parentId == Id)
         {
             throw new PermissionDomainException("权限不能以自身作为上级权限");
         }
 
-        Id = id;
         Code = RequireText(code, "权限编码不能为空");
         Title = RequireText(title, "权限标题不能为空");
         Type = type;

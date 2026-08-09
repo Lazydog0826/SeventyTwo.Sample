@@ -44,7 +44,9 @@ try
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
     var permissionsListPermissionId = Guid.CreateVersion7();
-    var permissionsNewPagePermissionId = Guid.CreateVersion7();
+    var permissionsCreatePermissionId = Guid.CreateVersion7();
+    var permissionsUpdatePermissionId = Guid.CreateVersion7();
+    var permissionsDeletePermissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
 
     db.Insertable(
@@ -131,17 +133,35 @@ try
                 },
                 new PermissionRecord
                 {
-                    Id = permissionsNewPagePermissionId,
-                    Code = "Permissions.NewPage",
-                    Title = "新页面",
-                    Type = PermissionType.Page,
+                    Id = permissionsCreatePermissionId,
+                    Code = "Permissions.Create",
+                    Title = "新增权限",
+                    Type = PermissionType.Button,
                     SortOrder = 102,
-                    Icon = string.Empty,
-                    VueComponentPath = "/src/views/permissions/new-page.vue",
-                    RoutePath = "/permissions/new-page",
-                    RouteName = "Permissions.NewPage",
-                    ParentId = permissionsPermissionId,
-                    MetaData = new PermissionMetaData(true),
+                    ParentId = permissionsListPermissionId,
+                    MetaData = default,
+                    OrgId = organizationId,
+                },
+                new PermissionRecord
+                {
+                    Id = permissionsUpdatePermissionId,
+                    Code = "Permissions.Update",
+                    Title = "修改权限",
+                    Type = PermissionType.Button,
+                    SortOrder = 103,
+                    ParentId = permissionsListPermissionId,
+                    MetaData = default,
+                    OrgId = organizationId,
+                },
+                new PermissionRecord
+                {
+                    Id = permissionsDeletePermissionId,
+                    Code = "Permissions.Delete",
+                    Title = "删除权限",
+                    Type = PermissionType.Button,
+                    SortOrder = 104,
+                    ParentId = permissionsListPermissionId,
+                    MetaData = default,
                     OrgId = organizationId,
                 },
             }
@@ -153,7 +173,9 @@ try
                 new UserPermissionRecord { UserId = userId, PermissionId = homePermissionId },
                 new UserPermissionRecord { UserId = userId, PermissionId = permissionsPermissionId },
                 new UserPermissionRecord { UserId = userId, PermissionId = permissionsListPermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsNewPagePermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsCreatePermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsUpdatePermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsDeletePermissionId },
             }
         )
         .ExecuteCommand();
