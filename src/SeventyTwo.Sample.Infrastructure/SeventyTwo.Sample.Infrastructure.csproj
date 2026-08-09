@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="SeventyTwo.Sample.DataSetup" />
+    <InternalsVisibleTo Include="SeventyTwo.Sample.ArchitectureTests" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,17 @@ namespace SeventyTwo.Sample.Infrastructure.Permissions;
 public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionRepository
 {
     /// <inheritdoc />
+    public async Task<IReadOnlyList<Permission>> GetListAsync(CancellationToken cancellationToken)
+    {
+        var records = await db.Queryable<PermissionRecord>()
+            .Where(permission => permission.DeleteAt == null)
+            .OrderBy(permission => permission.SortOrder)
+            .OrderBy(permission => permission.Id)
+            .ToListAsync(cancellationToken);
+        return records.Adapt<List<Permission>>();
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken)
     {
         var records = await db.Queryable<PermissionRecord>()

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Permissions;
+using SeventyTwo.Sample.WebApi.Authentication;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
@@ -13,6 +14,19 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 [Route("api/permissions")]
 public sealed class PermissionsController(IPermissionApplication permissionApplication) : ControllerBase
 {
+    /// <summary>
+    /// 获取权限管理列表。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>所有未删除权限，包含已禁用权限。</returns>
+    [HttpGet("list")]
+    [Permission(PermissionMatchMode.All, "Permissions.List")]
+    public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken)
+    {
+        var res = await permissionApplication.GetListAsync(cancellationToken);
+        return WebApiResponse.Query(res);
+    }
+
     /// <summary>
     /// 获取当前登录用户的权限。
     /// </summary>

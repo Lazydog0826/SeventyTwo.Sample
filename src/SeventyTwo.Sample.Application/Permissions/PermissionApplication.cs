@@ -15,6 +15,29 @@ public sealed class PermissionApplication(
     private static readonly TimeSpan AllPermissionsSlidingExpiration = TimeSpan.FromMinutes(30);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<PermissionListOutput>> GetListAsync(CancellationToken cancellationToken)
+    {
+        var permissions = await permissionRepository.GetListAsync(cancellationToken);
+        return permissions
+            .Select(x => new PermissionListOutput
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Title = x.Title,
+                Type = x.Type,
+                Enable = x.Enable,
+                SortOrder = x.SortOrder,
+                Icon = x.Icon,
+                VueComponentPath = x.VueComponentPath,
+                RoutePath = x.RoutePath,
+                RouteName = x.RouteName,
+                MetaData = x.MetaData,
+                ParentId = x.ParentId,
+            })
+            .ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<PermissionOutput> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var allPermissions = await GetAllPermissionsAsync(cancellationToken);

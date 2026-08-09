@@ -6,6 +6,13 @@ namespace SeventyTwo.Sample.Domain.Permissions;
 public interface IPermissionRepository
 {
     /// <summary>
+    /// 获取所有未删除权限，包含已禁用权限。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>所有未删除权限。</returns>
+    Task<IReadOnlyList<Permission>> GetListAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// 获取所有有效权限。
     /// </summary>
     /// <param name="cancellationToken">取消令牌。</param>

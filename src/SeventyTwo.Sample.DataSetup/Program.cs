@@ -91,7 +91,7 @@ try
                 RoutePath = "/home",
                 RouteName = "home",
                 ParentId = null,
-                MetaData = new PermissionMetaData(true, true),
+                MetaData = new PermissionMetaData(true),
                 OrgId = organizationId,
             }
         )
@@ -111,7 +111,7 @@ try
                     RoutePath = string.Empty,
                     RouteName = string.Empty,
                     ParentId = null,
-                    MetaData = new PermissionMetaData(true, true),
+                    MetaData = new PermissionMetaData(true),
                     OrgId = organizationId,
                 },
                 new PermissionRecord
@@ -126,7 +126,7 @@ try
                     RoutePath = "/permissions/list",
                     RouteName = "Permissions.List",
                     ParentId = permissionsPermissionId,
-                    MetaData = new PermissionMetaData(true, true),
+                    MetaData = new PermissionMetaData(true),
                     OrgId = organizationId,
                 },
                 new PermissionRecord
@@ -141,7 +141,7 @@ try
                     RoutePath = "/permissions/new-page",
                     RouteName = "Permissions.NewPage",
                     ParentId = permissionsPermissionId,
-                    MetaData = new PermissionMetaData(true, true),
+                    MetaData = new PermissionMetaData(true),
                     OrgId = organizationId,
                 },
             }

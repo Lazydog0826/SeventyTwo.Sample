@@ -21,6 +21,7 @@ public sealed class PermissionMappingProfile : IRegister
                 x.RouteName,
                 x.ParentId,
                 x.MetaData
-            ));
+            ))
+            .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
     }
 }
