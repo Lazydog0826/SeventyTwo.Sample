@@ -23,10 +23,11 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// </summary>
     /// <returns>当前登录用户信息。</returns>
     [HttpGet("Info")]
-    public Task<UserOutput> GetInfoAsync()
+    public async Task<IActionResult> GetInfoAsync()
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        return userApplication.GetAsync(userId);
+        var data = await userApplication.GetAsync(userId);
+        return WebApiResponse.Query(data);
     }
 
     /// <summary>
@@ -61,7 +62,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// </summary>
     [HttpPost("Logout")]
     [AllowAnonymous]
-    public async Task LogoutAsync()
+    public async Task<IActionResult> LogoutAsync()
     {
         await userApplication.LogoutAsync(Request.Cookies["refresh_token"] ?? string.Empty);
         Response.Cookies.Delete(
@@ -74,6 +75,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
                 Path = "/",
             }
         );
+        return WebApiResponse.Operate();
     }
 
     private void SetRefreshTokenCookie(LoginOutput data)
