@@ -33,9 +33,20 @@ public sealed class Permission : AggregateRoot
     /// <summary>
     /// 修改权限信息，并校验客户端持有的并发版本。
     /// </summary>
+    /// <param name="metaData"></param>
     /// <param name="version">客户端读取权限时获得的版本。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
+    /// <param name="code"></param>
+    /// <param name="title"></param>
+    /// <param name="type"></param>
+    /// <param name="enable"></param>
+    /// <param name="sortOrder"></param>
+    /// <param name="icon"></param>
+    /// <param name="vueComponentPath"></param>
+    /// <param name="routePath"></param>
+    /// <param name="routeName"></param>
+    /// <param name="parentId"></param>
     public void Update(
         string code,
         string title,

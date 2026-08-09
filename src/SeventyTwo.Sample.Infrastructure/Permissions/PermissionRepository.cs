@@ -36,10 +36,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Guid>> GetUserIdsAsync(
-        Guid permissionId,
-        CancellationToken cancellationToken
-    )
+    public async Task<IReadOnlyList<Guid>> GetUserIdsAsync(Guid permissionId, CancellationToken cancellationToken)
     {
         return await db.Queryable<UserPermissionRecord>()
             .Where(userPermission => userPermission.PermissionId == permissionId)

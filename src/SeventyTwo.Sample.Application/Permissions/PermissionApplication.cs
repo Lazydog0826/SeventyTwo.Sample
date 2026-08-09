@@ -92,9 +92,7 @@ public sealed class PermissionApplication(
     public async Task<IReadOnlyList<PermissionListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var permissions = await permissionRepository.GetListAsync(cancellationToken);
-        return permissions
-            .Select(ToListOutput)
-            .ToList();
+        return permissions.Select(ToListOutput).ToList();
     }
 
     /// <inheritdoc />

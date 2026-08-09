@@ -23,10 +23,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <returns>创建后的权限信息。</returns>
     [HttpPost("create")]
     [Permission(PermissionMatchMode.All, "Permissions.Create")]
-    public async Task<IActionResult> CreateAsync(
-        CreatePermissionRequest request,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> CreateAsync(CreatePermissionRequest request, CancellationToken cancellationToken)
     {
         var result = await permissionApplication.CreateAsync(
             new CreatePermissionInput(
@@ -55,10 +52,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <returns>操作结果。</returns>
     [HttpPost("update")]
     [Permission(PermissionMatchMode.All, "Permissions.Update")]
-    public async Task<IActionResult> UpdateAsync(
-        UpdatePermissionRequest request,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> UpdateAsync(UpdatePermissionRequest request, CancellationToken cancellationToken)
     {
         await permissionApplication.UpdateAsync(
             request.Id,
@@ -90,10 +84,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <remarks>存在下级权限时拒绝删除。</remarks>
     [HttpPost("delete")]
     [Permission(PermissionMatchMode.All, "Permissions.Delete")]
-    public async Task<IActionResult> DeleteAsync(
-        DeletePermissionRequest request,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> DeleteAsync(DeletePermissionRequest request, CancellationToken cancellationToken)
     {
         await permissionApplication.DeleteAsync(request.Id, cancellationToken);
         return WebApiResponse.Operate();
@@ -184,19 +175,20 @@ public sealed record UpdatePermissionRequest(
     Guid? ParentId,
     PermissionMetaData? MetaData,
     Guid Version
-) : CreatePermissionRequest(
-    Code,
-    Title,
-    Type,
-    Enable,
-    SortOrder,
-    Icon,
-    VueComponentPath,
-    RoutePath,
-    RouteName,
-    ParentId,
-    MetaData
-);
+)
+    : CreatePermissionRequest(
+        Code,
+        Title,
+        Type,
+        Enable,
+        SortOrder,
+        Icon,
+        VueComponentPath,
+        RoutePath,
+        RouteName,
+        ParentId,
+        MetaData
+    );
 
 /// <summary>
 /// 权限删除请求。

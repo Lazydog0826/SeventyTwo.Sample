@@ -14,7 +14,9 @@ public interface IPermissionRepository
     /// <summary>
     /// 判断权限编码是否已被其他权限占用。
     /// </summary>
+    /// <param name="code"></param>
     /// <param name="excludedId">检查修改场景时需要排除的权限 ID。</param>
+    /// <param name="cancellationToken"></param>
     Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken);
 
     /// <summary>
