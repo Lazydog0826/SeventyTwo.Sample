@@ -44,6 +44,7 @@ try
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
     var permissionsListPermissionId = Guid.CreateVersion7();
+    var permissionsNewPagePermissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
 
     db.Insertable(
@@ -128,6 +129,21 @@ try
                     MetaData = new PermissionMetaData(true, true),
                     OrgId = organizationId,
                 },
+                new PermissionRecord
+                {
+                    Id = permissionsNewPagePermissionId,
+                    Code = "Permissions.NewPage",
+                    Title = "新页面",
+                    Type = PermissionType.Page,
+                    SortOrder = 102,
+                    Icon = string.Empty,
+                    VueComponentPath = "/src/views/permissions/new-page.vue",
+                    RoutePath = "/permissions/new-page",
+                    RouteName = "Permissions.NewPage",
+                    ParentId = permissionsPermissionId,
+                    MetaData = new PermissionMetaData(true, true),
+                    OrgId = organizationId,
+                },
             }
         )
         .ExecuteCommand();
@@ -137,6 +153,7 @@ try
                 new UserPermissionRecord { UserId = userId, PermissionId = homePermissionId },
                 new UserPermissionRecord { UserId = userId, PermissionId = permissionsPermissionId },
                 new UserPermissionRecord { UserId = userId, PermissionId = permissionsListPermissionId },
+                new UserPermissionRecord { UserId = userId, PermissionId = permissionsNewPagePermissionId },
             }
         )
         .ExecuteCommand();
