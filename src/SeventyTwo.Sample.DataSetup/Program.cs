@@ -85,6 +85,7 @@ try
                 Title = "首页",
                 Type = PermissionType.Page,
                 SortOrder = 0,
+                Icon = "House",
                 VueComponentPath = "/src/views/home.vue",
                 RoutePath = "/home",
                 RouteName = "home",
