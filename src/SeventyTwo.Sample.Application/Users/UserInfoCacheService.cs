@@ -98,9 +98,9 @@ public sealed class UserInfoCacheService(
                 await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), CacheDuration);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
-            timeout: LoadLockAcquireTimeout,
+            acquisitionTimeout: LoadLockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockLeaseDuration,
+            leaseDuration: LockLeaseDuration,
             executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );
@@ -155,9 +155,9 @@ public sealed class UserInfoCacheService(
                 await database.KeyDeleteAsync(cacheKey);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
-            timeout: InvalidationLockAcquireTimeout,
+            acquisitionTimeout: InvalidationLockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockLeaseDuration,
+            leaseDuration: LockLeaseDuration,
             executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );

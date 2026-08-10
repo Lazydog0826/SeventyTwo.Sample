@@ -101,9 +101,9 @@ public sealed class PermissionCacheService(
                 operationCancellationToken.ThrowIfCancellationRequested();
                 await SetCacheAsync(database, configuration, permissions, operationCancellationToken);
             },
-            timeout: LoadLockAcquireTimeout,
+            acquisitionTimeout: LoadLockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockLeaseDuration,
+            leaseDuration: LockLeaseDuration,
             executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );
@@ -135,9 +135,9 @@ public sealed class PermissionCacheService(
 
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
-            timeout: InvalidationLockAcquireTimeout,
+            acquisitionTimeout: InvalidationLockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockLeaseDuration,
+            leaseDuration: LockLeaseDuration,
             executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );

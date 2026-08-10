@@ -90,9 +90,9 @@ public sealed class UserPermissionCacheService(
                 operationCancellationToken.ThrowIfCancellationRequested();
                 cachedValue = permissionCodes;
             },
-            timeout: LockAcquireTimeout,
+            acquisitionTimeout: LockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockExpiration,
+            leaseDuration: LockExpiration,
             executionTimeout: LockExpiration,
             cancellationToken: cancellationToken
         );
@@ -148,9 +148,9 @@ public sealed class UserPermissionCacheService(
                 await database.KeyDeleteAsync(cacheKey);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
-            timeout: LockAcquireTimeout,
+            acquisitionTimeout: LockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
-            renewalDuration: LockExpiration,
+            leaseDuration: LockExpiration,
             executionTimeout: LockExpiration,
             cancellationToken: cancellationToken
         );
