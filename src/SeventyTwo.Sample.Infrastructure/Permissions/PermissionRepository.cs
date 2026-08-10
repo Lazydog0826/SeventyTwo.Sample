@@ -116,28 +116,21 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        // 用户权限表没有数据库级联删除约束，因此关联和权限记录必须在同一事务内物理删除。
-        var result = await db.Ado.UseTranAsync(async () =>
+        // 多表删除的事务边界由应用层 IUnitOfWork 统一管理，仓储只执行数据操作。
+        if (await HasChildrenAsync(id, cancellationToken))
         {
-            if (await HasChildrenAsync(id, cancellationToken))
-            {
-                throw new PermissionDomainException("权限存在下级权限，不能删除");
-            }
+            throw new PermissionDomainException("权限存在下级权限，不能删除");
+        }
 
-            await db.Deleteable<UserPermissionRecord>()
-                .Where(userPermission => userPermission.PermissionId == id)
-                .ExecuteCommandAsync(cancellationToken);
-            var affectedRows = await db.Deleteable<PermissionRecord>()
-                .Where(permission => permission.Id == id && permission.DeleteAt == null)
-                .ExecuteCommandAsync(cancellationToken);
-            if (affectedRows == 0)
-            {
-                throw new PermissionDomainException("权限不存在");
-            }
-        });
-        if (!result.IsSuccess)
+        await db.Deleteable<UserPermissionRecord>()
+            .Where(userPermission => userPermission.PermissionId == id)
+            .ExecuteCommandAsync(cancellationToken);
+        var affectedRows = await db.Deleteable<PermissionRecord>()
+            .Where(permission => permission.Id == id && permission.DeleteAt == null)
+            .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows == 0)
         {
-            throw result.ErrorException;
+            throw new PermissionDomainException("权限不存在");
         }
     }
 

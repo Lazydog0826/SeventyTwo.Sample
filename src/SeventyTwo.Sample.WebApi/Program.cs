@@ -163,6 +163,12 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // CAP 的数据库、RabbitMQ 配置以及 Dashboard 登录凭据均为必需配置；
 // 缺少配置节时立即终止启动，避免应用在消息基础设施不完整的状态下运行。
 var capConfiguration = builder.Configuration.GetRequiredSection(nameof(CapConfiguration)).Get<CapConfiguration>()!;
+var postgreSqlConnectionString = builder.Configuration.GetConnectionString("PostgreSQL");
+if (string.IsNullOrWhiteSpace(postgreSqlConnectionString))
+{
+    throw new InvalidOperationException("未配置 ConnectionStrings:PostgreSQL");
+}
+
 var dashboardAuthenticationConfiguration = builder
     .Configuration.GetRequiredSection(nameof(CapDashboardAuthenticationConfiguration))
     .Get<CapDashboardAuthenticationConfiguration>()!;
@@ -221,6 +227,9 @@ builder
 builder
     .Services.AddCap(x =>
     {
+        // 消费者方法总共尝试三次；达到阈值后原消息保留为 CAP Failed 状态。
+        x.FailedRetryCount = 3;
+
         // 禁止匿名访问 Dashboard，并将请求交由上方的 Dashboard 专用授权策略校验。
         x.UseDashboard(options =>
         {
@@ -229,7 +238,7 @@ builder
         });
 
         // CAP 使用 PostgreSQL 进行消息持久化，并与业务数据库事务协同。
-        x.UsePostgreSql(capConfiguration.PostgreSqlConnectionString);
+        x.UsePostgreSql(postgreSqlConnectionString);
 
         // 配置 RabbitMQ 连接及可靠性选项：发布确认保证 Broker 已接收消息，
         // 持久化队列可在 RabbitMQ 重启后继续保留。

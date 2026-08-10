@@ -11,17 +11,17 @@ namespace SeventyTwo.Sample.Application.Permissions;
 public interface IPermissionApplication
 {
     /// <summary>
-    /// 创建权限并清除权限列表缓存。
+    /// 创建权限并发布权限列表缓存失效消息。
     /// </summary>
     Task<PermissionListOutput> CreateAsync(CreatePermissionInput input, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 修改权限并清除权限列表及关联用户的权限编码缓存。
+    /// 修改权限并发布权限列表缓存失效消息。
     /// </summary>
     Task UpdateAsync(Guid id, UpdatePermissionInput input, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 物理删除权限及用户权限关联，并清除相关缓存。
+    /// 物理删除权限及用户权限关联，并发布权限列表缓存失效消息。
     /// </summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 

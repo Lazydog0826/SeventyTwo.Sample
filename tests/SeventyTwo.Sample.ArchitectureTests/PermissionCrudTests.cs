@@ -1,8 +1,12 @@
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using SeventyTwo.InfraKit.Cache;
+using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Domain.Permissions;
+using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Controllers;
@@ -79,8 +83,14 @@ public sealed class PermissionCrudTests
         var parent = CreatePermission("Parent", PermissionType.Directory);
         var child = CreatePermission("Child", PermissionType.Directory, parent.Id);
         var repository = new FakePermissionRepository([parent, child]);
-        using var cache = new MemoryCache(new MemoryCacheOptions());
-        var application = new PermissionApplication(repository, cache, new FakePermissionChecker());
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakePermissionChecker(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork()
+        );
 
         await Assert.ThrowsAsync<PermissionDomainException>(() =>
             application.CreateAsync(CreateInput("Parent"), CancellationToken.None)
@@ -91,20 +101,168 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
-    public async Task ApplicationMutation_ShouldInvalidatePermissionCaches()
+    public async Task ApplicationMutation_ShouldPublishCacheInvalidationMessage()
     {
         var permission = CreatePermission("Editable", PermissionType.Page);
-        var userId = Guid.CreateVersion7();
-        var repository = new FakePermissionRepository([permission], [userId]);
-        var checker = new FakePermissionChecker();
-        using var cache = new MemoryCache(new MemoryCacheOptions());
-        cache.Set("Permissions:All", new[] { permission });
-        var application = new PermissionApplication(repository, cache, checker);
+        var repository = new FakePermissionRepository([permission]);
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
+        database.SetString(versionKey, "old-version");
+        var publisher = new FakePermissionCacheInvalidationPublisher();
+        var unitOfWork = new FakeUnitOfWork();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakePermissionChecker(),
+            publisher,
+            unitOfWork
+        );
 
         await application.UpdateAsync(permission.Id, UpdateInput(permission, null), CancellationToken.None);
+        await application.CreateAsync(CreateInput("Created"), CancellationToken.None);
+        await application.DeleteAsync(permission.Id, CancellationToken.None);
 
-        Assert.False(cache.TryGetValue("Permissions:All", out _));
-        Assert.Equal([userId], checker.InvalidatedUserIds);
+        Assert.Equal(3, publisher.PublishCount);
+        Assert.Equal(3, unitOfWork.ExecuteCount);
+        Assert.True(database.StringExists(versionKey));
+    }
+
+    [Fact]
+    public async Task CacheInvalidationConsumer_ShouldInvalidateAllPermissionsCache()
+    {
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
+        database.SetString(versionKey, "old-version");
+        var consumer = new PermissionCacheInvalidationConsumer(cacheService);
+
+        await consumer.ConsumeAsync(
+            new PermissionCacheInvalidationMessage(Guid.CreateVersion7(), DateTimeOffset.UtcNow),
+            CancellationToken.None
+        );
+
+        Assert.False(database.StringExists(versionKey));
+    }
+
+    [Fact]
+    public async Task RedisCacheInvalidation_ShouldWaitForLoadingAndRemoveLoadedVersion()
+    {
+        var permission = CreatePermission("Concurrent", PermissionType.Page);
+        var (cacheService, database, configuration, redisCacheService) = CreateCacheService();
+        var loadStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseLoad = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var loadTask = cacheService.GetOrLoadAsync(
+            async _ =>
+            {
+                loadStarted.SetResult();
+                await releaseLoad.Task;
+                return [permission];
+            },
+            CancellationToken.None
+        );
+        await loadStarted.Task;
+
+        var invalidationTask = cacheService.InvalidateAsync();
+        Assert.False(invalidationTask.IsCompleted);
+        Assert.Equal(TimeSpan.FromMinutes(2.5), redisCacheService.LastLockAcquireTimeout);
+
+        releaseLoad.SetResult();
+        await loadTask;
+        await invalidationTask;
+
+        Assert.False(
+            database.StringExists(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration))
+        );
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldReturnCompleteCachedPermissionWithoutReloading()
+    {
+        var permission = CreatePermission("Cached", PermissionType.Page);
+        permission.CreatedAt = DateTimeOffset.Parse("2026-08-09T01:02:03+00:00");
+        permission.UpdatedBy = Guid.CreateVersion7();
+        permission.UpdatedAt = DateTimeOffset.Parse("2026-08-09T02:03:04+00:00");
+        permission.OrgId = Guid.CreateVersion7();
+        var (cacheService, _, _, _) = CreateCacheService();
+        var loadCount = 0;
+
+        var first = await cacheService.GetOrLoadAsync(
+            _ =>
+            {
+                loadCount++;
+                return Task.FromResult<IReadOnlyList<Permission>>([permission]);
+            },
+            CancellationToken.None
+        );
+        var second = await cacheService.GetOrLoadAsync(
+            _ =>
+            {
+                loadCount++;
+                return Task.FromResult<IReadOnlyList<Permission>>([]);
+            },
+            CancellationToken.None
+        );
+
+        var cachedPermission = Assert.Single(second);
+        Assert.Same(permission, Assert.Single(first));
+        Assert.Equal(1, loadCount);
+        Assert.Equal(permission.Id, cachedPermission.Id);
+        Assert.Equal(permission.Code, cachedPermission.Code);
+        Assert.Equal(permission.MetaData, cachedPermission.MetaData);
+        Assert.Equal(permission.CreatedAt, cachedPermission.CreatedAt);
+        Assert.Equal(permission.UpdatedBy, cachedPermission.UpdatedBy);
+        Assert.Equal(permission.UpdatedAt, cachedPermission.UpdatedAt);
+        Assert.Equal(permission.OrgId, cachedPermission.OrgId);
+        Assert.Equal(permission.Version, cachedPermission.Version);
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldCacheEmptyPermissionList()
+    {
+        var (cacheService, _, _, _) = CreateCacheService();
+        var loadCount = 0;
+
+        async Task<IReadOnlyList<Permission>> LoadAsync(CancellationToken _)
+        {
+            loadCount++;
+            await Task.CompletedTask;
+            return [];
+        }
+
+        Assert.Empty(await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None));
+        Assert.Empty(await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None));
+        Assert.Equal(1, loadCount);
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldReloadAllPermissionsWhenBucketIsMissing()
+    {
+        var permissions = Enumerable
+            .Range(0, 11)
+            .Select(index => CreatePermission($"Permission{index}", PermissionType.Page))
+            .ToArray();
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        var loadCount = 0;
+
+        Task<IReadOnlyList<Permission>> LoadAsync(CancellationToken _)
+        {
+            loadCount++;
+            return Task.FromResult<IReadOnlyList<Permission>>(permissions);
+        }
+
+        Assert.Equal(permissions, await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None));
+
+        var version = database.GetString(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration));
+        var metaValue = database.GetString(
+            PermissionCacheKeys.GetAllPermissionsMetaKey(configuration, version.ToString())
+        );
+        var bucketKeys = JsonSerializer.Deserialize<PermissionCacheMeta>(metaValue.ToString())?.BucketKeys;
+        Assert.NotNull(bucketKeys);
+        Assert.True(bucketKeys.Length > 1);
+        Assert.True(database.Delete(bucketKeys[0]));
+
+        Assert.Equal(permissions, await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None));
+        Assert.Equal(2, loadCount);
     }
 
     [Fact]
@@ -183,6 +341,26 @@ public sealed class PermissionCrudTests
             new PermissionMetaData(true)
         );
     }
+
+    private static (
+        PermissionMemoryCacheService Service,
+        InMemoryRedisDatabase Database,
+        CacheConfiguration Configuration,
+        FakeRedisCacheService RedisCacheService
+    ) CreateCacheService()
+    {
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var configuration = new CacheConfiguration { KeyNamespace = "Tests" };
+        var redisCacheService = new FakeRedisCacheService(database);
+        return (
+            new PermissionMemoryCacheService(redisCacheService, Options.Create(configuration)),
+            (InMemoryRedisDatabase)(object)database,
+            configuration,
+            redisCacheService
+        );
+    }
+
+    private sealed record PermissionCacheMeta(string[] BucketKeys);
 
     private static CreatePermissionInput CreateInput(string code)
     {
@@ -264,6 +442,30 @@ public sealed class PermissionCrudTests
             PermissionMatchMode matchMode,
             CancellationToken cancellationToken
         ) => Task.FromResult(false);
+    }
+
+    private sealed class FakePermissionCacheInvalidationPublisher
+        : IPermissionCacheInvalidationPublisher
+    {
+        public int PublishCount { get; private set; }
+
+        public Task PublishAsync(CancellationToken cancellationToken)
+        {
+            PublishCount++;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeUnitOfWork : IUnitOfWork
+    {
+        public int ExecuteCount { get; private set; }
+
+        public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ExecuteCount++;
+            return action();
+        }
     }
 
     private sealed class FakePermissionRepository(

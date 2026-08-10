@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
@@ -9,13 +8,12 @@ namespace SeventyTwo.Sample.Application.Permissions;
 [AutofacDependency(typeof(IPermissionApplication))]
 public sealed class PermissionApplication(
     IPermissionRepository permissionRepository,
-    IMemoryCache memoryCache,
-    IUserPermissionChecker userPermissionChecker
+    PermissionMemoryCacheService memoryCacheService,
+    IUserPermissionChecker userPermissionChecker,
+    IPermissionCacheInvalidationPublisher cacheInvalidationPublisher,
+    IUnitOfWork unitOfWork
 ) : IPermissionApplication
 {
-    private const string AllPermissionsCacheKey = "Permissions:All";
-    private static readonly TimeSpan AllPermissionsSlidingExpiration = TimeSpan.FromMinutes(30);
-
     /// <inheritdoc />
     public async Task<PermissionListOutput> CreateAsync(
         CreatePermissionInput input,
@@ -40,8 +38,14 @@ public sealed class PermissionApplication(
         };
         await ValidateCodeAsync(permission.Code, null, cancellationToken);
         await ValidateParentAsync(permission.Id, permission.ParentId, cancellationToken);
-        await permissionRepository.AddAsync(permission, cancellationToken);
-        memoryCache.Remove(AllPermissionsCacheKey);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                await permissionRepository.AddAsync(permission, cancellationToken);
+                await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+            },
+            cancellationToken
+        );
         return ToListOutput(permission);
     }
 
@@ -56,7 +60,6 @@ public sealed class PermissionApplication(
 
         await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
         await ValidateParentAsync(id, input.ParentId, cancellationToken);
-        var userIds = await permissionRepository.GetUserIdsAsync(id, cancellationToken);
         permission.Update(
             input.Code,
             input.Title,
@@ -73,19 +76,28 @@ public sealed class PermissionApplication(
             SystemIds.System,
             DateTimeExtension.Now()
         );
-        await permissionRepository.SaveAsync(permission, cancellationToken);
-        memoryCache.Remove(AllPermissionsCacheKey);
-        await userPermissionChecker.InvalidateAsync(userIds);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                await permissionRepository.SaveAsync(permission, cancellationToken);
+                await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         _ = await GetRequiredAsync(id, cancellationToken);
-        var userIds = await permissionRepository.GetUserIdsAsync(id, cancellationToken);
-        await permissionRepository.DeleteAsync(id, cancellationToken);
-        memoryCache.Remove(AllPermissionsCacheKey);
-        await userPermissionChecker.InvalidateAsync(userIds);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                await permissionRepository.DeleteAsync(id, cancellationToken);
+                await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
@@ -130,20 +142,7 @@ public sealed class PermissionApplication(
 
     private async Task<IReadOnlyList<Permission>> GetAllPermissionsAsync(CancellationToken cancellationToken)
     {
-        if (
-            memoryCache.TryGetValue<IReadOnlyList<Permission>>(AllPermissionsCacheKey, out var cachedPermissions)
-            && cachedPermissions is not null
-        )
-        {
-            return cachedPermissions;
-        }
-
-        var permissions = await permissionRepository.GetAllAsync(cancellationToken);
-        return memoryCache.Set(
-            AllPermissionsCacheKey,
-            permissions,
-            new MemoryCacheEntryOptions { SlidingExpiration = AllPermissionsSlidingExpiration }
-        );
+        return await memoryCacheService.GetOrLoadAsync(permissionRepository.GetAllAsync, cancellationToken);
     }
 
     private async Task<Permission> GetRequiredAsync(Guid id, CancellationToken cancellationToken)

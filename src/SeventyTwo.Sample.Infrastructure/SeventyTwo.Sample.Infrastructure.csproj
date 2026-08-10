@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DotNetCore.CAP" />
+    <PackageReference Include="DotNetCore.CAP.PostgreSql" />
     <PackageReference Include="Mapster" />
     <PackageReference Include="SeventyTwo.InfraKit" />
     <PackageReference Include="SqlSugarCore" />
