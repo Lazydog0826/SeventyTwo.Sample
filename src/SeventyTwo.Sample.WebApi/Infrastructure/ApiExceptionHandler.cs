@@ -31,7 +31,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
     )
     {
         var request = httpContext.Request;
-        request.Headers.TryGetValue("requestNo", out var requestNo);
+        request.Headers.TryGetValue("RequestNo", out var requestNo);
 
         if (exception is not DomainException and not ApiValidationException and not TokenAuthenticationException)
         {
