@@ -8,15 +8,17 @@ namespace SeventyTwo.Sample.Infrastructure.Users;
 [AutofacDependency(typeof(IUserRepository))]
 public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
 {
-    public async Task<User?> GetAsync(Guid id)
+    public async Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var user = await db.Queryable<UserAccountRecord>().Where(x => x.Id == id).FirstAsync();
+        var user = await db.Queryable<UserAccountRecord>().Where(x => x.Id == id).FirstAsync(cancellationToken);
         return user?.Adapt<User>();
     }
 
-    public async Task<User?> GetByAccountAsync(string account)
+    public async Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken)
     {
-        var user = await db.Queryable<UserAccountRecord>().Where(x => x.Username == account).FirstAsync();
+        var user = await db.Queryable<UserAccountRecord>()
+            .Where(x => x.Username == account)
+            .FirstAsync(cancellationToken);
         return user?.Adapt<User>();
     }
 }
