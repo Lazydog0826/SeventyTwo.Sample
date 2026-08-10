@@ -47,11 +47,7 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.AddAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
-                await userPermissionCacheInvalidationPublisher.PublishAsync(
-                    Guid.Empty,
-                    true,
-                    cancellationToken
-                );
+                await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
             },
             cancellationToken
         );
@@ -90,11 +86,7 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.SaveAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
-                await userPermissionCacheInvalidationPublisher.PublishAsync(
-                    Guid.Empty,
-                    true,
-                    cancellationToken
-                );
+                await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
             },
             cancellationToken
         );
@@ -109,11 +101,7 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.DeleteAsync(id, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
-                await userPermissionCacheInvalidationPublisher.PublishAsync(
-                    Guid.Empty,
-                    true,
-                    cancellationToken
-                );
+                await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
             },
             cancellationToken
         );
