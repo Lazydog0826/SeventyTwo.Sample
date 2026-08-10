@@ -142,7 +142,9 @@ public sealed class BalanceChangeService(
 
     private bool CanUseRedis()
     {
-        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks"));
+        var disabledUntil = memoryCache.Get<long>(
+            cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks")
+        );
         return DateTimeOffset.UtcNow.UtcTicks >= disabledUntil;
     }
 
