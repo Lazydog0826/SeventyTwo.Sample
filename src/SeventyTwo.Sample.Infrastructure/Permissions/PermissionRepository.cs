@@ -23,7 +23,8 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken)
     {
         return db.Queryable<PermissionRecord>()
-            .Where(permission => permission.Code == code && (!excludedId.HasValue || permission.Id != excludedId.Value))
+            .Where(permission => permission.Code == code)
+            .WhereIF(excludedId.HasValue, permission => permission.Id != excludedId)
             .AnyAsync(cancellationToken);
     }
 
