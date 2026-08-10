@@ -337,6 +337,98 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task RedisCache_ShouldHonorPreCanceledTokenWhenCacheExists()
+    {
+        var permission = CreatePermission("Cached", PermissionType.Page);
+        var (cacheService, _, _, _) = CreateCacheService();
+        await cacheService.GetOrLoadAsync(
+            _ => Task.FromResult<IReadOnlyList<Permission>>([permission]),
+            CancellationToken.None
+        );
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await cancellationTokenSource.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            cacheService.GetOrLoadAsync(
+                _ => Task.FromResult<IReadOnlyList<Permission>>([]),
+                cancellationTokenSource.Token
+            )
+        );
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldHonorCancellationAfterLockedCacheRead()
+    {
+        var permission = CreatePermission("Cached", PermissionType.Page);
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        await cacheService.GetOrLoadAsync(
+            _ => Task.FromResult<IReadOnlyList<Permission>>([permission]),
+            CancellationToken.None
+        );
+        var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
+        var version = database.GetString(versionKey);
+        Assert.True(database.Delete(versionKey));
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var versionReadCount = 0;
+        database.StringGetCompleted = key =>
+        {
+            if (key != versionKey)
+            {
+                return;
+            }
+
+            versionReadCount++;
+            if (versionReadCount == 1)
+            {
+                database.SetString(versionKey, version);
+            }
+            else if (versionReadCount == 2)
+            {
+                cancellationTokenSource.Cancel();
+            }
+        };
+        var loadCount = 0;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            cacheService.GetOrLoadAsync(
+                _ =>
+                {
+                    loadCount++;
+                    return Task.FromResult<IReadOnlyList<Permission>>([]);
+                },
+                cancellationTokenSource.Token
+            )
+        );
+
+        Assert.Equal(2, versionReadCount);
+        Assert.Equal(0, loadCount);
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldNotPublishVersionWhenCanceledDuringCacheWrite()
+    {
+        var permission = CreatePermission("Canceled", PermissionType.Page);
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        using var cancellationTokenSource = new CancellationTokenSource();
+        database.StringSetCompleted = key =>
+        {
+            if (key.Contains(":Meta:", StringComparison.Ordinal))
+            {
+                cancellationTokenSource.Cancel();
+            }
+        };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            cacheService.GetOrLoadAsync(
+                _ => Task.FromResult<IReadOnlyList<Permission>>([permission]),
+                cancellationTokenSource.Token
+            )
+        );
+
+        Assert.False(database.StringExists(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration)));
+    }
+
+    [Fact]
     public async Task RedisCache_ShouldCacheEmptyPermissionList()
     {
         var (cacheService, _, _, _) = CreateCacheService();

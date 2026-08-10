@@ -9,6 +9,9 @@ public class InMemoryRedisDatabase : DispatchProxy
 {
     private readonly ConcurrentDictionary<string, RedisValue> stringValues = [];
 
+    public Action<string>? StringGetCompleted { get; set; }
+    public Action<string>? StringSetCompleted { get; set; }
+
     public void SetString(string key, RedisValue value)
     {
         stringValues[key] = value;
@@ -37,18 +40,24 @@ public class InMemoryRedisDatabase : DispatchProxy
         var key = args[0]?.ToString() ?? throw new InvalidOperationException("Redis 键不能为空");
         return targetMethod.Name switch
         {
-            nameof(IDatabaseAsync.StringGetAsync) => Task.FromResult(
-                stringValues.TryGetValue(key, out var value) ? value : RedisValue.Null
-            ),
+            nameof(IDatabaseAsync.StringGetAsync) => GetStringAsync(key),
             nameof(IDatabaseAsync.StringSetAsync) => SetStringAsync(key, (RedisValue)args[1]!),
             nameof(IDatabaseAsync.KeyDeleteAsync) => Task.FromResult(DeleteKey(key)),
             _ => throw new NotSupportedException($"测试 Redis 未实现 {targetMethod.Name}"),
         };
     }
 
+    private Task<RedisValue> GetStringAsync(string key)
+    {
+        var value = stringValues.TryGetValue(key, out var storedValue) ? storedValue : RedisValue.Null;
+        StringGetCompleted?.Invoke(key);
+        return Task.FromResult(value);
+    }
+
     private Task<bool> SetStringAsync(string key, RedisValue value)
     {
         SetString(key, value);
+        StringSetCompleted?.Invoke(key);
         return Task.FromResult(true);
     }
 
