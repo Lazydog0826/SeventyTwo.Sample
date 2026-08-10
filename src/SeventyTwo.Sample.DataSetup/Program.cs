@@ -167,19 +167,6 @@ try
             }
         )
         .ExecuteCommand();
-    db.Insertable(
-            new[]
-            {
-                new UserPermissionRecord { UserId = userId, PermissionId = homePermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsPermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsListPermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsCreatePermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsUpdatePermissionId },
-                new UserPermissionRecord { UserId = userId, PermissionId = permissionsDeletePermissionId },
-            }
-        )
-        .ExecuteCommand();
-
     db.Ado.CommitTran();
     Console.WriteLine("测试机构、超级管理员和权限初始化完成。");
 }
