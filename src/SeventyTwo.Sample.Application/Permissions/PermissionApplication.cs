@@ -5,6 +5,9 @@ using SeventyTwo.Sample.Domain.Permissions;
 
 namespace SeventyTwo.Sample.Application.Permissions;
 
+/// <summary>
+/// 权限应用服务。
+/// </summary>
 [AutofacDependency(typeof(IPermissionApplication))]
 public sealed class PermissionApplication(
     IPermissionRepository permissionRepository,
@@ -140,11 +143,22 @@ public sealed class PermissionApplication(
         return new PermissionOutput(menus, buttonCodes);
     }
 
+    /// <summary>
+    /// 获取所有权限，并使用内存缓存复用查询结果。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>所有权限。</returns>
     private async Task<IReadOnlyList<Permission>> GetAllPermissionsAsync(CancellationToken cancellationToken)
     {
         return await memoryCacheService.GetOrLoadAsync(permissionRepository.GetAllAsync, cancellationToken);
     }
 
+    /// <summary>
+    /// 查询指定权限，不存在时抛出业务异常。
+    /// </summary>
+    /// <param name="id">权限 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>权限聚合。</returns>
     private async Task<Permission> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
@@ -156,6 +170,12 @@ public sealed class PermissionApplication(
             ?? throw new PermissionDomainException("权限不存在");
     }
 
+    /// <summary>
+    /// 验证权限编码未被其他权限使用。
+    /// </summary>
+    /// <param name="code">权限编码。</param>
+    /// <param name="excludedId">校验时排除的权限 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
     private async Task ValidateCodeAsync(string code, Guid? excludedId, CancellationToken cancellationToken)
     {
         if (await permissionRepository.CodeExistsAsync(code, excludedId, cancellationToken))
@@ -164,6 +184,12 @@ public sealed class PermissionApplication(
         }
     }
 
+    /// <summary>
+    /// 验证上级权限存在，且设置后不会形成循环引用。
+    /// </summary>
+    /// <param name="id">当前权限 ID。</param>
+    /// <param name="parentId">候选上级权限 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
     private async Task ValidateParentAsync(Guid id, Guid? parentId, CancellationToken cancellationToken)
     {
         if (parentId is null)
@@ -198,6 +224,11 @@ public sealed class PermissionApplication(
         }
     }
 
+    /// <summary>
+    /// 将权限聚合转换为权限管理列表项。
+    /// </summary>
+    /// <param name="permission">权限聚合。</param>
+    /// <returns>权限管理列表项。</returns>
     private static PermissionListOutput ToListOutput(Permission permission)
     {
         return new PermissionListOutput
