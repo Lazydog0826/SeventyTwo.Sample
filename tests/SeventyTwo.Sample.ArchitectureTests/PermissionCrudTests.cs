@@ -28,8 +28,8 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisDatabase = (InMemoryRedisDatabase)(object)database;
         var redisCacheService = new FakeRedisCacheService(database);
-        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "Tests" });
-        var cacheKey = cacheConfiguration.Value.Data("Users", $"Info:{userId}");
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
+        var cacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
         redisDatabase.SetString(cacheKey, "invalid json");
         var service = new UserInfoCacheService(
             userRepository,
@@ -59,7 +59,7 @@ public sealed class PermissionCrudTests
         );
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisCacheService = new FakeRedisCacheService(database);
-        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "Tests" });
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
         var userRepository = new FakeUserRepository(new User(userId, "superadmin", "hash", "超级管理员"));
         var userPermissionCacheService = new UserPermissionCacheService(
             repository,
@@ -67,7 +67,7 @@ public sealed class PermissionCrudTests
             redisCacheService,
             cacheConfiguration
         );
-        var permissionCacheKey = cacheConfiguration.Value.Data("Permissions", "UserCodes:SuperAdmin");
+        var permissionCacheKey = cacheConfiguration.Value.Data("permissions", "user-codes:super-admin");
         var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
         inMemoryDatabase.SetString(permissionCacheKey, "invalid-json");
 
@@ -424,7 +424,7 @@ public sealed class PermissionCrudTests
         using var cancellationTokenSource = new CancellationTokenSource();
         database.StringSetCompleted = key =>
         {
-            if (key.Contains(":Meta:", StringComparison.Ordinal))
+            if (key.Contains(":meta:", StringComparison.Ordinal))
             {
                 cancellationTokenSource.Cancel();
             }
@@ -582,7 +582,7 @@ public sealed class PermissionCrudTests
     ) CreateCacheService()
     {
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
-        var configuration = new CacheConfiguration { KeyNamespace = "Tests" };
+        var configuration = new CacheConfiguration { KeyNamespace = "tests" };
         var redisCacheService = new FakeRedisCacheService(database);
         return (
             new PermissionCacheService(redisCacheService, Options.Create(configuration)),
