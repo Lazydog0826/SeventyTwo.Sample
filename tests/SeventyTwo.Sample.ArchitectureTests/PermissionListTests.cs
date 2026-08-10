@@ -1,6 +1,8 @@
 using System.Reflection;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Infrastructure.Permissions;
@@ -66,14 +68,21 @@ public sealed class PermissionListTests
     }
 
     [Fact]
-    public void ListEndpoint_ShouldRequirePermissionListPermission()
+    public async Task ListEndpoint_ShouldRequirePermissionListPermission()
     {
         var action = typeof(PermissionsController).GetMethod(nameof(PermissionsController.GetListAsync));
 
         var httpGet = Assert.IsType<HttpGetAttribute>(action?.GetCustomAttribute<HttpGetAttribute>());
         var permission = Assert.IsType<PermissionAttribute>(action?.GetCustomAttribute<PermissionAttribute>());
         Assert.Equal("list", httpGet.Template);
-        Assert.Equal("Permission:All:Permissions.List", permission.Policy);
+
+        var policyProvider = new PermissionPolicyProvider(Options.Create(new AuthorizationOptions()));
+        var policy = await policyProvider.GetPolicyAsync(Assert.IsType<string>(permission.Policy));
+        var requirement = Assert.Single(
+            Assert.IsType<AuthorizationPolicy>(policy).Requirements.OfType<PermissionRequirement>()
+        );
+        Assert.Equal(PermissionMatchMode.All, requirement.MatchMode);
+        Assert.Equal(["Permissions.List"], requirement.PermissionCodes);
     }
 
     private static TypeAdapterConfig CreateMapsterConfiguration()

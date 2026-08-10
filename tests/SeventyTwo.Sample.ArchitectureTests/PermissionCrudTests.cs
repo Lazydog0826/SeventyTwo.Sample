@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
@@ -107,14 +108,25 @@ public sealed class PermissionCrudTests
     [InlineData(nameof(PermissionsController.CreateAsync), "create", "Permissions.Create")]
     [InlineData(nameof(PermissionsController.UpdateAsync), "update", "Permissions.Update")]
     [InlineData(nameof(PermissionsController.DeleteAsync), "delete", "Permissions.Delete")]
-    public void MutationEndpoints_ShouldRequireDedicatedPermission(string methodName, string route, string code)
+    public async Task MutationEndpoints_ShouldRequireDedicatedPermission(
+        string methodName,
+        string route,
+        string code
+    )
     {
         var action = typeof(PermissionsController).GetMethod(methodName);
 
         var httpPost = Assert.IsType<HttpPostAttribute>(action?.GetCustomAttribute<HttpPostAttribute>());
         var permission = Assert.IsType<PermissionAttribute>(action?.GetCustomAttribute<PermissionAttribute>());
         Assert.Equal(route, httpPost.Template);
-        Assert.Equal($"Permission:All:{code}", permission.Policy);
+
+        var policyProvider = new PermissionPolicyProvider(Options.Create(new AuthorizationOptions()));
+        var policy = await policyProvider.GetPolicyAsync(Assert.IsType<string>(permission.Policy));
+        var requirement = Assert.Single(
+            Assert.IsType<AuthorizationPolicy>(policy).Requirements.OfType<PermissionRequirement>()
+        );
+        Assert.Equal(PermissionMatchMode.All, requirement.MatchMode);
+        Assert.Equal([code], requirement.PermissionCodes);
     }
 
     [Fact]
