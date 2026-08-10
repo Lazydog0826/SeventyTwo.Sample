@@ -228,9 +228,7 @@ public sealed class PermissionMemoryCacheService(
             .ToArray();
 
         await Task.WhenAll(
-            buckets.Select(bucket =>
-                database.StringSetAsync(bucket.Key, bucket.Value, BucketCacheExpiration)
-            )
+            buckets.Select(bucket => database.StringSetAsync(bucket.Key, bucket.Value, BucketCacheExpiration))
         );
 
         var metaKey = PermissionCacheKeys.GetAllPermissionsMetaKey(configuration, version);
