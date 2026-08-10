@@ -1,3 +1,4 @@
+// ReSharper disable NotAccessedPositionalProperty.Global
 namespace SeventyTwo.Sample.Application.Permissions;
 
 /// <summary>
