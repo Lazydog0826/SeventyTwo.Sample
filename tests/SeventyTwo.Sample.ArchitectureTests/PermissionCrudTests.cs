@@ -5,7 +5,9 @@ using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Permissions;
+using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Domain.Permissions;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -16,6 +18,91 @@ namespace SeventyTwo.Sample.ArchitectureTests;
 
 public sealed class PermissionCrudTests
 {
+    [Fact]
+    public async Task UserInfoCache_ShouldReloadWhenCachedValueIsInvalidJson()
+    {
+        var userId = Guid.CreateVersion7();
+        var user = new User(userId, "user", "hash", "测试用户");
+        var userRepository = new FakeUserRepository(user);
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var redisDatabase = (InMemoryRedisDatabase)(object)database;
+        var redisCacheService = new FakeRedisCacheService(database);
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "Tests" });
+        var cacheKey = cacheConfiguration.Value.Data("Users", $"Info:{userId}");
+        redisDatabase.SetString(cacheKey, "invalid json");
+        var service = new UserInfoCacheService(
+            userRepository,
+            redisCacheService,
+            cacheConfiguration
+        );
+
+        var output = await service.FindAsync(userId, CancellationToken.None);
+
+        Assert.NotNull(output);
+        Assert.Equal(userId, output.Id);
+        Assert.Equal(1, userRepository.GetCount);
+        Assert.NotNull(
+            JsonSerializer.Deserialize<UserOutput>(redisDatabase.GetString(cacheKey).ToString())
+        );
+    }
+
+    [Fact]
+    public async Task SuperAdmin_ShouldReceiveAllEnabledPermissionsWithoutAssignments()
+    {
+        var userId = Guid.CreateVersion7();
+        var repository = new FakePermissionRepository(
+            [
+                CreatePermission("Enabled", PermissionType.Page),
+                CreatePermission("Disabled", PermissionType.Page, enable: false),
+            ]
+        );
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var redisCacheService = new FakeRedisCacheService(database);
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "Tests" });
+        var userRepository = new FakeUserRepository(new User(userId, "superadmin", "hash", "超级管理员"));
+        var userPermissionCacheService = new UserPermissionCacheService(
+            repository,
+            new UserInfoCacheService(userRepository, redisCacheService, cacheConfiguration),
+            redisCacheService,
+            cacheConfiguration
+        );
+        var permissionCacheKey = cacheConfiguration.Value.Data("Permissions", "UserCodes:SuperAdmin");
+        var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
+        inMemoryDatabase.SetString(permissionCacheKey, "invalid-json");
+
+        var codes = await userPermissionCacheService.GetCodesAsync(userId, CancellationToken.None);
+        var hasEnabled = await userPermissionCacheService.HasAsync(
+            userId,
+            ["Enabled"],
+            PermissionMatchMode.All,
+            CancellationToken.None
+        );
+        var hasDisabled = await userPermissionCacheService.HasAsync(
+            userId,
+            ["Disabled"],
+            PermissionMatchMode.All,
+            CancellationToken.None
+        );
+
+        Assert.Equal(["Enabled"], codes);
+        Assert.True(hasEnabled);
+        Assert.False(hasDisabled);
+        Assert.Equal(1, userRepository.GetCount);
+        Assert.Equal(1, repository.GetAllCount);
+
+        var cachedCodes = JsonSerializer.Deserialize<string[]>(
+            inMemoryDatabase.GetString(permissionCacheKey).ToString()
+        );
+        Assert.NotNull(cachedCodes);
+        Assert.Equal(["Enabled"], cachedCodes);
+
+        await userPermissionCacheService.DeleteAsync(userId, CancellationToken.None);
+        Assert.True(inMemoryDatabase.StringExists(permissionCacheKey));
+
+        await userPermissionCacheService.DeleteSuperAdminAsync(CancellationToken.None);
+        Assert.False(inMemoryDatabase.StringExists(permissionCacheKey));
+    }
+
     [Theory]
     [InlineData(nameof(PermissionsController.CreateAsync), "create", "Permissions.Create")]
     [InlineData(nameof(PermissionsController.UpdateAsync), "update", "Permissions.Update")]
@@ -87,8 +174,9 @@ public sealed class PermissionCrudTests
         var application = new PermissionApplication(
             repository,
             cacheService,
-            new FakePermissionChecker(),
+            new FakeUserPermissionCacheService(),
             new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
             new FakeUnitOfWork()
         );
 
@@ -109,12 +197,15 @@ public sealed class PermissionCrudTests
         var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
         database.SetString(versionKey, "old-version");
         var publisher = new FakePermissionCacheInvalidationPublisher();
+        var userPermissionCacheInvalidationPublisher = new FakeUserPermissionCacheInvalidationPublisher();
+        var userPermissionCacheService = new FakeUserPermissionCacheService();
         var unitOfWork = new FakeUnitOfWork();
         var application = new PermissionApplication(
             repository,
             cacheService,
-            new FakePermissionChecker(),
+            userPermissionCacheService,
             publisher,
+            userPermissionCacheInvalidationPublisher,
             unitOfWork
         );
 
@@ -124,6 +215,15 @@ public sealed class PermissionCrudTests
 
         Assert.Equal(3, publisher.PublishCount);
         Assert.Equal(3, unitOfWork.ExecuteCount);
+        Assert.Equal(
+            [
+                new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
+                new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
+                new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
+            ],
+            userPermissionCacheInvalidationPublisher.Messages
+        );
+        Assert.Equal(0, userPermissionCacheService.DeleteSuperAdminCount);
         Assert.True(database.StringExists(versionKey));
     }
 
@@ -141,6 +241,26 @@ public sealed class PermissionCrudTests
         );
 
         Assert.False(database.StringExists(versionKey));
+    }
+
+    [Fact]
+    public async Task UserPermissionCacheInvalidationConsumer_ShouldDeleteRequestedCache()
+    {
+        var userId = Guid.CreateVersion7();
+        var cacheService = new FakeUserPermissionCacheService();
+        var consumer = new UserPermissionCacheInvalidationConsumer(cacheService);
+
+        await consumer.ConsumeAsync(
+            new UserPermissionCacheInvalidationMessage(userId, false),
+            CancellationToken.None
+        );
+        await consumer.ConsumeAsync(
+            new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
+            CancellationToken.None
+        );
+
+        Assert.Equal([userId], cacheService.DeletedUserIds);
+        Assert.Equal(1, cacheService.DeleteSuperAdminCount);
     }
 
     [Fact]
@@ -325,7 +445,12 @@ public sealed class PermissionCrudTests
         }
     }
 
-    private static Permission CreatePermission(string code, PermissionType type, Guid? parentId = null)
+    private static Permission CreatePermission(
+        string code,
+        PermissionType type,
+        Guid? parentId = null,
+        bool enable = true
+    )
     {
         return new Permission(
             Guid.CreateVersion7(),
@@ -339,11 +464,14 @@ public sealed class PermissionCrudTests
             type == PermissionType.Page ? code : null,
             parentId,
             new PermissionMetaData(true)
-        );
+        )
+        {
+            Enable = enable,
+        };
     }
 
     private static (
-        PermissionMemoryCacheService Service,
+        PermissionCacheService Service,
         InMemoryRedisDatabase Database,
         CacheConfiguration Configuration,
         FakeRedisCacheService RedisCacheService
@@ -353,7 +481,7 @@ public sealed class PermissionCrudTests
         var configuration = new CacheConfiguration { KeyNamespace = "Tests" };
         var redisCacheService = new FakeRedisCacheService(database);
         return (
-            new PermissionMemoryCacheService(redisCacheService, Options.Create(configuration)),
+            new PermissionCacheService(redisCacheService, Options.Create(configuration)),
             (InMemoryRedisDatabase)(object)database,
             configuration,
             redisCacheService
@@ -423,9 +551,13 @@ public sealed class PermissionCrudTests
         };
     }
 
-    private sealed class FakePermissionChecker : IUserPermissionChecker
+    private sealed class FakeUserPermissionCacheService : IUserPermissionCacheService
     {
         public IReadOnlyList<Guid> InvalidatedUserIds { get; private set; } = [];
+
+        public IReadOnlyList<Guid> DeletedUserIds { get; private set; } = [];
+
+        public int DeleteSuperAdminCount { get; private set; }
 
         public Task InvalidateAsync(IReadOnlyCollection<Guid> userIds)
         {
@@ -436,12 +568,44 @@ public sealed class PermissionCrudTests
         public Task<IReadOnlyList<string>> GetCodesAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<string>>([]);
 
+        public Task DeleteAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            DeletedUserIds = [.. DeletedUserIds, userId];
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteSuperAdminAsync(CancellationToken cancellationToken)
+        {
+            DeleteSuperAdminCount++;
+            return Task.CompletedTask;
+        }
+
         public Task<bool> HasAsync(
             Guid userId,
             IReadOnlyCollection<string> permissionCodes,
             PermissionMatchMode matchMode,
             CancellationToken cancellationToken
         ) => Task.FromResult(false);
+    }
+
+    private sealed class FakeUserRepository(User user) : IUserRepository
+    {
+        public int GetCount { get; private set; }
+
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            GetCount++;
+            return Task.FromResult(id == user.Id ? user : null);
+        }
+
+        public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(
+                string.Equals(account, user.Username, StringComparison.Ordinal) ? user : null
+            );
+        }
     }
 
     private sealed class FakePermissionCacheInvalidationPublisher
@@ -452,6 +616,18 @@ public sealed class PermissionCrudTests
         public Task PublishAsync(CancellationToken cancellationToken)
         {
             PublishCount++;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeUserPermissionCacheInvalidationPublisher
+        : IUserPermissionCacheInvalidationPublisher
+    {
+        public IReadOnlyList<UserPermissionCacheInvalidationMessage> Messages { get; private set; } = [];
+
+        public Task PublishAsync(Guid userId, bool isSuperAdmin, CancellationToken cancellationToken)
+        {
+            Messages = [.. Messages, new UserPermissionCacheInvalidationMessage(userId, isSuperAdmin)];
             return Task.CompletedTask;
         }
     }
@@ -474,6 +650,8 @@ public sealed class PermissionCrudTests
     ) : IPermissionRepository
     {
         private readonly List<Permission> items = [.. permissions];
+
+        public int GetAllCount { get; private set; }
 
         public Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult(items.SingleOrDefault(permission => permission.Id == id));
@@ -504,8 +682,13 @@ public sealed class PermissionCrudTests
         public Task<IReadOnlyList<Permission>> GetListAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Permission>>(items);
 
-        public Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<Permission>>(items.Where(permission => permission.Enable).ToList());
+        public Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken)
+        {
+            GetAllCount++;
+            return Task.FromResult<IReadOnlyList<Permission>>(
+                items.Where(permission => permission.Enable).ToList()
+            );
+        }
 
         public Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<string>>([]);

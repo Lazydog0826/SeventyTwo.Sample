@@ -72,17 +72,18 @@ public sealed class FakeRedisCacheService(IDatabase database) : IRedisCacheServi
     public async Task LockAsync(
         string lockKey,
         Func<CancellationToken, Task> func,
-        TimeSpan? timeout = null,
-        TimeSpan? renewalInterval = null,
-        TimeSpan? renewalDuration = null,
-        TimeSpan? executionTimeout = null,
+        TimeSpan timeout = default,
+        TimeSpan renewalInterval = default,
+        TimeSpan renewalDuration = default,
+        TimeSpan executionTimeout = default,
         int? db = null,
         CancellationToken cancellationToken = default
     )
     {
         LastLockAcquireTimeout = timeout;
         var semaphore = locks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
-        if (!await semaphore.WaitAsync(timeout ?? Timeout.InfiniteTimeSpan, cancellationToken))
+        var waitTimeout = timeout == default ? Timeout.InfiniteTimeSpan : timeout;
+        if (!await semaphore.WaitAsync(waitTimeout, cancellationToken))
         {
             throw new TimeoutException($"获取测试 Redis 锁超时：{lockKey}");
         }
