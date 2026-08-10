@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using SeventyTwo.Sample.Application.Permissions;
@@ -18,7 +19,18 @@ public sealed class PermissionAttribute : AuthorizeAttribute
     /// <param name="permissionCodes">访问接口所需的权限编码。</param>
     public PermissionAttribute(PermissionMatchMode matchMode, params string[] permissionCodes)
     {
-        Policy = PermissionPolicy.CreateName(matchMode, permissionCodes);
+        if (permissionCodes is null || permissionCodes.Length == 0)
+        {
+            throw new ArgumentException("必须指定至少一个权限代码", nameof(permissionCodes));
+        }
+
+        if (matchMode is not PermissionMatchMode.All and not PermissionMatchMode.Any)
+        {
+            throw new ArgumentOutOfRangeException(nameof(matchMode), "权限匹配模式必须是 All 或 Any");
+        }
+        Policy = JsonSerializer.Serialize(
+            new PermissionAttributeData { MatchMode = matchMode, PermissionCodes = [.. permissionCodes] }
+        );
     }
 }
 
@@ -33,7 +45,16 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
     /// </summary>
     public override Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
-        if (!PermissionPolicy.TryParse(policyName, out var matchMode, out var permissionCodes))
+        PermissionAttributeData? permissionAttributeData;
+        try
+        {
+            permissionAttributeData = JsonSerializer.Deserialize<PermissionAttributeData>(policyName);
+        }
+        catch
+        {
+            permissionAttributeData = null;
+        }
+        if (permissionAttributeData == null)
         {
             return base.GetPolicyAsync(policyName);
         }
@@ -41,7 +62,9 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
         // 权限接口必须先通过业务 JWT 方案建立身份，再由权限处理器检查用户权限。
         var policy = new AuthorizationPolicyBuilder(BusinessJwtAuthenticationDefaults.Scheme)
             .RequireAuthenticatedUser()
-            .AddRequirements(new PermissionRequirement(permissionCodes, matchMode))
+            .AddRequirements(
+                new PermissionRequirement(permissionAttributeData.PermissionCodes, permissionAttributeData.MatchMode)
+            )
             .Build();
         return Task.FromResult<AuthorizationPolicy?>(policy);
     }
@@ -93,64 +116,9 @@ public sealed class PermissionAuthorizationHandler(IUserPermissionCacheService u
 public sealed record PermissionRequirement(IReadOnlyCollection<string> PermissionCodes, PermissionMatchMode MatchMode)
     : IAuthorizationRequirement;
 
-/// <summary>
-/// 负责权限授权策略名称的生成与解析。
-/// </summary>
-internal static class PermissionPolicy
+internal sealed class PermissionAttributeData
 {
-    private const string Prefix = "Permission:";
+    public PermissionMatchMode MatchMode { get; init; }
 
-    /// <summary>
-    /// 将权限匹配模式和权限编码编码为可供 ASP.NET Core 引用的策略名称。
-    /// </summary>
-    public static string CreateName(PermissionMatchMode matchMode, IReadOnlyCollection<string> permissionCodes)
-    {
-        if (!Enum.IsDefined(matchMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(matchMode));
-        }
-
-        // 清理空值和重复项，并保留首次出现的权限编码顺序，使策略名称保持稳定。
-        var codes = permissionCodes
-            .Where(code => !string.IsNullOrWhiteSpace(code))
-            .Select(code => code.Trim())
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        return codes.Length == 0
-            ? throw new ArgumentException("至少需要一个权限编码", nameof(permissionCodes))
-            : $"{Prefix}{matchMode}:{string.Join(',', codes.Select(Uri.EscapeDataString))}";
-    }
-
-    /// <summary>
-    /// 尝试从策略名称解析权限匹配模式和权限编码；不属于权限策略或格式无效时返回 false。
-    /// </summary>
-    public static bool TryParse(
-        string policyName,
-        out PermissionMatchMode matchMode,
-        out IReadOnlyCollection<string> permissionCodes
-    )
-    {
-        matchMode = default;
-        permissionCodes = [];
-        if (!policyName.StartsWith(Prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var parts = policyName[Prefix.Length..].Split(':', 2);
-        if (parts.Length != 2 || !Enum.TryParse(parts[0], out matchMode) || !Enum.IsDefined(matchMode))
-        {
-            return false;
-        }
-
-        // 权限编码在生成名称时经过 URI 转义，此处按逗号拆分后恢复原始内容。
-        var codes = parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries).Select(Uri.UnescapeDataString).ToArray();
-        if (codes.Length == 0)
-        {
-            return false;
-        }
-
-        permissionCodes = codes;
-        return true;
-    }
+    public List<string> PermissionCodes { get; init; } = [];
 }
