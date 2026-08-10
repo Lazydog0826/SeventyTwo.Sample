@@ -153,7 +153,7 @@ public sealed class UserApplication(
     /// <returns>令牌缓存键。</returns>
     private string GetTokenCacheKey(Guid sessionId)
     {
-        return cacheConfiguration.Value.Data("TOKEN_CACHE_KEY", sessionId.ToString());
+        return cacheConfiguration.Value.Data("token-cache-key", sessionId.ToString());
     }
 
     /// <summary>

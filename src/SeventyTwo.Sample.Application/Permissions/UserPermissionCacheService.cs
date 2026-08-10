@@ -22,22 +22,22 @@ public sealed class UserPermissionCacheService(
 
     private string GetSuperAdminCacheKey()
     {
-        return cacheConfiguration.Value.Data("Permissions", "UserCodes:SuperAdmin");
+        return cacheConfiguration.Value.Data("permissions", "user-codes:super-admin");
     }
 
     private string GetSuperAdminLockKey()
     {
-        return cacheConfiguration.Value.Lock("Permissions", "UserCodes:SuperAdmin");
+        return cacheConfiguration.Value.Lock("permissions", "user-codes:super-admin");
     }
 
     private string GetCacheKey(Guid userId)
     {
-        return cacheConfiguration.Value.Data("Permissions", $"UserCodes:{userId}");
+        return cacheConfiguration.Value.Data("permissions", $"user-codes:{userId}");
     }
 
     private string GetLockKey(Guid userId)
     {
-        return cacheConfiguration.Value.Lock("Permissions", $"UserCodes:{userId}");
+        return cacheConfiguration.Value.Lock("permissions", $"user-codes:{userId}");
     }
 
     /// <inheritdoc />

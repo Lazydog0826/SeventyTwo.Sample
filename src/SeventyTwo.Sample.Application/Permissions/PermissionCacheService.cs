@@ -15,22 +15,22 @@ public static class PermissionCacheKeys
 {
     public static string GetAllPermissionsLockKey(CacheConfiguration configuration)
     {
-        return configuration.Lock("Permissions", "Lock");
+        return configuration.Lock("permissions", "lock");
     }
 
     public static string GetAllPermissionsVersionKey(CacheConfiguration configuration)
     {
-        return configuration.Data("Permissions", "Version");
+        return configuration.Data("permissions", "version");
     }
 
     public static string GetAllPermissionsMetaKey(CacheConfiguration configuration, string version)
     {
-        return configuration.Data("Permissions", "Meta:" + version);
+        return configuration.Data("permissions", "meta:" + version);
     }
 
     public static string GetAllPermissionsBucketKey(CacheConfiguration configuration, string bucket)
     {
-        return configuration.Data("Permissions", "Bucket:" + bucket);
+        return configuration.Data("permissions", "bucket:" + bucket);
     }
 }
 

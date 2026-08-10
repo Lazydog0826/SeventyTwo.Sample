@@ -85,7 +85,7 @@ public sealed class BalanceChangeService(
 
     private string GetCacheKey(string key)
     {
-        return cacheConfiguration.Value.Data("Wallets", $"CustomerKey:{key}");
+        return cacheConfiguration.Value.Data("wallets", $"customer-key:{key}");
     }
 
     private async Task<List<string>> CheckWalletKeysExistAsync(List<string> keys)
@@ -142,14 +142,14 @@ public sealed class BalanceChangeService(
 
     private bool CanUseRedis()
     {
-        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"));
+        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks"));
         return DateTimeOffset.UtcNow.UtcTicks >= disabledUntil;
     }
 
     private void SetRedisCircuitBreaker()
     {
         memoryCache.Set(
-            cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"),
+            cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks"),
             DateTimeOffset.UtcNow.UtcTicks + TimeSpan.FromMinutes(1).Ticks
         );
     }

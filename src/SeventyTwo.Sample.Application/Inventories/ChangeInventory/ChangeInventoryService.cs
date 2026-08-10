@@ -83,7 +83,7 @@ public sealed class ChangeInventoryService(
 
     private string GetCacheKey(string key)
     {
-        return cacheConfiguration.Value.Data("Inventories", $"DimKey:{key}");
+        return cacheConfiguration.Value.Data("inventories", $"dim-key:{key}");
     }
 
     private async Task<List<string>> CheckInventoriesKeyExistAsync(List<string> keys)
@@ -140,14 +140,14 @@ public sealed class ChangeInventoryService(
 
     private bool CanUseRedis()
     {
-        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"));
+        var disabledUntil = memoryCache.Get<long>(cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks"));
         return DateTimeOffset.UtcNow.UtcTicks >= disabledUntil;
     }
 
     private void SetRedisCircuitBreaker()
     {
         memoryCache.Set(
-            cacheConfiguration.Value.Data("Common", "RedisDisabledUntilTicks"),
+            cacheConfiguration.Value.Data("common", "redis-disabled-until-ticks"),
             DateTimeOffset.UtcNow.UtcTicks + TimeSpan.FromMinutes(1).Ticks
         );
     }

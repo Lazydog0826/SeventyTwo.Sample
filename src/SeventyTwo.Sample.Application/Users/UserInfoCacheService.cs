@@ -33,7 +33,7 @@ public sealed class UserInfoCacheService(
     /// <returns>用户信息缓存键。</returns>
     private string GetCacheKey(Guid id)
     {
-        return cacheConfiguration.Value.Data("Users", $"Info:{id}");
+        return cacheConfiguration.Value.Data("users", $"info:{id}");
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public sealed class UserInfoCacheService(
     /// <returns>用户信息缓存锁键。</returns>
     private string GetLockKey(Guid id)
     {
-        return cacheConfiguration.Value.Lock("Users", $"Info:{id}");
+        return cacheConfiguration.Value.Lock("users", $"info:{id}");
     }
 
     /// <summary>

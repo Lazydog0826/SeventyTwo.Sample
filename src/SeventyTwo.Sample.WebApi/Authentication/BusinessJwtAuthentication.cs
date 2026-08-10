@@ -70,7 +70,7 @@ public sealed class BusinessJwtAuthenticationHandler(
 
         // 根据 Token 中的会话 ID 生成 Redis Key，并一次读取当前会话保存的
         // Token 哈希和用户 ID，用于确认该 Token 仍属于有效登录会话。
-        var cacheKey = cacheConfiguration.Value.Data("TOKEN_CACHE_KEY", payload.SessionId.ToString());
+        var cacheKey = cacheConfiguration.Value.Data("token-cache-key", payload.SessionId.ToString());
         var session = await redisCacheService.GetDatabase().HashGetAsync(cacheKey, ["accessTokenHash", "userId"]);
 
         // 除了 Token 本身的密码学有效性，还必须满足服务端会话校验：
