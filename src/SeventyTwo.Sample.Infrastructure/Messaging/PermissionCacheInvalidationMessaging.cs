@@ -37,10 +37,7 @@ public sealed class PermissionCacheInvalidationConsumer(PermissionMemoryCacheSer
         PermissionCacheInvalidationMessage.TopicName,
         Group = PermissionCacheInvalidationMessage.ConsumerGroup
     )]
-    public Task ConsumeAsync(
-        PermissionCacheInvalidationMessage message,
-        CancellationToken cancellationToken
-    )
+    public Task ConsumeAsync(PermissionCacheInvalidationMessage message, CancellationToken cancellationToken)
     {
         return memoryCacheService.InvalidateAsync(cancellationToken);
     }
