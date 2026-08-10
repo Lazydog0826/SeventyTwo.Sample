@@ -116,9 +116,19 @@ public sealed class UserInfoCacheService(
             }
 
             var serializedValue = cachedValue.ToString();
-            return serializedValue == EmptyCacheValue
-                ? (true, null)
-                : (true, JsonSerializer.Deserialize<UserOutput>(serializedValue));
+            if (serializedValue == EmptyCacheValue)
+            {
+                return (true, null);
+            }
+
+            try
+            {
+                return (true, JsonSerializer.Deserialize<UserOutput>(serializedValue));
+            }
+            catch (JsonException)
+            {
+                return (false, null);
+            }
         }
     }
 
