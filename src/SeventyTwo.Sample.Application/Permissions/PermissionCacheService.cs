@@ -66,9 +66,11 @@ public sealed class PermissionCacheService(
         CancellationToken cancellationToken
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var database = redisCacheService.GetDatabase();
         var configuration = cacheConfiguration.Value;
         var cachedPermissions = await TryGetCachedAsync(database, configuration);
+        cancellationToken.ThrowIfCancellationRequested();
         if (cachedPermissions is not null)
         {
             return cachedPermissions;
@@ -89,14 +91,15 @@ public sealed class PermissionCacheService(
 
                 // 等待锁期间可能已有其他实例完成缓存加载。
                 permissions = await TryGetCachedAsync(database, configuration);
+                operationCancellationToken.ThrowIfCancellationRequested();
                 if (permissions is not null)
                 {
                     return;
                 }
 
                 permissions = await loader(operationCancellationToken);
-                await SetCacheAsync(database, configuration, permissions);
                 operationCancellationToken.ThrowIfCancellationRequested();
+                await SetCacheAsync(database, configuration, permissions, operationCancellationToken);
             },
             timeout: LoadLockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
@@ -207,10 +210,12 @@ public sealed class PermissionCacheService(
     /// <param name="database">Redis 数据库。</param>
     /// <param name="configuration">缓存键配置。</param>
     /// <param name="permissions">需要缓存的全部权限。</param>
+    /// <param name="cancellationToken">用于停止后续缓存写入和版本发布的令牌。</param>
     private static async Task SetCacheAsync(
         IDatabase database,
         CacheConfiguration configuration,
-        IReadOnlyList<Permission> permissions
+        IReadOnlyList<Permission> permissions,
+        CancellationToken cancellationToken
     )
     {
         var version = Guid.CreateVersion7().ToString();
@@ -227,13 +232,16 @@ public sealed class PermissionCacheService(
             })
             .ToArray();
 
+        cancellationToken.ThrowIfCancellationRequested();
         await Task.WhenAll(
             buckets.Select(bucket => database.StringSetAsync(bucket.Key, bucket.Value, BucketCacheExpiration))
         );
+        cancellationToken.ThrowIfCancellationRequested();
 
         var metaKey = PermissionCacheKeys.GetAllPermissionsMetaKey(configuration, version);
         var meta = new PermissionCacheMeta([.. buckets.Select(bucket => bucket.Key.ToString())]);
         await database.StringSetAsync(metaKey, JsonSerializer.Serialize(meta), MetaCacheExpiration);
+        cancellationToken.ThrowIfCancellationRequested();
 
         // 最后发布版本，确保读取方只会看到已写完的缓存。
         await database.StringSetAsync(
@@ -241,6 +249,7 @@ public sealed class PermissionCacheService(
             version,
             VersionCacheExpiration
         );
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     private sealed record PermissionCacheMeta(string[] BucketKeys);
