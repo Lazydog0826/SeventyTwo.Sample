@@ -24,7 +24,12 @@ public sealed class UserPermissionService(
 
     private string GetSuperAdminCacheKey()
     {
-        return cacheConfiguration.Value.Data("Permissions", $"UserCodeSet:SuperAdmin");
+        return cacheConfiguration.Value.Data("Permissions", "UserCodeSet:SuperAdmin");
+    }
+
+    private string GetSuperAdminLockKey()
+    {
+        return cacheConfiguration.Value.Lock("Permissions", "UserCodeSet:SuperAdmin");
     }
 
     private string GetCacheKey(Guid userId)
@@ -34,29 +39,23 @@ public sealed class UserPermissionService(
 
     private string GetLockKey(Guid userId)
     {
-        return cacheConfiguration.Value.Data("Permissions", $"UserCodeSet:{userId}");
+        return cacheConfiguration.Value.Lock("Permissions", $"UserCodeSet:{userId}");
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetCodesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        string cacheKey;
         var database = redisCacheService.GetDatabase();
-        if (await userInfoCacheService.IsSuperAdminAsync(userId, cancellationToken))
-        {
-            cacheKey = GetSuperAdminCacheKey();
-        }
-        else
-        {
-            cacheKey = GetCacheKey(userId);
-        }
+        var isSuperAdmin = await userInfoCacheService.IsSuperAdminAsync(userId, cancellationToken);
+        var cacheKey = isSuperAdmin ? GetSuperAdminCacheKey() : GetCacheKey(userId);
         var cachedValue = await GetCacheAsync();
         cancellationToken.ThrowIfCancellationRequested();
         if (cachedValue is not null)
         {
             return cachedValue;
         }
-        var lockKey = GetLockKey(userId);
+
+        var lockKey = isSuperAdmin ? GetSuperAdminLockKey() : GetLockKey(userId);
         await redisCacheService.LockAsync(
             lockKey,
             async lockCancellationToken =>
@@ -73,6 +72,8 @@ public sealed class UserPermissionService(
                 {
                     return;
                 }
+
+                // TODO(BUG): 超级管理员也调用 GetCodesByUserIdAsync，只会查询用户权限关联；没有关联记录时无法获得其应有的全部有效权限，应在超级管理员分支查询 GetAllAsync 的编码。
                 var permissionCodes = await permissionRepository.GetCodesByUserIdAsync(
                     userId,
                     operationCancellationToken
@@ -86,8 +87,10 @@ public sealed class UserPermissionService(
                 {
                     throw new InvalidOperationException("保存用户权限缓存失败");
                 }
+
                 await Task.WhenAll(cacheDeleteTask, setAddTask, setExpireTask);
                 operationCancellationToken.ThrowIfCancellationRequested();
+                // TODO(BUG): 缓存加载成功后没有把 permissionCodes 赋给 cachedValue，首次调用最终仍返回空集合；应回传本次加载结果或重新读取缓存。
             },
             timeout: LockAcquireTimeout,
             renewalInterval: LockRenewalInterval,
@@ -101,6 +104,7 @@ public sealed class UserPermissionService(
         async Task<IReadOnlyList<string>?> GetCacheAsync()
         {
             var temCachedValue = await database.SetMembersAsync(cacheKey);
+            // TODO(BUG): Redis 键不存在时 SetMembersAsync 返回空数组而非 null，当前实现会把冷缓存误判为已命中；同时命中后会把 LoadedMarker 当作权限编码返回。应以 LoadedMarker 判断是否已加载并在返回值中过滤它。
             return [.. temCachedValue.Select(x => x.ToString())];
         }
     }
@@ -118,6 +122,7 @@ public sealed class UserPermissionService(
         {
             cacheKey = GetCacheKey(userId);
         }
+
         var lockKey = GetLockKey(userId);
         await redisCacheService.LockAsync(
             lockKey,
@@ -148,6 +153,7 @@ public sealed class UserPermissionService(
         CancellationToken cancellationToken
     )
     {
+        // TODO(BUG): HasAsync 直接查询 Redis，冷缓存或过期后不会触发 GetCodesAsync 加载，授权入口会把实际有权限的用户误判为无权限。
         string cacheKey;
         var database = redisCacheService.GetDatabase();
         if (await userInfoCacheService.IsSuperAdminAsync(userId, cancellationToken))
@@ -158,6 +164,7 @@ public sealed class UserPermissionService(
         {
             cacheKey = GetCacheKey(userId);
         }
+
         var containsTasks = permissionCodes.Select(code => database.SetContainsAsync(cacheKey, code)).ToArray();
         var results = await Task.WhenAll(containsTasks);
         return matchMode == PermissionMatchMode.All ? results.All(x => x) : results.Any(x => x);
