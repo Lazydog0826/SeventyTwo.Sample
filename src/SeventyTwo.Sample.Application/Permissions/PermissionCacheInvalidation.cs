@@ -232,7 +232,7 @@ public sealed class PermissionMemoryCacheService(
         );
 
         var metaKey = PermissionCacheKeys.GetAllPermissionsMetaKey(configuration, version);
-        var meta = new PermissionCacheMeta(buckets.Select(bucket => bucket.Key.ToString()).ToArray());
+        var meta = new PermissionCacheMeta([.. buckets.Select(bucket => bucket.Key.ToString())]);
         await database.StringSetAsync(metaKey, JsonSerializer.Serialize(meta), MetaCacheExpiration);
 
         // 最后发布版本，确保读取方只会看到已写完的缓存。
