@@ -37,6 +37,12 @@ public interface IUserPermissionCacheService
     Task DeleteAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 删除超级管理员权限缓存。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task DeleteSuperAdminAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// 判断用户是否拥有指定权限。
     /// </summary>
     /// <param name="userId">用户 ID。</param>

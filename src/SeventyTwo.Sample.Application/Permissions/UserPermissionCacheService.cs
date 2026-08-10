@@ -1,9 +1,9 @@
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Domain.Permissions;
-using StackExchange.Redis;
 
 namespace SeventyTwo.Sample.Application.Permissions;
 
@@ -15,31 +15,29 @@ public sealed class UserPermissionCacheService(
     IOptions<CacheConfiguration> cacheConfiguration
 ) : IUserPermissionCacheService
 {
-    // 系统保留的权限缓存加载标记，权限编码禁止使用该值。
-    private const string LoadedMarker = "__CACHE_LOADED__";
-    private static readonly TimeSpan SlidingExpiration = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan LockAcquireTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LockExpiration = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LockRenewalInterval = TimeSpan.FromSeconds(10);
 
     private string GetSuperAdminCacheKey()
     {
-        return cacheConfiguration.Value.Data("Permissions", "UserCodeSet:SuperAdmin");
+        return cacheConfiguration.Value.Data("Permissions", "UserCodes:SuperAdmin");
     }
 
     private string GetSuperAdminLockKey()
     {
-        return cacheConfiguration.Value.Lock("Permissions", "UserCodeSet:SuperAdmin");
+        return cacheConfiguration.Value.Lock("Permissions", "UserCodes:SuperAdmin");
     }
 
     private string GetCacheKey(Guid userId)
     {
-        return cacheConfiguration.Value.Data("Permissions", $"UserCodeSet:{userId}");
+        return cacheConfiguration.Value.Data("Permissions", $"UserCodes:{userId}");
     }
 
     private string GetLockKey(Guid userId)
     {
-        return cacheConfiguration.Value.Lock("Permissions", $"UserCodeSet:{userId}");
+        return cacheConfiguration.Value.Lock("Permissions", $"UserCodes:{userId}");
     }
 
     /// <inheritdoc />
@@ -87,17 +85,8 @@ public sealed class UserPermissionCacheService(
                     );
                 }
 
-                var transaction = database.CreateTransaction();
-                var cacheDeleteTask = transaction.KeyDeleteAsync(cacheKey);
-                var cacheValues = permissionCodes.Select(x => (RedisValue)x).Append(LoadedMarker).ToArray();
-                var setAddTask = transaction.SetAddAsync(cacheKey, cacheValues);
-                var setExpireTask = transaction.KeyExpireAsync(cacheKey, SlidingExpiration);
-                if (!await transaction.ExecuteAsync())
-                {
-                    throw new InvalidOperationException("保存用户权限缓存失败");
-                }
+                await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(permissionCodes), CacheExpiration);
 
-                await Task.WhenAll(cacheDeleteTask, setAddTask, setExpireTask);
                 operationCancellationToken.ThrowIfCancellationRequested();
                 cachedValue = permissionCodes;
             },
@@ -112,23 +101,38 @@ public sealed class UserPermissionCacheService(
 
         async Task<IReadOnlyList<string>?> GetCacheAsync()
         {
-            var cachedValues = await database.SetMembersAsync(cacheKey);
-            if (cachedValues.All(value => value != LoadedMarker))
+            var serializedValue = await database.StringGetAsync(cacheKey);
+            if (!serializedValue.HasValue)
             {
                 return null;
             }
 
-            return [.. cachedValues.Where(value => value != LoadedMarker).Select(value => value.ToString())];
+            try
+            {
+                return JsonSerializer.Deserialize<string[]>(serializedValue.ToString()) ?? [];
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid userId, CancellationToken cancellationToken)
+    public Task DeleteAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return DeleteCacheAsync(GetCacheKey(userId), GetLockKey(userId), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task DeleteSuperAdminAsync(CancellationToken cancellationToken)
+    {
+        return DeleteCacheAsync(GetSuperAdminCacheKey(), GetSuperAdminLockKey(), cancellationToken);
+    }
+
+    private async Task DeleteCacheAsync(string cacheKey, string lockKey, CancellationToken cancellationToken)
     {
         var database = redisCacheService.GetDatabase();
-        var isSuperAdmin = await userInfoCacheService.IsSuperAdminAsync(userId, cancellationToken);
-        var cacheKey = isSuperAdmin ? GetSuperAdminCacheKey() : GetCacheKey(userId);
-        var lockKey = isSuperAdmin ? GetSuperAdminLockKey() : GetLockKey(userId);
         await redisCacheService.LockAsync(
             lockKey,
             async lockCancellationToken =>
