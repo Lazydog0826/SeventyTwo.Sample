@@ -18,6 +18,11 @@ public sealed class UserInfoCacheService(
 )
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan LoadLockAcquireTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan InvalidationLockAcquireTimeout = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan LockRenewalInterval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan LockLeaseDuration = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan LockExecutionTimeout = TimeSpan.FromSeconds(30);
     private const string EmptyCacheValue = "null";
     private const string SuperAdmin = "superadmin";
 
@@ -93,6 +98,10 @@ public sealed class UserInfoCacheService(
                 await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), CacheDuration);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
+            timeout: LoadLockAcquireTimeout,
+            renewalInterval: LockRenewalInterval,
+            renewalDuration: LockLeaseDuration,
+            executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );
 
@@ -136,6 +145,10 @@ public sealed class UserInfoCacheService(
                 await database.KeyDeleteAsync(cacheKey);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
+            timeout: InvalidationLockAcquireTimeout,
+            renewalInterval: LockRenewalInterval,
+            renewalDuration: LockLeaseDuration,
+            executionTimeout: LockExecutionTimeout,
             cancellationToken: cancellationToken
         );
     }
