@@ -132,6 +132,8 @@ public sealed class UserPermissionCacheService(
 
     private async Task DeleteCacheAsync(string cacheKey, string lockKey, CancellationToken cancellationToken)
     {
+        // 缓存删除由调用方通过异步队列执行，失败时最多重试三次；因此这里允许锁获取超时，
+        // 不要求删除的锁等待时间必须大于缓存加载的锁内执行上限。
         var database = redisCacheService.GetDatabase();
         await redisCacheService.LockAsync(
             lockKey,
