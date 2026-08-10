@@ -11,9 +11,10 @@ namespace SeventyTwo.Sample.Application.Permissions;
 [AutofacDependency(typeof(IPermissionApplication))]
 public sealed class PermissionApplication(
     IPermissionRepository permissionRepository,
-    PermissionMemoryCacheService memoryCacheService,
-    IUserPermissionChecker userPermissionChecker,
+    PermissionCacheService cacheService,
+    IUserPermissionCacheService userPermissionCacheService,
     IPermissionCacheInvalidationPublisher cacheInvalidationPublisher,
+    IUserPermissionCacheInvalidationPublisher userPermissionCacheInvalidationPublisher,
     IUnitOfWork unitOfWork
 ) : IPermissionApplication
 {
@@ -46,6 +47,11 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.AddAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+                await userPermissionCacheInvalidationPublisher.PublishAsync(
+                    Guid.Empty,
+                    true,
+                    cancellationToken
+                );
             },
             cancellationToken
         );
@@ -84,6 +90,11 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.SaveAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+                await userPermissionCacheInvalidationPublisher.PublishAsync(
+                    Guid.Empty,
+                    true,
+                    cancellationToken
+                );
             },
             cancellationToken
         );
@@ -98,6 +109,11 @@ public sealed class PermissionApplication(
             {
                 await permissionRepository.DeleteAsync(id, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
+                await userPermissionCacheInvalidationPublisher.PublishAsync(
+                    Guid.Empty,
+                    true,
+                    cancellationToken
+                );
             },
             cancellationToken
         );
@@ -114,7 +130,7 @@ public sealed class PermissionApplication(
     public async Task<PermissionOutput> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var allPermissions = await GetAllPermissionsAsync(cancellationToken);
-        var permissionCodes = await userPermissionChecker.GetCodesAsync(userId, cancellationToken);
+        var permissionCodes = await userPermissionCacheService.GetCodesAsync(userId, cancellationToken);
         var permissionCodeSet = permissionCodes.ToHashSet(StringComparer.Ordinal);
         var permissions = allPermissions.Where(x => permissionCodeSet.Contains(x.Code)).ToList();
         var menus = permissions
@@ -150,7 +166,7 @@ public sealed class PermissionApplication(
     /// <returns>所有权限。</returns>
     private async Task<IReadOnlyList<Permission>> GetAllPermissionsAsync(CancellationToken cancellationToken)
     {
-        return await memoryCacheService.GetOrLoadAsync(permissionRepository.GetAllAsync, cancellationToken);
+        return await cacheService.GetOrLoadAsync(permissionRepository.GetAllAsync, cancellationToken);
     }
 
     /// <summary>

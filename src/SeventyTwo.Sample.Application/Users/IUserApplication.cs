@@ -11,28 +11,32 @@ public interface IUserApplication
     /// 获取用户信息。
     /// </summary>
     /// <param name="id">用户 ID。</param>
+    /// <param name="cancellationToken">用于取消用户信息查询的令牌。</param>
     /// <returns>用户信息。</returns>
-    Task<UserOutput> GetAsync(Guid id);
+    Task<UserOutput> GetAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 用户登录。
     /// </summary>
     /// <param name="request">登录输入。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>登录令牌。</returns>
-    Task<LoginOutput> LoginAsync(LoginInput request);
+    Task<LoginOutput> LoginAsync(LoginInput request, CancellationToken cancellationToken);
 
     /// <summary>
     /// 使用刷新令牌轮换访问令牌和刷新令牌。
     /// </summary>
     /// <param name="refreshToken">刷新令牌。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>新的令牌。</returns>
-    Task<LoginOutput> RefreshTokenAsync(string refreshToken);
+    Task<LoginOutput> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>
     /// 退出当前登录会话。
     /// </summary>
     /// <param name="refreshToken">刷新令牌。</param>
-    Task LogoutAsync(string refreshToken);
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task LogoutAsync(string refreshToken, CancellationToken cancellationToken);
 }
 
 /// <summary>

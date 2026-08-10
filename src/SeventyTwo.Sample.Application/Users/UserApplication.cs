@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -20,38 +19,23 @@ namespace SeventyTwo.Sample.Application.Users;
 [AutofacDependency(typeof(IUserApplication))]
 public sealed class UserApplication(
     IUserRepository userRepository,
+    UserInfoCacheService userInfoCacheService,
     ITokenService tokenService,
     IRedisCacheService redisCacheService,
     IOptions<CacheConfiguration> cacheConfiguration
 ) : IUserApplication
 {
-    private static readonly TimeSpan UserInfoCacheDuration = TimeSpan.FromMinutes(10);
-
     /// <inheritdoc />
-    public async Task<UserOutput> GetAsync(Guid id)
+    public async Task<UserOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var cacheKey = cacheConfiguration.Value.Data("Users", $"Info:{id}");
-        var database = redisCacheService.GetDatabase();
-        var cachedValue = await database.StringGetAsync(cacheKey);
-        if (cachedValue.HasValue)
-        {
-            var cachedUser = JsonSerializer.Deserialize<UserOutput>(cachedValue.ToString());
-            if (cachedUser != null)
-            {
-                return cachedUser;
-            }
-        }
-
-        var user = await userRepository.GetAsync(id) ?? throw new UserDomainException("用户不存在");
-        var output = user.Adapt<UserOutput>();
-        await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), UserInfoCacheDuration);
-        return output;
+        return await userInfoCacheService.FindAsync(id, cancellationToken)
+            ?? throw new UserDomainException("用户不存在");
     }
 
     /// <inheritdoc />
-    public async Task<LoginOutput> LoginAsync(LoginInput request)
+    public async Task<LoginOutput> LoginAsync(LoginInput request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByAccountAsync(request.Account);
+        var user = await userRepository.GetByAccountAsync(request.Account, cancellationToken);
         if (user == null)
         {
             throw new UserDomainException("账号或密码错误");
@@ -84,18 +68,18 @@ public sealed class UserApplication(
             ]
         );
         var keyExpireTask = transaction.KeyExpireAsync(cacheKey, tokens.ExpireTime);
-        if (!await transaction.ExecuteAsync())
+        if (!await transaction.ExecuteAsync().WaitAsync(cancellationToken))
         {
             throw new InvalidOperationException("保存登录会话失败");
         }
 
-        await Task.WhenAll(hashSetTask, keyExpireTask);
+        await Task.WhenAll(hashSetTask, keyExpireTask).WaitAsync(cancellationToken);
 
         return tokens.Adapt<LoginOutput>();
     }
 
     /// <inheritdoc />
-    public async Task<LoginOutput> RefreshTokenAsync(string refreshToken)
+    public async Task<LoginOutput> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
         if (
             string.IsNullOrWhiteSpace(refreshToken)
@@ -106,7 +90,7 @@ public sealed class UserApplication(
             throw new TokenAuthenticationException("刷新令牌无效");
         }
 
-        var user = await userRepository.GetAsync(payload.UserId);
+        var user = await userRepository.GetAsync(payload.UserId, cancellationToken);
         if (user == null)
         {
             throw new TokenAuthenticationException("刷新令牌无效");
@@ -127,17 +111,17 @@ public sealed class UserApplication(
             ]
         );
         var keyExpireTask = transaction.KeyExpireAsync(cacheKey, tokens.ExpireTime);
-        if (!await transaction.ExecuteAsync())
+        if (!await transaction.ExecuteAsync().WaitAsync(cancellationToken))
         {
             throw new TokenAuthenticationException("刷新令牌无效");
         }
 
-        await Task.WhenAll(hashSetTask, keyExpireTask);
+        await Task.WhenAll(hashSetTask, keyExpireTask).WaitAsync(cancellationToken);
         return tokens.Adapt<LoginOutput>();
     }
 
     /// <inheritdoc />
-    public async Task LogoutAsync(string refreshToken)
+    public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken)
     {
         if (
             string.IsNullOrWhiteSpace(refreshToken)
@@ -154,12 +138,12 @@ public sealed class UserApplication(
         transaction.AddCondition(Condition.HashEqual(cacheKey, "refreshTokenHash", GetTokenHash(refreshToken)));
         transaction.AddCondition(Condition.HashEqual(cacheKey, "userId", payload.UserId.ToString()));
         var deleteTask = transaction.KeyDeleteAsync(cacheKey);
-        if (!await transaction.ExecuteAsync())
+        if (!await transaction.ExecuteAsync().WaitAsync(cancellationToken))
         {
             return;
         }
 
-        await deleteTask;
+        await deleteTask.WaitAsync(cancellationToken);
     }
 
     /// <summary>

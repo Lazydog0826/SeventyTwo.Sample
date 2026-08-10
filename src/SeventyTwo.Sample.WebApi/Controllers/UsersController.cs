@@ -21,12 +21,13 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// <summary>
     /// 获取当前登录用户信息。
     /// </summary>
+    /// <param name="cancellationToken">用于取消用户信息查询的令牌。</param>
     /// <returns>当前登录用户信息。</returns>
     [HttpGet("Info")]
-    public async Task<IActionResult> GetInfoAsync()
+    public async Task<IActionResult> GetInfoAsync(CancellationToken cancellationToken)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var data = await userApplication.GetAsync(userId);
+        var data = await userApplication.GetAsync(userId, cancellationToken);
         return WebApiResponse.Query(data);
     }
 
@@ -34,12 +35,13 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// 用户登录。
     /// </summary>
     /// <param name="rqRequest">登录请求。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>访问令牌。</returns>
     [HttpPost("Login")]
     [AllowAnonymous]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest rqRequest, CancellationToken cancellationToken)
     {
-        var data = await userApplication.LoginAsync(rqRequest.Adapt<LoginInput>());
+        var data = await userApplication.LoginAsync(rqRequest.Adapt<LoginInput>(), cancellationToken);
         SetRefreshTokenCookie(data);
         return WebApiResponse.Query(data.AccessToken);
     }
@@ -47,12 +49,16 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// <summary>
     /// 刷新访问令牌。
     /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>新的访问令牌。</returns>
     [HttpPost("RefreshToken")]
     [AllowAnonymous]
-    public async Task<IActionResult> RefreshTokenAsync()
+    public async Task<IActionResult> RefreshTokenAsync(CancellationToken cancellationToken)
     {
-        var data = await userApplication.RefreshTokenAsync(Request.Cookies["refresh_token"] ?? string.Empty);
+        var data = await userApplication.RefreshTokenAsync(
+            Request.Cookies["refresh_token"] ?? string.Empty,
+            cancellationToken
+        );
         SetRefreshTokenCookie(data);
         return WebApiResponse.Query(data.AccessToken);
     }
@@ -60,11 +66,12 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     /// <summary>
     /// 退出登录。
     /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("Logout")]
     [AllowAnonymous]
-    public async Task<IActionResult> LogoutAsync()
+    public async Task<IActionResult> LogoutAsync(CancellationToken cancellationToken)
     {
-        await userApplication.LogoutAsync(Request.Cookies["refresh_token"] ?? string.Empty);
+        await userApplication.LogoutAsync(Request.Cookies["refresh_token"] ?? string.Empty, cancellationToken);
         Response.Cookies.Delete(
             "refresh_token",
             new CookieOptions
