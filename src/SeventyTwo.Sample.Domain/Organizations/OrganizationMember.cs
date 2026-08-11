@@ -11,17 +11,17 @@ public sealed class OrganizationMember : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new OrganizationDomainException("机构成员 ID 不能为空");
+            throw new OrganizationDomainException(MessageKeys.Organizations.MemberIdRequired);
         }
 
         if (organizationId == Guid.Empty)
         {
-            throw new OrganizationDomainException("机构 ID 不能为空");
+            throw new OrganizationDomainException(MessageKeys.Organizations.IdRequired);
         }
 
         if (userId == Guid.Empty)
         {
-            throw new OrganizationDomainException("用户 ID 不能为空");
+            throw new OrganizationDomainException(MessageKeys.Users.IdRequired);
         }
 
         Id = id;

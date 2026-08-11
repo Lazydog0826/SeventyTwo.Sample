@@ -11,22 +11,22 @@ public sealed class Organization : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new OrganizationDomainException("机构 ID 不能为空");
+            throw new OrganizationDomainException(MessageKeys.Organizations.IdRequired);
         }
 
         if (parentId == Guid.Empty)
         {
-            throw new OrganizationDomainException("上级机构 ID 不能为空");
+            throw new OrganizationDomainException(MessageKeys.Organizations.ParentIdRequired);
         }
 
         if (parentId == id)
         {
-            throw new OrganizationDomainException("机构不能以自身作为上级机构");
+            throw new OrganizationDomainException(MessageKeys.Organizations.SelfCannotBeParent);
         }
 
         Id = id;
-        Code = RequireText(code, "机构编码不能为空");
-        Name = RequireText(name, "机构名称不能为空");
+        Code = RequireText(code, MessageKeys.Organizations.CodeRequired);
+        Name = RequireText(name, MessageKeys.Organizations.NameRequired);
         ParentId = parentId;
     }
 

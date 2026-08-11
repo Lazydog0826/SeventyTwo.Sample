@@ -1,3 +1,6 @@
 namespace SeventyTwo.Sample.Domain.Organizations;
 
-public sealed class OrganizationDomainException(string message) : DomainException(message);
+public sealed class OrganizationDomainException(
+    string message,
+    DomainErrorType errorType = DomainErrorType.Validation
+) : DomainException(message, errorType);

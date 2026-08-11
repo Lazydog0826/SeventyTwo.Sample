@@ -15,12 +15,12 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
     {
         if (request.Index <= 0)
         {
-            throw new OrderDomainException("页码必须大于 0");
+            throw new OrderDomainException(MessageKeys.Paging.PageNumberMustBePositive);
         }
 
         if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
+            throw new OrderDomainException(MessageKeys.Paging.PageSizeOutOfRange1000);
         }
 
         var page = await orderRepository.GetPageAsync(request, cancellationToken);
@@ -34,12 +34,12 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
     {
         if (request.Index <= 0)
         {
-            throw new OrderDomainException("页码必须大于 0");
+            throw new OrderDomainException(MessageKeys.Paging.PageNumberMustBePositive);
         }
 
         if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
+            throw new OrderDomainException(MessageKeys.Paging.PageSizeOutOfRange1000);
         }
 
         var page = await orderRepository.GetPageByIdsAsync(request, cancellationToken);
@@ -53,22 +53,22 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
     {
         if (request.Limit is <= 0 or > 1000)
         {
-            throw new OrderDomainException("每页数量必须在 1 到 1000 之间");
+            throw new OrderDomainException(MessageKeys.Paging.PageSizeOutOfRange1000);
         }
 
         if (request.LastDateTime.HasValue != (request.LastId is not null))
         {
-            throw new OrderDomainException("最后时间和最后 ID 必须同时传入");
+            throw new OrderDomainException(MessageKeys.Paging.CursorFieldsMustBeProvidedTogether);
         }
 
         if (request.Direction is not CursorDirection.Next and not CursorDirection.Previous)
         {
-            throw new OrderDomainException("游标翻页方向无效");
+            throw new OrderDomainException(MessageKeys.Paging.CursorDirectionInvalid);
         }
 
         if (request is { Direction: CursorDirection.Previous, LastDateTime: null })
         {
-            throw new OrderDomainException("查询上一页时必须传入游标");
+            throw new OrderDomainException(MessageKeys.Paging.PreviousPageCursorRequired);
         }
 
         var page = await orderRepository.GetPageByCursorAsync(request, cancellationToken);
