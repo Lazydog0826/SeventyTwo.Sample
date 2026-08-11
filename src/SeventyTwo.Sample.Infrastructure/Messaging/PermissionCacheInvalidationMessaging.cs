@@ -26,7 +26,7 @@ public sealed class CapPermissionCacheInvalidationPublisher(ICapPublisher capPub
 /// <summary>
 /// 权限缓存失效消息消费者。
 /// </summary>
-public sealed class PermissionCacheInvalidationConsumer(PermissionCacheService cacheService)
+public sealed class PermissionCacheInvalidationConsumer(PermissionCacheService cacheService) : ICapSubscribe
 {
     /// <summary>
     /// 消费权限缓存失效消息并清除本地权限缓存。
@@ -66,6 +66,7 @@ public sealed class CapUserPermissionCacheInvalidationPublisher(ICapPublisher ca
 /// 用户权限缓存失效消息消费者。
 /// </summary>
 public sealed class UserPermissionCacheInvalidationConsumer(IUserPermissionCacheService userPermissionCacheService)
+    : ICapSubscribe
 {
     /// <summary>
     /// 消费用户权限缓存失效消息并删除对应缓存。
