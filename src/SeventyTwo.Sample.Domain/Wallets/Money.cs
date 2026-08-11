@@ -9,17 +9,17 @@ public readonly record struct Money
         // ReSharper disable once ConvertIfStatementToSwitchStatement
         if (value < 0)
         {
-            throw new WalletDomainException("金额不能小于 0");
+            throw new WalletDomainException(MessageKeys.Wallets.AmountMustNotBeNegative);
         }
 
         if (value > MaxAmount)
         {
-            throw new WalletDomainException("金额超出范围");
+            throw new WalletDomainException(MessageKeys.Wallets.AmountOutOfRange);
         }
 
         if (decimal.Round(value, 2) != value)
         {
-            throw new WalletDomainException("金额最多保留两位小数");
+            throw new WalletDomainException(MessageKeys.Wallets.AmountScaleInvalid);
         }
 
         Value = value;
@@ -32,12 +32,14 @@ public readonly record struct Money
     public Money Add(Money amount)
     {
         return Value > MaxAmount - amount.Value
-            ? throw new WalletDomainException("金额超出范围")
+            ? throw new WalletDomainException(MessageKeys.Wallets.AmountOutOfRange)
             : new Money(Value + amount.Value);
     }
 
     public Money Subtract(Money amount)
     {
-        return amount.Value > Value ? throw new WalletDomainException("余额不足") : new Money(Value - amount.Value);
+        return amount.Value > Value
+            ? throw new WalletDomainException(MessageKeys.Wallets.InsufficientBalance, DomainErrorType.Conflict)
+            : new Money(Value - amount.Value);
     }
 }
