@@ -82,7 +82,7 @@ public sealed class PermissionListTests
             Assert.IsType<AuthorizationPolicy>(policy).Requirements.OfType<PermissionRequirement>()
         );
         Assert.Equal(PermissionMatchMode.All, requirement.MatchMode);
-        Assert.Equal(["Permissions.List"], requirement.PermissionCodes);
+        Assert.Equal(["permissionsList"], requirement.PermissionCodes);
     }
 
     private static TypeAdapterConfig CreateMapsterConfiguration()

@@ -105,9 +105,9 @@ public sealed class PermissionCrudTests
     }
 
     [Theory]
-    [InlineData(nameof(PermissionsController.CreateAsync), "create", "Permissions.Create")]
-    [InlineData(nameof(PermissionsController.UpdateAsync), "update", "Permissions.Update")]
-    [InlineData(nameof(PermissionsController.DeleteAsync), "delete", "Permissions.Delete")]
+    [InlineData(nameof(PermissionsController.CreateAsync), "create", "permissionsCreate")]
+    [InlineData(nameof(PermissionsController.UpdateAsync), "update", "permissionsUpdate")]
+    [InlineData(nameof(PermissionsController.DeleteAsync), "delete", "permissionsDelete")]
     public async Task MutationEndpoints_ShouldRequireDedicatedPermission(
         string methodName,
         string route,
