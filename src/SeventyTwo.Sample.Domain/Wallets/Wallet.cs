@@ -8,17 +8,17 @@ public class Wallet : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new WalletDomainException("钱包 ID 不能为空");
+            throw new WalletDomainException(MessageKeys.Wallets.IdRequired);
         }
 
         if (customerId == Guid.Empty)
         {
-            throw new WalletDomainException("客户 ID 不能为空");
+            throw new WalletDomainException(MessageKeys.Wallets.CustomerIdRequired);
         }
 
         if (!Enum.IsDefined(walletType))
         {
-            throw new WalletDomainException("钱包类型无效");
+            throw new WalletDomainException(MessageKeys.Wallets.TypeInvalid);
         }
 
         Id = id;
@@ -37,7 +37,7 @@ public class Wallet : AggregateRoot
     {
         if (amount.IsZero)
         {
-            throw new WalletDomainException("余额变更金额必须大于 0");
+            throw new WalletDomainException(MessageKeys.Wallets.ChangeAmountMustBePositive);
         }
 
         var beforeBalance = Balance;

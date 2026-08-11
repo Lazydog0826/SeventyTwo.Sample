@@ -28,12 +28,12 @@ public sealed class WalletBalanceChangeService
     {
         if (customerId == Guid.Empty)
         {
-            throw new WalletDomainException("客户 ID 不能为空");
+            throw new WalletDomainException(MessageKeys.Wallets.CustomerIdRequired);
         }
 
         if (requests.Count == 0)
         {
-            throw new WalletDomainException("余额变更明细不能为空");
+            throw new WalletDomainException(MessageKeys.Wallets.ChangeItemsRequired);
         }
 
         var walletDictionary = new Dictionary<WalletCurrency, Wallet>();
@@ -41,12 +41,12 @@ public sealed class WalletBalanceChangeService
         {
             if (wallet.CustomerId != customerId)
             {
-                throw new WalletDomainException("钱包不属于当前客户");
+                throw new WalletDomainException(MessageKeys.Wallets.NotOwnedByCustomer);
             }
 
             if (!walletDictionary.TryAdd(wallet.WalletType, wallet))
             {
-                throw new WalletDomainException("客户存在重复的钱包类型");
+                throw new WalletDomainException(MessageKeys.Wallets.DuplicateTypeForCustomer);
             }
         }
 
@@ -69,12 +69,12 @@ public sealed class WalletBalanceChangeService
         {
             if (!Enum.IsDefined(request.WalletType))
             {
-                throw new WalletDomainException("钱包类型无效");
+                throw new WalletDomainException(MessageKeys.Wallets.TypeInvalid);
             }
 
             if (!Enum.IsDefined(request.ChangeType))
             {
-                throw new WalletDomainException("钱包变更类型无效");
+                throw new WalletDomainException(MessageKeys.Wallets.ChangeTypeInvalid);
             }
 
             if (!walletDictionary.TryGetValue(request.WalletType, out var wallet))
