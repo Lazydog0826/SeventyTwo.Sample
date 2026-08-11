@@ -182,8 +182,9 @@ var dashboardAuthenticationConfiguration = builder
 builder
     .Services.AddAuthorization(options =>
     {
-        // 兜底授权策略要求所有未显式放行的端点通过业务 JWT 完成身份认证。
-        options.FallbackPolicy = new AuthorizationPolicyBuilder(BusinessJwtAuthenticationDefaults.Scheme)
+        // 兜底授权策略按请求路径选择认证方案：CAP Dashboard（包括静态资源）使用 Basic，
+        // 其他未显式放行的端点仍使用业务 JWT。
+        options.FallbackPolicy = new AuthorizationPolicyBuilder(CapDashboardAuthenticationDefaults.PathBasedScheme)
             .RequireAuthenticatedUser()
             .Build();
 
@@ -198,10 +199,19 @@ builder
     })
     .AddAuthentication(options =>
     {
-        // 默认认证与质询均交给业务 JWT 方案处理。
+        // 默认认证与质询使用业务 JWT；CAP 请求由显式策略或兜底路径策略选择 Basic。
         options.DefaultAuthenticateScheme = BusinessJwtAuthenticationDefaults.Scheme;
         options.DefaultChallengeScheme = BusinessJwtAuthenticationDefaults.Scheme;
     })
+    .AddPolicyScheme(
+        CapDashboardAuthenticationDefaults.PathBasedScheme,
+        displayName: null,
+        options =>
+        {
+            options.ForwardDefaultSelector = context =>
+                CapDashboardAuthenticationDefaults.SelectScheme(context.Request.Path);
+        }
+    )
     // 注册业务 JWT 自定义认证处理器；处理器通过 ITokenService 校验令牌，
     // JwtConfiguration 由 ITokenService 的实现 JwtTokenService 读取。
     .AddScheme<BusinessJwtAuthenticationOptions, BusinessJwtAuthenticationHandler>(

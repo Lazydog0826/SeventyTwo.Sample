@@ -30,6 +30,11 @@ public sealed class CapDashboardAuthenticationConfiguration
 public static class CapDashboardAuthenticationDefaults
 {
     /// <summary>
+    /// 根据请求路径转发到 Dashboard Basic 或业务 JWT 的认证方案名称。
+    /// </summary>
+    public const string PathBasedScheme = "PathBasedAuthentication";
+
+    /// <summary>
     /// Dashboard 授权策略名称，供 CAP Dashboard 配置按名称引用；
     /// 该策略要求使用下方的 <see cref="BasicScheme"/> 认证方案并建立有效用户身份。
     /// </summary>
@@ -41,6 +46,15 @@ public static class CapDashboardAuthenticationDefaults
     /// 不是 Authorization 请求头中的 Basic 前缀。
     /// </summary>
     public const string BasicScheme = "CapDashboardBasic";
+
+    /// <summary>
+    /// CAP Dashboard 的所有请求（包括未附带 Dashboard 授权元数据的静态资源）使用 Basic；
+    /// 其他请求仍使用业务 JWT，避免 Dashboard 凭据被用于业务接口。
+    /// </summary>
+    public static string SelectScheme(PathString requestPath)
+    {
+        return requestPath.StartsWithSegments("/cap") ? BasicScheme : BusinessJwtAuthenticationDefaults.Scheme;
+    }
 }
 
 /// <summary>
