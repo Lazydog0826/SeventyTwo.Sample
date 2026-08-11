@@ -53,12 +53,22 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
 
         var response = exception switch
         {
-            TokenAuthenticationException => WebApiResponse.Error(exception.Message, HttpStatusCode.Unauthorized),
-            DomainException or ApiValidationException => WebApiResponse.Error(
+            TokenAuthenticationException => WebApiResponse.Error(
                 exception.Message,
+                ErrorCodes.Authentication,
+                HttpStatusCode.Unauthorized
+            ),
+            ApiValidationException => WebApiResponse.Error(
+                exception.Message,
+                ErrorCodes.Validation,
                 HttpStatusCode.BadRequest
             ),
-            _ => WebApiResponse.Error("服务异常: " + requestNo),
+            DomainException domainException => WebApiResponse.Error(
+                domainException.Message,
+                ErrorCodes.Domain,
+                GetStatusCode(domainException.ErrorType)
+            ),
+            _ => WebApiResponse.Error(MessageKeys.Common.InternalError, ErrorCodes.Internal),
         };
 
         httpContext.Response.StatusCode = (int)response.Code;
@@ -69,4 +79,12 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
         );
         return true;
     }
+
+    private static HttpStatusCode GetStatusCode(DomainErrorType errorType) =>
+        errorType switch
+        {
+            DomainErrorType.NotFound => HttpStatusCode.NotFound,
+            DomainErrorType.Conflict => HttpStatusCode.Conflict,
+            _ => HttpStatusCode.UnprocessableEntity,
+        };
 }
