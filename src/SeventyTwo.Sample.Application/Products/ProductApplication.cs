@@ -48,12 +48,12 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     {
         if (request.Index <= 0)
         {
-            throw new ProductDomainException("页码必须大于 0");
+            throw new ProductDomainException(MessageKeys.Paging.PageNumberMustBePositive);
         }
 
         if (request.Limit is <= 0 or > 100)
         {
-            throw new ProductDomainException("每页数量必须在 1 到 100 之间");
+            throw new ProductDomainException(MessageKeys.Paging.PageSizeOutOfRange100);
         }
 
         var page = await productRepository.GetPageAsync(request, cancellationToken);
@@ -70,7 +70,7 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
     {
         if (id == Guid.Empty)
         {
-            throw new ProductDomainException("商品 ID 不能为空");
+            throw new ProductDomainException(MessageKeys.Products.IdRequired);
         }
 
         return await productRepository.FindAsync(id, cancellationToken) ?? throw new ProductNotFoundException();

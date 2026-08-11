@@ -1,5 +1,7 @@
 namespace SeventyTwo.Sample.Domain.Products;
 
-public sealed class ProductDomainException(string message) : DomainException(message);
+public sealed class ProductDomainException(string message, DomainErrorType errorType = DomainErrorType.Validation)
+    : DomainException(message, errorType);
 
-public sealed class ProductNotFoundException() : DomainException("商品不存在");
+public sealed class ProductNotFoundException()
+    : DomainException(MessageKeys.Products.NotFound, DomainErrorType.NotFound);

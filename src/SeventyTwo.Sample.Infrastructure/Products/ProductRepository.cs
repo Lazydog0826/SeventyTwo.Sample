@@ -1,5 +1,6 @@
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 using SqlSugar;
@@ -88,7 +89,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
         {
             if (!isDelete && await FindAsync(product.Id, cancellationToken) is not null)
             {
-                throw new ProductDomainException("商品数据已变更，请刷新后重试");
+                throw new ProductDomainException(MessageKeys.Products.DataChanged, DomainErrorType.Conflict);
             }
 
             throw new ProductNotFoundException();

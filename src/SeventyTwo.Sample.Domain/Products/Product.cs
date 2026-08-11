@@ -22,7 +22,7 @@ public sealed class Product : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new ProductDomainException("商品 ID 不能为空");
+            throw new ProductDomainException(MessageKeys.Products.IdRequired);
         }
 
         Id = id;
@@ -52,12 +52,12 @@ public sealed class Product : AggregateRoot
     {
         if (version != Version)
         {
-            throw new ProductDomainException("商品数据已变更，请刷新后重试");
+            throw new ProductDomainException(MessageKeys.Products.DataChanged, DomainErrorType.Conflict);
         }
 
         if (updatedAt == default)
         {
-            throw new ProductDomainException("商品修改时间不能为空");
+            throw new ProductDomainException(MessageKeys.Products.ModifiedAtRequired);
         }
 
         SetInfo(name, price);
@@ -74,7 +74,7 @@ public sealed class Product : AggregateRoot
     {
         if (deletedAt == default)
         {
-            throw new ProductDomainException("商品删除时间不能为空");
+            throw new ProductDomainException(MessageKeys.Products.DeletedAtRequired);
         }
 
         Enable = false;
@@ -91,28 +91,28 @@ public sealed class Product : AggregateRoot
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ProductDomainException("商品名称不能为空");
+            throw new ProductDomainException(MessageKeys.Products.NameRequired);
         }
 
         name = name.Trim();
         if (name.Length > 255)
         {
-            throw new ProductDomainException("商品名称长度不能超过 255 个字符");
+            throw new ProductDomainException(MessageKeys.Products.NameTooLong);
         }
 
         if (price <= 0)
         {
-            throw new ProductDomainException("商品价格必须大于 0");
+            throw new ProductDomainException(MessageKeys.Products.PriceMustBePositive);
         }
 
         if (price > MaxPrice)
         {
-            throw new ProductDomainException("商品价格超出范围");
+            throw new ProductDomainException(MessageKeys.Products.PriceOutOfRange);
         }
 
         if (decimal.Round(price, 2) != price)
         {
-            throw new ProductDomainException("商品价格最多保留两位小数");
+            throw new ProductDomainException(MessageKeys.Products.PriceScaleInvalid);
         }
 
         Name = name;
