@@ -142,18 +142,11 @@ builder.Services.AddControllers().AddJsonOptions(JsonConfiguration.Configure);
 
 #region 模型验证
 
-// 覆盖 MVC 默认的模型验证失败响应：汇总所有字段的验证错误，
+// 覆盖 MVC 默认的模型验证失败响应：选择首个字段消息键，
 // 再抛出业务验证异常，由全局异常处理器生成统一格式的 API 错误响应。
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
-    options.InvalidModelStateResponseFactory = context =>
-    {
-        var message = string.Join(
-            "；",
-            context.ModelState.Values.SelectMany(value => value.Errors).Select(error => error.ErrorMessage)
-        );
-        throw new ApiValidationException(message);
-    };
+    options.InvalidModelStateResponseFactory = _ => throw new ApiValidationException(MessageKeys.Validation.Failed);
 });
 
 #endregion
