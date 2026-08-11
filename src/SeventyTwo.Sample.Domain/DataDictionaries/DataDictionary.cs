@@ -11,12 +11,12 @@ public sealed class DataDictionary : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new DataDictionaryDomainException("数据字典 ID 不能为空");
+            throw new DataDictionaryDomainException(MessageKeys.DataDictionaries.IdRequired);
         }
 
         Id = id;
-        Code = RequireText(code, "数据字典编码不能为空");
-        Name = RequireText(name, "数据字典名称不能为空");
+        Code = RequireText(code, MessageKeys.DataDictionaries.CodeRequired);
+        Name = RequireText(name, MessageKeys.DataDictionaries.NameRequired);
         Description = NormalizeOptional(description);
     }
 

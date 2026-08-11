@@ -11,23 +11,23 @@ public sealed class DataDictionaryItem
     {
         if (id == Guid.Empty)
         {
-            throw new DataDictionaryDomainException("数据字典项 ID 不能为空");
+            throw new DataDictionaryDomainException(MessageKeys.DataDictionaries.ItemIdRequired);
         }
 
         if (dictionaryId == Guid.Empty)
         {
-            throw new DataDictionaryDomainException("数据字典 ID 不能为空");
+            throw new DataDictionaryDomainException(MessageKeys.DataDictionaries.IdRequired);
         }
 
         if (sortOrder < 0)
         {
-            throw new DataDictionaryDomainException("数据字典项排序号不能小于 0");
+            throw new DataDictionaryDomainException(MessageKeys.DataDictionaries.ItemSortMustNotBeNegative);
         }
 
         Id = id;
         DictionaryId = dictionaryId;
-        Value = RequireText(value, "数据字典项值不能为空");
-        Label = RequireText(label, "数据字典项文本不能为空");
+        Value = RequireText(value, MessageKeys.DataDictionaries.ItemValueRequired);
+        Label = RequireText(label, MessageKeys.DataDictionaries.ItemLabelRequired);
         SortOrder = sortOrder;
     }
 
