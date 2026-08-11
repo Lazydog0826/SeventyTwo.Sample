@@ -1,3 +1,4 @@
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 
@@ -20,7 +21,7 @@ public sealed class ProductTests
     {
         var exception = Assert.Throws<ProductDomainException>(() => new Product(Guid.Empty, "测试商品", 1m));
 
-        Assert.Equal("商品 ID 不能为空", exception.Message);
+        Assert.Equal(MessageKeys.Products.IdRequired, exception.Message);
     }
 
     [Theory]
@@ -32,7 +33,7 @@ public sealed class ProductTests
             new Product(Guid.CreateVersion7(), name, 1m)
         );
 
-        Assert.Equal("商品名称不能为空", exception.Message);
+        Assert.Equal(MessageKeys.Products.NameRequired, exception.Message);
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public sealed class ProductTests
             new Product(Guid.CreateVersion7(), new string('a', 256), 1m)
         );
 
-        Assert.Equal("商品名称长度不能超过 255 个字符", exception.Message);
+        Assert.Equal(MessageKeys.Products.NameTooLong, exception.Message);
     }
 
     [Fact]
@@ -52,7 +53,7 @@ public sealed class ProductTests
             new Product(Guid.CreateVersion7(), "测试商品", 0m)
         );
 
-        Assert.Equal("商品价格必须大于 0", exception.Message);
+        Assert.Equal(MessageKeys.Products.PriceMustBePositive, exception.Message);
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public sealed class ProductTests
             new Product(Guid.CreateVersion7(), "测试商品", 10000000000000000m)
         );
 
-        Assert.Equal("商品价格超出范围", exception.Message);
+        Assert.Equal(MessageKeys.Products.PriceOutOfRange, exception.Message);
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public sealed class ProductTests
             new Product(Guid.CreateVersion7(), "测试商品", 1.001m)
         );
 
-        Assert.Equal("商品价格最多保留两位小数", exception.Message);
+        Assert.Equal(MessageKeys.Products.PriceScaleInvalid, exception.Message);
     }
 
     [Fact]
@@ -133,7 +134,8 @@ public sealed class ProductTests
             )
         );
 
-        Assert.Equal("商品数据已变更，请刷新后重试", exception.Message);
+        Assert.Equal(MessageKeys.Products.DataChanged, exception.Message);
+        Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
         Assert.Equal("旧商品", product.Name);
         Assert.Equal(1m, product.Price);
     }

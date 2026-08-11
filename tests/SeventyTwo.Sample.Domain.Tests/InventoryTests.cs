@@ -1,3 +1,4 @@
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain.Inventories;
 
 namespace SeventyTwo.Sample.Domain.Tests;
@@ -42,8 +43,8 @@ public sealed class InventoryTests
         var increaseException = Assert.Throws<InventoryDomainException>(() => inventory.Increase(quantity));
         var decreaseException = Assert.Throws<InventoryDomainException>(() => inventory.Decrease(quantity));
 
-        Assert.Equal("库存变更数量必须大于 0", increaseException.Message);
-        Assert.Equal("库存变更数量必须大于 0", decreaseException.Message);
+        Assert.Equal(MessageKeys.Inventories.ChangeQuantityMustBePositive, increaseException.Message);
+        Assert.Equal(MessageKeys.Inventories.ChangeQuantityMustBePositive, decreaseException.Message);
     }
 
     [Fact]
@@ -53,7 +54,8 @@ public sealed class InventoryTests
 
         var exception = Assert.Throws<InventoryDomainException>(() => inventory.Decrease(11));
 
-        Assert.Equal("库存不足", exception.Message);
+        Assert.Equal(MessageKeys.Inventories.Insufficient, exception.Message);
+        Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
         Assert.Equal(10, inventory.Quantity);
     }
 
