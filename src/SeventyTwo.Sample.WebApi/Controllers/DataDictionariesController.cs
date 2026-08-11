@@ -58,11 +58,7 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
         CancellationToken cancellationToken
     )
     {
-        await application.UpdateAsync(
-            request.Id,
-            request.Adapt<UpdateDataDictionaryInput>(),
-            cancellationToken
-        );
+        await application.UpdateAsync(request.Id, request.Adapt<UpdateDataDictionaryInput>(), cancellationToken);
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 

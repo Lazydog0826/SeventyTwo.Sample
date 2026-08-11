@@ -157,5 +157,4 @@ public sealed class DataDictionaryApplication(IDataDictionaryRepository reposito
             throw new DataDictionaryDomainException(MessageKeys.DataDictionaries.CodeExists, DomainErrorType.Conflict);
         }
     }
-
 }
