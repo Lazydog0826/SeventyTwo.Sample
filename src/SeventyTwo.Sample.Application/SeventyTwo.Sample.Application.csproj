@@ -9,6 +9,7 @@
     <PackageReference Include="SeventyTwo.InfraKit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SeventyTwo.Sample.Common\SeventyTwo.Sample.Common.csproj" />
     <ProjectReference Include="..\SeventyTwo.Sample.Domain\SeventyTwo.Sample.Domain.csproj" />
   </ItemGroup>
 </Project>

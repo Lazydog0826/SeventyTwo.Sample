@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Application\SeventyTwo.Sample.Application.csproj" />
+    <ProjectReference Include="..\SeventyTwo.Sample.Common\SeventyTwo.Sample.Common.csproj" />
     <ProjectReference Include="..\SeventyTwo.Sample.Infrastructure\SeventyTwo.Sample.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
