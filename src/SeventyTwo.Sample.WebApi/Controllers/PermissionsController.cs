@@ -22,7 +22,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>创建后的权限信息。</returns>
     [HttpPost("create")]
-    [Permission(PermissionMatchMode.All, "Permissions.Create")]
+    [Permission(PermissionMatchMode.All, "permissionsCreate")]
     public async Task<IActionResult> CreateAsync(CreatePermissionRequest request, CancellationToken cancellationToken)
     {
         var result = await permissionApplication.CreateAsync(
@@ -51,7 +51,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>操作结果。</returns>
     [HttpPost("update")]
-    [Permission(PermissionMatchMode.All, "Permissions.Update")]
+    [Permission(PermissionMatchMode.All, "permissionsUpdate")]
     public async Task<IActionResult> UpdateAsync(UpdatePermissionRequest request, CancellationToken cancellationToken)
     {
         await permissionApplication.UpdateAsync(
@@ -83,7 +83,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <returns>操作结果。</returns>
     /// <remarks>存在下级权限时拒绝删除。</remarks>
     [HttpPost("delete")]
-    [Permission(PermissionMatchMode.All, "Permissions.Delete")]
+    [Permission(PermissionMatchMode.All, "permissionsDelete")]
     public async Task<IActionResult> DeleteAsync(DeletePermissionRequest request, CancellationToken cancellationToken)
     {
         await permissionApplication.DeleteAsync(request.Id, cancellationToken);
@@ -96,7 +96,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>所有未删除权限，包含已禁用权限。</returns>
     [HttpGet("list")]
-    [Permission(PermissionMatchMode.All, "Permissions.List")]
+    [Permission(PermissionMatchMode.All, "permissionsList")]
     public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken)
     {
         var res = await permissionApplication.GetListAsync(cancellationToken);
