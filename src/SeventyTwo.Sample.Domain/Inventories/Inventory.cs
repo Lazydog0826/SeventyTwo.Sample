@@ -28,42 +28,42 @@ public sealed class Inventory : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new InventoryDomainException("库存 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.IdRequired);
         }
 
         if (productId == Guid.Empty)
         {
-            throw new InventoryDomainException("商品 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Products.IdRequired);
         }
 
         if (warehouseId == Guid.Empty)
         {
-            throw new InventoryDomainException("仓库 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.WarehouseIdRequired);
         }
 
         if (locationId == Guid.Empty)
         {
-            throw new InventoryDomainException("货位 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.LocationIdRequired);
         }
 
         if (string.IsNullOrWhiteSpace(inboundBatchNo))
         {
-            throw new InventoryDomainException("入库批次号不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.InboundBatchNoRequired);
         }
 
         if (inboundAt == default)
         {
-            throw new InventoryDomainException("入库时间不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.InboundAtRequired);
         }
 
         if (initialQuantity < 0)
         {
-            throw new InventoryDomainException("初始库存数量不能小于 0");
+            throw new InventoryDomainException(MessageKeys.Inventories.InitialQuantityMustNotBeNegative);
         }
 
         if (quantity < 0)
         {
-            throw new InventoryDomainException("库存数量不能小于 0");
+            throw new InventoryDomainException(MessageKeys.Inventories.QuantityMustNotBeNegative);
         }
 
         Id = id;
@@ -115,12 +115,12 @@ public sealed class Inventory : AggregateRoot
     {
         if (quantity <= 0)
         {
-            throw new InventoryDomainException("库存变更数量必须大于 0");
+            throw new InventoryDomainException(MessageKeys.Inventories.ChangeQuantityMustBePositive);
         }
 
         if (quantity > int.MaxValue - Quantity)
         {
-            throw new InventoryDomainException("库存数量超出范围");
+            throw new InventoryDomainException(MessageKeys.Inventories.QuantityOutOfRange);
         }
 
         var beforeQuantity = Quantity;
@@ -132,12 +132,12 @@ public sealed class Inventory : AggregateRoot
     {
         if (quantity <= 0)
         {
-            throw new InventoryDomainException("库存变更数量必须大于 0");
+            throw new InventoryDomainException(MessageKeys.Inventories.ChangeQuantityMustBePositive);
         }
 
         if (quantity > Quantity)
         {
-            throw new InventoryDomainException("库存不足");
+            throw new InventoryDomainException(MessageKeys.Inventories.Insufficient, DomainErrorType.Conflict);
         }
 
         var beforeQuantity = Quantity;

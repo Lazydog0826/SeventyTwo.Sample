@@ -34,7 +34,7 @@ public sealed class InventoryChangeDraft
     {
         if (requestNo == Guid.Empty)
         {
-            throw new InventoryDomainException("业务请求号不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.BusinessRequestNoRequired);
         }
 
         RequestNo = requestNo;
@@ -55,22 +55,22 @@ public record InventoryDraft
     {
         if (productId == Guid.Empty)
         {
-            throw new InventoryDomainException("商品 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Products.IdRequired);
         }
 
         if (warehouseId == Guid.Empty)
         {
-            throw new InventoryDomainException("仓库 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.WarehouseIdRequired);
         }
 
         if (locationId == Guid.Empty)
         {
-            throw new InventoryDomainException("货位 ID 不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.LocationIdRequired);
         }
 
         if (quantity <= 0)
         {
-            throw new InventoryDomainException("库存变更数量必须大于 0");
+            throw new InventoryDomainException(MessageKeys.Inventories.ChangeQuantityMustBePositive);
         }
 
         ProductId = productId;
@@ -102,17 +102,17 @@ public sealed record InventoryIncreaseDraft : InventoryDraft
     {
         if (string.IsNullOrWhiteSpace(inboundBatchNo))
         {
-            throw new InventoryDomainException("入库批次号不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.InboundBatchNoRequired);
         }
 
         if (inboundBatchNo.Length > 64)
         {
-            throw new InventoryDomainException("入库批次号长度不能超过 64 个字符");
+            throw new InventoryDomainException(MessageKeys.Inventories.InboundBatchNoTooLong);
         }
 
         if (changedAt == default)
         {
-            throw new InventoryDomainException("入库时间不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.InboundAtRequired);
         }
 
         InboundBatchNo = inboundBatchNo;
@@ -141,7 +141,7 @@ public sealed class InventoryChangeService
     {
         if (changedAt == default)
         {
-            throw new InventoryDomainException("库存变更时间不能为空");
+            throw new InventoryDomainException(MessageKeys.Inventories.ChangedAtRequired);
         }
 
         var newInventories = new List<Inventory>();
@@ -229,7 +229,7 @@ public sealed class InventoryChangeService
 
             if (remainingQuantity > 0)
             {
-                throw new InventoryDomainException("库存不足");
+                throw new InventoryDomainException(MessageKeys.Inventories.Insufficient, DomainErrorType.Conflict);
             }
         }
 
