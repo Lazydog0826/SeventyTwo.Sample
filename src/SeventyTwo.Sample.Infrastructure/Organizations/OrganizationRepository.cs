@@ -1,0 +1,149 @@
+using Mapster;
+using SeventyTwo.InfraKit.Autofac;
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Common.MessageKeys;
+using SeventyTwo.Sample.Domain;
+using SeventyTwo.Sample.Domain.Organizations;
+using SqlSugar;
+
+namespace SeventyTwo.Sample.Infrastructure.Organizations;
+
+[AutofacDependency(typeof(IOrganizationRepository))]
+public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRepository
+{
+    private const long MutationLockKey = 0x534556454E54594F;
+
+    public async Task AcquireMutationLockAsync(CancellationToken cancellationToken)
+    {
+        await db.Ado.ExecuteCommandAsync(
+            "SELECT pg_advisory_xact_lock(@lockKey)",
+            new { lockKey = MutationLockKey },
+            cancellationToken
+        );
+    }
+
+    public async Task<Organization?> FindAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var record = await db.Queryable<OrganizationRecord>()
+            .Where(organization => organization.Id == id && organization.DeleteAt == null)
+            .FirstAsync(cancellationToken);
+        return record?.Adapt<Organization>();
+    }
+
+    public async Task<IReadOnlyList<Organization>> GetListAsync(CancellationToken cancellationToken)
+    {
+        var records = await db.Queryable<OrganizationRecord>()
+            .Where(organization => organization.DeleteAt == null)
+            .OrderBy(organization => organization.CreatedAt)
+            .OrderBy(organization => organization.Id)
+            .ToListAsync(cancellationToken);
+        return records.Adapt<List<Organization>>();
+    }
+
+    public Task<bool> CodeExistsAsync(Guid orgId, string code, Guid? excludedId, CancellationToken cancellationToken)
+    {
+        return db.Queryable<OrganizationRecord>()
+            .Where(organization =>
+                organization.OrgId == orgId && organization.Code == code && organization.DeleteAt == null
+            )
+            .WhereIF(excludedId.HasValue, organization => organization.Id != excludedId)
+            .AnyAsync(cancellationToken);
+    }
+
+    public async Task AddAsync(Organization organization, CancellationToken cancellationToken)
+    {
+        var record = new OrganizationRecord
+        {
+            Id = organization.Id,
+            Code = organization.Code,
+            Name = organization.Name,
+            Enable = organization.Enable,
+            ParentId = organization.ParentId,
+            CreatedBy = SystemIds.System,
+            CreatedAt = DateTimeExtension.Now(),
+            OrgId = organization.OrgId,
+            Version = Guid.CreateVersion7(),
+        };
+        var affectedRows = await db.Insertable(record)
+            .PostgreSQLConflictNothing(["org_id", "code"])
+            .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows == 0)
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.CodeExists, DomainErrorType.Conflict);
+        }
+
+        record.AggregateRootToEntity(organization);
+    }
+
+    public async Task SaveAsync(Organization organization, CancellationToken cancellationToken)
+    {
+        var nextVersion = Guid.CreateVersion7();
+        var record = new OrganizationRecord
+        {
+            Id = organization.Id,
+            Code = organization.Code,
+            Name = organization.Name,
+            Enable = organization.Enable,
+            ParentId = organization.ParentId,
+            UpdatedBy = organization.UpdatedBy,
+            UpdatedAt = organization.UpdatedAt,
+            Version = nextVersion,
+        };
+        var affectedRows = await db.Updateable(record)
+            .UpdateColumns(entity => new
+            {
+                entity.Code,
+                entity.Name,
+                entity.Enable,
+                entity.ParentId,
+                entity.UpdatedBy,
+                entity.UpdatedAt,
+                entity.Version,
+            })
+            .Where(entity =>
+                entity.Id == organization.Id && entity.Version == organization.Version && entity.DeleteAt == null
+            )
+            .ExecuteCommandAsync(cancellationToken);
+
+        if (affectedRows == 0)
+        {
+            if (await FindAsync(organization.Id, cancellationToken) is not null)
+            {
+                throw new OrganizationDomainException(MessageKeys.Organizations.DataChanged, DomainErrorType.Conflict);
+            }
+
+            throw new OrganizationDomainException(MessageKeys.Organizations.NotFound, DomainErrorType.NotFound);
+        }
+
+        organization.Version = nextVersion;
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (
+            await db.Queryable<OrganizationRecord>()
+                .Where(organization => organization.ParentId == id && organization.DeleteAt == null)
+                .AnyAsync(cancellationToken)
+        )
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.HasChildren, DomainErrorType.Conflict);
+        }
+
+        if (
+            await db.Queryable<OrganizationMemberRecord>()
+                .Where(member => member.OrganizationId == id && member.DeleteAt == null)
+                .AnyAsync(cancellationToken)
+        )
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.HasMembers, DomainErrorType.Conflict);
+        }
+
+        var affectedRows = await db.Deleteable<OrganizationRecord>()
+            .Where(organization => organization.Id == id && organization.DeleteAt == null)
+            .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows == 0)
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.NotFound, DomainErrorType.NotFound);
+        }
+    }
+}
