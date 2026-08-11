@@ -84,7 +84,7 @@ try
             new PermissionRecord
             {
                 Id = homePermissionId,
-                Code = "Home",
+                Code = "home",
                 Title = "首页",
                 Type = PermissionType.Page,
                 SortOrder = 0,
@@ -104,7 +104,7 @@ try
                 new PermissionRecord
                 {
                     Id = permissionsPermissionId,
-                    Code = "Permissions",
+                    Code = "permissions",
                     Title = "权限管理",
                     Type = PermissionType.Directory,
                     SortOrder = 100,
@@ -119,7 +119,7 @@ try
                 new PermissionRecord
                 {
                     Id = permissionsListPermissionId,
-                    Code = "Permissions.List",
+                    Code = "permissionsList",
                     Title = "列表",
                     Type = PermissionType.Page,
                     SortOrder = 101,
@@ -134,7 +134,7 @@ try
                 new PermissionRecord
                 {
                     Id = permissionsCreatePermissionId,
-                    Code = "Permissions.Create",
+                    Code = "permissionsCreate",
                     Title = "新增权限",
                     Type = PermissionType.Button,
                     SortOrder = 102,
@@ -145,7 +145,7 @@ try
                 new PermissionRecord
                 {
                     Id = permissionsUpdatePermissionId,
-                    Code = "Permissions.Update",
+                    Code = "permissionsUpdate",
                     Title = "修改权限",
                     Type = PermissionType.Button,
                     SortOrder = 103,
@@ -156,7 +156,7 @@ try
                 new PermissionRecord
                 {
                     Id = permissionsDeletePermissionId,
-                    Code = "Permissions.Delete",
+                    Code = "permissionsDelete",
                     Title = "删除权限",
                     Type = PermissionType.Button,
                     SortOrder = 104,
