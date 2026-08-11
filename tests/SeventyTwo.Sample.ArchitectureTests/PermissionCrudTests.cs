@@ -490,6 +490,63 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task RepositorySave_ShouldPersistNullableGuidParentAndAdvanceVersion()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"permission-update-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(databasePath);
+            db.CodeFirst.InitTables<PermissionRecord>();
+            var parentId = Guid.CreateVersion7();
+            var permissionId = Guid.CreateVersion7();
+            await db.Insertable(
+                    new[]
+                    {
+                        CreateRecord(parentId, "Parent", null),
+                        CreateRecord(permissionId, "Editable", parentId),
+                    }
+                )
+                .ExecuteCommandAsync();
+            var repository = new PermissionRepository(db);
+            var permission = Assert.IsType<Permission>(
+                await repository.FindAsync(permissionId, CancellationToken.None)
+            );
+            var originalVersion = permission.Version;
+
+            permission.Update(
+                "Editable",
+                "修改后",
+                PermissionType.Button,
+                true,
+                9,
+                null,
+                null,
+                null,
+                null,
+                parentId,
+                default,
+                originalVersion,
+                Guid.CreateVersion7(),
+                DateTimeOffset.UtcNow
+            );
+            await repository.SaveAsync(permission, CancellationToken.None);
+
+            var record = await db.Queryable<PermissionRecord>()
+                .Where(item => item.Id == permissionId)
+                .SingleAsync();
+            Assert.Equal(parentId, record.ParentId);
+            Assert.Equal("修改后", record.Title);
+            Assert.NotEqual(originalVersion, record.Version);
+            Assert.Equal(record.Version, permission.Version);
+            db.Ado.Close();
+        }
+        finally
+        {
+            File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task RepositoryDelete_ShouldRemoveAssignmentsAndAllowCodeReuse()
     {
         var databasePath = Path.Combine(Path.GetTempPath(), $"permission-delete-{Guid.NewGuid():N}.db");

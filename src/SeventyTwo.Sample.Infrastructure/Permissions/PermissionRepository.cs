@@ -77,23 +77,41 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     public async Task SaveAsync(Permission permission, CancellationToken cancellationToken)
     {
         var nextVersion = Guid.CreateVersion7();
-        var affectedRows = await db.Updateable<PermissionRecord>()
-            .SetColumns(permissionRecord => new PermissionRecord
+        var record = new PermissionRecord
+        {
+            Id = permission.Id,
+            Code = permission.Code,
+            Title = permission.Title,
+            Type = permission.Type,
+            Enable = permission.Enable,
+            SortOrder = permission.SortOrder,
+            Icon = permission.Icon,
+            VueComponentPath = permission.VueComponentPath,
+            RoutePath = permission.RoutePath,
+            RouteName = permission.RouteName,
+            ParentId = permission.ParentId,
+            MetaData = permission.MetaData,
+            UpdatedBy = permission.UpdatedBy,
+            UpdatedAt = permission.UpdatedAt,
+            Version = nextVersion,
+        };
+        var affectedRows = await db.Updateable(record)
+            .UpdateColumns(permissionRecord => new
             {
-                Code = permission.Code,
-                Title = permission.Title,
-                Type = permission.Type,
-                Enable = permission.Enable,
-                SortOrder = permission.SortOrder,
-                Icon = permission.Icon,
-                VueComponentPath = permission.VueComponentPath,
-                RoutePath = permission.RoutePath,
-                RouteName = permission.RouteName,
-                ParentId = permission.ParentId,
-                MetaData = permission.MetaData,
-                UpdatedBy = permission.UpdatedBy,
-                UpdatedAt = permission.UpdatedAt,
-                Version = nextVersion,
+                permissionRecord.Code,
+                permissionRecord.Title,
+                permissionRecord.Type,
+                permissionRecord.Enable,
+                permissionRecord.SortOrder,
+                permissionRecord.Icon,
+                permissionRecord.VueComponentPath,
+                permissionRecord.RoutePath,
+                permissionRecord.RouteName,
+                permissionRecord.ParentId,
+                permissionRecord.MetaData,
+                permissionRecord.UpdatedBy,
+                permissionRecord.UpdatedAt,
+                permissionRecord.Version,
             })
             .Where(permissionRecord =>
                 permissionRecord.Id == permission.Id
