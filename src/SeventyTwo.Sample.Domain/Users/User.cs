@@ -19,13 +19,13 @@ public sealed class User : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new UserDomainException("用户 ID 不能为空");
+            throw new UserDomainException(MessageKeys.Users.IdRequired);
         }
 
         Id = id;
-        Username = RequireText(username, "用户名不能为空");
-        PasswordHash = RequireText(passwordHash, "密码摘要不能为空");
-        DisplayName = RequireText(displayName, "用户姓名不能为空");
+        Username = RequireText(username, MessageKeys.Users.UsernameRequired);
+        PasswordHash = RequireText(passwordHash, MessageKeys.Users.PasswordHashRequired);
+        DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = NormalizeOptional(phone);
         Email = NormalizeOptional(email);
     }

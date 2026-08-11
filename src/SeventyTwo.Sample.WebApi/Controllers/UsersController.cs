@@ -28,7 +28,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var data = await userApplication.GetAsync(userId, cancellationToken);
-        return WebApiResponse.Query(data);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     {
         var data = await userApplication.LoginAsync(rqRequest.Adapt<LoginInput>(), cancellationToken);
         SetRefreshTokenCookie(data);
-        return WebApiResponse.Query(data.AccessToken);
+        return WebApiResponse.Query(data.AccessToken, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
             cancellationToken
         );
         SetRefreshTokenCookie(data);
-        return WebApiResponse.Query(data.AccessToken);
+        return WebApiResponse.Query(data.AccessToken, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
                 Path = "/",
             }
         );
-        return WebApiResponse.Operate();
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     private void SetRefreshTokenCookie(LoginOutput data)
@@ -108,10 +108,10 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
 /// <param name="Account">账号。</param>
 /// <param name="Password">密码。</param>
 public sealed record LoginRequest(
-    [Required(ErrorMessage = "账号不能为空")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "账号长度必须为 3～50 个字符")]
+    [Required(ErrorMessage = MessageKeys.Validation.AccountRequired)]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = MessageKeys.Validation.AccountLengthInvalid)]
         string Account,
-    [Required(ErrorMessage = "密码不能为空")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "密码长度必须为 6～100 个字符")]
+    [Required(ErrorMessage = MessageKeys.Validation.PasswordRequired)]
+    [StringLength(100, MinimumLength = 6, ErrorMessage = MessageKeys.Validation.PasswordLengthInvalid)]
         string Password
 );

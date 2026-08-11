@@ -11,17 +11,17 @@ public sealed class UserPermission : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new PermissionDomainException("用户权限 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.UserPermissionIdRequired);
         }
 
         if (userId == Guid.Empty)
         {
-            throw new PermissionDomainException("用户 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Users.IdRequired);
         }
 
         if (permissionId == Guid.Empty)
         {
-            throw new PermissionDomainException("权限 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.IdRequired);
         }
 
         Id = id;

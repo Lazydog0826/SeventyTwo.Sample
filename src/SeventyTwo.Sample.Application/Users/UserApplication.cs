@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application.Authentication;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Users;
 using StackExchange.Redis;
 
@@ -29,7 +30,7 @@ public sealed class UserApplication(
     public async Task<UserOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         return await userInfoCacheService.FindAsync(id, cancellationToken)
-            ?? throw new UserDomainException("用户不存在");
+            ?? throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
     }
 
     /// <inheritdoc />
@@ -38,7 +39,7 @@ public sealed class UserApplication(
         var user = await userRepository.GetByAccountAsync(request.Account, cancellationToken);
         if (user == null)
         {
-            throw new UserDomainException("账号或密码错误");
+            throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
         }
 
         var valid = new PasswordHasher<string>().VerifyHashedPassword(
@@ -49,7 +50,7 @@ public sealed class UserApplication(
 
         if (valid.Equals(PasswordVerificationResult.Failed))
         {
-            throw new UserDomainException("账号或密码错误");
+            throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
         }
 
         var sessionId = Guid.CreateVersion7();
@@ -87,13 +88,13 @@ public sealed class UserApplication(
             || payload is not { TokenType: "refresh" }
         )
         {
-            throw new TokenAuthenticationException("刷新令牌无效");
+            throw new TokenAuthenticationException(MessageKeys.Authentication.RefreshTokenInvalid);
         }
 
         var user = await userRepository.GetAsync(payload.UserId, cancellationToken);
         if (user == null)
         {
-            throw new TokenAuthenticationException("刷新令牌无效");
+            throw new TokenAuthenticationException(MessageKeys.Authentication.RefreshTokenInvalid);
         }
 
         var tokens = tokenService.Generate(user, payload.SessionId);
@@ -113,7 +114,7 @@ public sealed class UserApplication(
         var keyExpireTask = transaction.KeyExpireAsync(cacheKey, tokens.ExpireTime);
         if (!await transaction.ExecuteAsync().WaitAsync(cancellationToken))
         {
-            throw new TokenAuthenticationException("刷新令牌无效");
+            throw new TokenAuthenticationException(MessageKeys.Authentication.RefreshTokenInvalid);
         }
 
         await Task.WhenAll(hashSetTask, keyExpireTask).WaitAsync(cancellationToken);
