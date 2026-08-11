@@ -41,7 +41,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
             ),
             cancellationToken
         );
-        return WebApiResponse.Query(result);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
             ),
             cancellationToken
         );
-        return WebApiResponse.Operate();
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     public async Task<IActionResult> DeleteAsync(DeletePermissionRequest request, CancellationToken cancellationToken)
     {
         await permissionApplication.DeleteAsync(request.Id, cancellationToken);
-        return WebApiResponse.Operate();
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken)
     {
         var res = await permissionApplication.GetListAsync(cancellationToken);
-        return WebApiResponse.Query(res);
+        return WebApiResponse.Query(res, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public sealed class PermissionsController(IPermissionApplication permissionAppli
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var res = await permissionApplication.GetByUserIdAsync(userId, cancellationToken);
-        return WebApiResponse.Query(res);
+        return WebApiResponse.Query(res, message: MessageKeys.Common.Success);
     }
 }
 

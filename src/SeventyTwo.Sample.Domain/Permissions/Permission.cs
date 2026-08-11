@@ -23,7 +23,7 @@ public sealed class Permission : AggregateRoot
     {
         if (id == Guid.Empty)
         {
-            throw new PermissionDomainException("权限 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.IdRequired);
         }
 
         Id = id;
@@ -66,12 +66,12 @@ public sealed class Permission : AggregateRoot
     {
         if (version != Version)
         {
-            throw new PermissionDomainException("权限数据已变更，请刷新后重试");
+            throw new PermissionDomainException(MessageKeys.Permissions.DataChanged, DomainErrorType.Conflict);
         }
 
         if (updatedAt == default)
         {
-            throw new PermissionDomainException("权限修改时间不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.ModifiedAtRequired);
         }
 
         SetInfo(code, title, type, sortOrder, icon, vueComponentPath, routePath, routeName, parentId, metaData);
@@ -95,26 +95,26 @@ public sealed class Permission : AggregateRoot
     {
         if (!Enum.IsDefined(type))
         {
-            throw new PermissionDomainException("权限类型无效");
+            throw new PermissionDomainException(MessageKeys.Permissions.TypeInvalid);
         }
 
         if (sortOrder < 0)
         {
-            throw new PermissionDomainException("权限排序号不能小于 0");
+            throw new PermissionDomainException(MessageKeys.Permissions.SortMustNotBeNegative);
         }
 
         if (parentId == Guid.Empty)
         {
-            throw new PermissionDomainException("上级权限 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.ParentIdRequired);
         }
 
         if (parentId == Id)
         {
-            throw new PermissionDomainException("权限不能以自身作为上级权限");
+            throw new PermissionDomainException(MessageKeys.Permissions.SelfCannotBeParent);
         }
 
-        Code = RequireText(code, "权限编码不能为空");
-        Title = RequireText(title, "权限标题不能为空");
+        Code = RequireText(code, MessageKeys.Permissions.CodeRequired);
+        Title = RequireText(title, MessageKeys.Permissions.TitleRequired);
         Type = type;
         SortOrder = sortOrder;
         ParentId = parentId;
@@ -122,21 +122,21 @@ public sealed class Permission : AggregateRoot
         switch (type)
         {
             case PermissionType.Directory:
-                Icon = RequireText(icon, "目录图标不能为空");
+                Icon = RequireText(icon, MessageKeys.Permissions.DirectoryIconRequired);
                 VueComponentPath = NormalizeOptionalText(vueComponentPath);
                 RoutePath = NormalizeOptionalText(routePath);
                 RouteName = NormalizeOptionalText(routeName);
                 break;
             case PermissionType.Page:
                 Icon = NormalizeOptionalText(icon);
-                VueComponentPath = RequireText(vueComponentPath, "页面 Vue 组件路径不能为空");
-                RoutePath = RequireText(routePath, "页面路由路径不能为空");
-                RouteName = RequireText(routeName, "页面路由名称不能为空");
+                VueComponentPath = RequireText(vueComponentPath, MessageKeys.Permissions.VueComponentPathRequired);
+                RoutePath = RequireText(routePath, MessageKeys.Permissions.RoutePathRequired);
+                RouteName = RequireText(routeName, MessageKeys.Permissions.RouteNameRequired);
                 break;
             case PermissionType.Button:
                 if (parentId is null)
                 {
-                    throw new PermissionDomainException("按钮的上级权限不能为空");
+                    throw new PermissionDomainException(MessageKeys.Permissions.ButtonParentRequired);
                 }
 
                 Icon = NormalizeOptionalText(icon);
@@ -145,13 +145,13 @@ public sealed class Permission : AggregateRoot
                 RouteName = NormalizeOptionalText(routeName);
                 break;
             default:
-                throw new PermissionDomainException("权限类型无效");
+                throw new PermissionDomainException(MessageKeys.Permissions.TypeInvalid);
         }
 
         MetaData =
             type == PermissionType.Button
                 ? metaData ?? default
-                : metaData ?? throw new PermissionDomainException("路由元数据不能为空");
+                : metaData ?? throw new PermissionDomainException(MessageKeys.Permissions.RouteMetadataRequired);
     }
 
     /// <summary>

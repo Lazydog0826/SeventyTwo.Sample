@@ -60,7 +60,7 @@ public sealed class PermissionApplication(
         var permission = await GetRequiredAsync(id, cancellationToken);
         if (string.IsNullOrWhiteSpace(input.Code))
         {
-            throw new PermissionDomainException("权限编码不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.CodeRequired);
         }
 
         await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
@@ -167,11 +167,11 @@ public sealed class PermissionApplication(
     {
         if (id == Guid.Empty)
         {
-            throw new PermissionDomainException("权限 ID 不能为空");
+            throw new PermissionDomainException(MessageKeys.Permissions.IdRequired);
         }
 
         return await permissionRepository.FindAsync(id, cancellationToken)
-            ?? throw new PermissionDomainException("权限不存在");
+            ?? throw new PermissionDomainException(MessageKeys.Permissions.NotFound, DomainErrorType.NotFound);
     }
 
     /// <summary>
@@ -184,7 +184,7 @@ public sealed class PermissionApplication(
     {
         if (await permissionRepository.CodeExistsAsync(code, excludedId, cancellationToken))
         {
-            throw new PermissionDomainException("权限编码已存在");
+            throw new PermissionDomainException(MessageKeys.Permissions.CodeExists, DomainErrorType.Conflict);
         }
     }
 
@@ -205,7 +205,7 @@ public sealed class PermissionApplication(
         var byId = permissions.ToDictionary(permission => permission.Id);
         if (!byId.ContainsKey(parentId.Value))
         {
-            throw new PermissionDomainException("上级权限不存在");
+            throw new PermissionDomainException(MessageKeys.Permissions.ParentNotFound, DomainErrorType.NotFound);
         }
 
         // 从候选上级持续向根节点回溯；遇到当前权限说明本次修改会形成环。
@@ -216,12 +216,12 @@ public sealed class PermissionApplication(
         {
             if (!visited.Add(currentId.Value))
             {
-                throw new PermissionDomainException("权限层级存在循环引用");
+                throw new PermissionDomainException(MessageKeys.Permissions.HierarchyCycle);
             }
 
             if (currentId == id)
             {
-                throw new PermissionDomainException("权限不能以自身或下级权限作为上级权限");
+                throw new PermissionDomainException(MessageKeys.Permissions.DescendantCannotBeParent);
             }
 
             currentId = byId.TryGetValue(currentId.Value, out var current) ? current.ParentId : null;

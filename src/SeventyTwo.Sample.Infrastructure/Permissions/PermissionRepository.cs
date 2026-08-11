@@ -1,6 +1,7 @@
 using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Permissions;
 using SqlSugar;
@@ -105,10 +106,10 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
         {
             if (await FindAsync(permission.Id, cancellationToken) is not null)
             {
-                throw new PermissionDomainException("权限数据已变更，请刷新后重试");
+                throw new PermissionDomainException(MessageKeys.Permissions.DataChanged, DomainErrorType.Conflict);
             }
 
-            throw new PermissionDomainException("权限不存在");
+            throw new PermissionDomainException(MessageKeys.Permissions.NotFound, DomainErrorType.NotFound);
         }
 
         permission.Version = nextVersion;
@@ -120,7 +121,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
         // 多表删除的事务边界由应用层 IUnitOfWork 统一管理，仓储只执行数据操作。
         if (await HasChildrenAsync(id, cancellationToken))
         {
-            throw new PermissionDomainException("权限存在下级权限，不能删除");
+            throw new PermissionDomainException("权限存在下级权限，不能删除", DomainErrorType.Conflict);
         }
 
         await db.Deleteable<UserPermissionRecord>()
@@ -131,7 +132,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
             .ExecuteCommandAsync(cancellationToken);
         if (affectedRows == 0)
         {
-            throw new PermissionDomainException("权限不存在");
+            throw new PermissionDomainException(MessageKeys.Permissions.NotFound, DomainErrorType.NotFound);
         }
     }
 
