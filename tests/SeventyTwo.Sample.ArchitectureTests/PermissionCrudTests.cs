@@ -48,6 +48,43 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task UserInfoCacheInvalidationConsumer_ShouldDeleteOnlyRequestedUserCache()
+    {
+        var userId = Guid.CreateVersion7();
+        var otherUserId = Guid.CreateVersion7();
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
+        var userCacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
+        var otherUserCacheKey = cacheConfiguration.Value.Data("users", $"info:{otherUserId}");
+        inMemoryDatabase.SetString(userCacheKey, "cached-user");
+        inMemoryDatabase.SetString(otherUserCacheKey, "cached-other-user");
+        var userInfoCacheService = new UserInfoCacheService(
+            new FakeUserRepository(
+                new User(
+                    userId,
+                    "user",
+                    "hash",
+                    "测试用户",
+                    "13800000000",
+                    "user@example.com"
+                )
+            ),
+            new FakeRedisCacheService(database),
+            cacheConfiguration
+        );
+        var consumer = new UserInfoCacheInvalidationConsumer(userInfoCacheService);
+
+        await consumer.ConsumeAsync(
+            new UserInfoCacheInvalidationMessage(userId),
+            CancellationToken.None
+        );
+
+        Assert.False(inMemoryDatabase.StringExists(userCacheKey));
+        Assert.True(inMemoryDatabase.StringExists(otherUserCacheKey));
+    }
+
+    [Fact]
     public async Task SuperAdmin_ShouldReceiveAllEnabledPermissionsWithoutAssignments()
     {
         var userId = Guid.CreateVersion7();
@@ -752,6 +789,8 @@ public sealed class PermissionCrudTests
     private sealed class FakeUserRepository(User user) : IUserRepository
     {
         public int GetCount { get; private set; }
+
+        public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
         {

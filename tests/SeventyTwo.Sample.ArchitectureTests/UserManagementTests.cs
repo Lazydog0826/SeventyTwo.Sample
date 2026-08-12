@@ -33,6 +33,7 @@ public sealed class UserManagementTests
             null!,
             new FakeUnitOfWork(),
             null!,
+            null!,
             null!
         );
 
@@ -73,13 +74,15 @@ public sealed class UserManagementTests
         };
         var userRepository = new CapturingUserRepository(user);
         var organizationRepository = new FakeOrganizationRepository(organization);
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
         var application = new UserApplication(
             userRepository,
             organizationRepository,
             null!,
             new FakeUnitOfWork(),
             null!,
-            null!
+            null!,
+            cacheInvalidationPublisher
         );
 
         await application.UpdateAsync(
@@ -90,6 +93,91 @@ public sealed class UserManagementTests
 
         Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
         Assert.Same(user, userRepository.SavedUser);
+        Assert.Equal([user.Id], cacheInvalidationPublisher.UserIds);
+    }
+
+    [Theory]
+    [InlineData(true, 0)]
+    [InlineData(false, 1)]
+    public async Task SetEnable_ShouldInvalidateUserInfoCacheAndOnlyInvalidateTokensWhenDisabled(
+        bool enable,
+        int expectedTokenInvalidations
+    )
+    {
+        var user = CreateUser(enable: !enable);
+        var userRepository = new CapturingUserRepository(user);
+        var tokenCacheService = new CapturingUserTokenCacheService();
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
+        var application = new UserApplication(
+            userRepository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCacheService,
+            cacheInvalidationPublisher
+        );
+
+        await application.SetEnableAsync(
+            user.Id,
+            new(enable, user.Version),
+            CancellationToken.None
+        );
+
+        Assert.Equal([user.Id], userRepository.LockedUserIds);
+        Assert.Equal(expectedTokenInvalidations, tokenCacheService.InvalidatedUserIds.Count);
+        Assert.Equal([user.Id], cacheInvalidationPublisher.UserIds);
+    }
+
+    [Fact]
+    public async Task SetEnable_WhenTokenInvalidationReturnsFalse_ShouldFailWithoutPublishingCacheMessage()
+    {
+        var user = CreateUser(enable: true);
+        var tokenCacheService = new CapturingUserTokenCacheService { SetInvalidBeforeResult = false };
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
+        var userRepository = new CapturingUserRepository(user);
+        var application = new UserApplication(
+            userRepository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCacheService,
+            cacheInvalidationPublisher
+        );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            application.SetEnableAsync(user.Id, new(false, user.Version), CancellationToken.None)
+        );
+
+        Assert.Empty(cacheInvalidationPublisher.UserIds);
+    }
+
+    [Fact]
+    public async Task SetEnable_WhenTokenInvalidationThrows_ShouldPropagateWithoutPublishingCacheMessage()
+    {
+        var user = CreateUser(enable: true);
+        var tokenCacheService = new CapturingUserTokenCacheService
+        {
+            SetInvalidBeforeException = new InvalidOperationException("Redis unavailable"),
+        };
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCacheService,
+            cacheInvalidationPublisher
+        );
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            application.SetEnableAsync(user.Id, new(false, user.Version), CancellationToken.None)
+        );
+
+        Assert.Equal("Redis unavailable", exception.Message);
+        Assert.Empty(cacheInvalidationPublisher.UserIds);
     }
 
     [Fact]
@@ -101,6 +189,7 @@ public sealed class UserManagementTests
             new FakeOrganizationRepository(organization),
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!
         );
@@ -126,6 +215,7 @@ public sealed class UserManagementTests
             null!,
             unitOfWork,
             null!,
+            null!,
             null!
         );
 
@@ -150,6 +240,7 @@ public sealed class UserManagementTests
             new FakeOrganizationRepository(organization),
             null!,
             unitOfWork,
+            null!,
             null!,
             null!
         );
@@ -183,11 +274,13 @@ public sealed class UserManagementTests
         {
             Enable = false,
         };
+        var userRepository = new CapturingUserRepository(user);
         var application = new UserApplication(
-            new CapturingUserRepository(user),
+            userRepository,
             null!,
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!
         );
@@ -197,6 +290,8 @@ public sealed class UserManagementTests
         );
 
         Assert.Equal(MessageKeys.Users.Disabled, exception.Message);
+        Assert.Equal([user.Id], userRepository.LockedUserIds);
+        Assert.Equal(1, userRepository.GetAfterSecurityLockCount);
     }
 
     [Fact]
@@ -215,11 +310,14 @@ public sealed class UserManagementTests
         {
             Enable = false,
         };
+        var userRepository = new CapturingUserRepository(user);
+        var unitOfWork = new CapturingUnitOfWork();
         var application = new UserApplication(
-            new CapturingUserRepository(user),
+            userRepository,
             null!,
             null!,
-            new FakeUnitOfWork(),
+            unitOfWork,
+            null!,
             null!,
             null!
         );
@@ -229,6 +327,105 @@ public sealed class UserManagementTests
         );
 
         Assert.Equal(MessageKeys.Users.CredentialsInvalid, exception.Message);
+        Assert.Equal(0, unitOfWork.ExecuteCount);
+        Assert.Empty(userRepository.LockedUserIds);
+    }
+
+    [Fact]
+    public async Task Login_WhenPasswordHashChangesWhileWaitingForSecurityLock_ShouldRejectCredentials()
+    {
+        const string username = "password-changed-user";
+        const string password = "password";
+        var userId = Guid.CreateVersion7();
+        var candidate = new User(
+            userId,
+            username,
+            new PasswordHasher<string>().HashPassword(username, password),
+            "密码变更用户",
+            "13800000000",
+            "password-changed@example.com"
+        )
+        {
+            Enable = true,
+        };
+        var lockedUser = new User(
+            userId,
+            username,
+            new PasswordHasher<string>().HashPassword(username, "new-password"),
+            "密码变更用户",
+            "13800000000",
+            "password-changed@example.com"
+        )
+        {
+            Enable = true,
+        };
+        var repository = new WaitingSecurityLockUserRepository(candidate, lockedUser);
+        var application = new UserApplication(
+            repository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!
+        );
+
+        var loginTask = application.LoginAsync(new(username, password), CancellationToken.None);
+        await repository.LockWaitStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        repository.ReleaseLockWait();
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() => loginTask);
+        Assert.Equal(MessageKeys.Users.CredentialsInvalid, exception.Message);
+        Assert.Equal(1, repository.LockedGetCount);
+    }
+
+    [Fact]
+    public async Task Login_WhenUserIsDisabledWhileWaitingForSecurityLock_ShouldRejectDisabledUser()
+    {
+        const string username = "concurrent-user";
+        const string password = "password";
+        var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
+        var userId = Guid.CreateVersion7();
+        var enabledUser = new User(
+            userId,
+            username,
+            passwordHash,
+            "并发用户",
+            "13800000000",
+            "concurrent@example.com"
+        )
+        {
+            Enable = true,
+        };
+        var disabledUser = new User(
+            userId,
+            username,
+            passwordHash,
+            "并发用户",
+            "13800000000",
+            "concurrent@example.com"
+        )
+        {
+            Enable = false,
+        };
+        var repository = new WaitingSecurityLockUserRepository(enabledUser, disabledUser);
+        var application = new UserApplication(
+            repository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!
+        );
+
+        var loginTask = application.LoginAsync(new(username, password), CancellationToken.None);
+        await repository.LockWaitStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        repository.ReleaseLockWait();
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() => loginTask);
+        Assert.Equal(MessageKeys.Users.Disabled, exception.Message);
+        Assert.Equal(1, repository.LockedGetCount);
     }
 
     [Fact]
@@ -246,7 +443,8 @@ public sealed class UserManagementTests
             null!,
             new FakeUnitOfWork(),
             tokenService,
-            tokenCacheService
+            tokenCacheService,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<TokenAuthenticationException>(() =>
@@ -378,13 +576,43 @@ public sealed class UserManagementTests
         return organization;
     }
 
+    private static User CreateUser(bool enable)
+    {
+        return new User(
+            Guid.CreateVersion7(),
+            $"user-{Guid.NewGuid():N}",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com"
+        )
+        {
+            Enable = enable,
+            Version = Guid.CreateVersion7(),
+        };
+    }
+
     private sealed class CapturingUserRepository(User? existingUser = null) : IUserRepository
     {
         public User? AddedUser { get; private set; }
         public User? SavedUser { get; private set; }
+        public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
+        public int GetAfterSecurityLockCount { get; private set; }
 
-        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
-            Task.FromResult(existingUser?.Id == id ? existingUser : null);
+        public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
+        {
+            LockedUserIds = [.. LockedUserIds, id];
+            return Task.CompletedTask;
+        }
+
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
+        {
+            if (LockedUserIds.Contains(id))
+            {
+                GetAfterSecurityLockCount++;
+            }
+            return Task.FromResult(existingUser?.Id == id ? existingUser : null);
+        }
 
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             Task.FromResult(existingUser?.Username == account ? existingUser : null);
@@ -408,6 +636,43 @@ public sealed class UserManagementTests
         }
 
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class WaitingSecurityLockUserRepository(User candidate, User lockedUser) : IUserRepository
+    {
+        private readonly TaskCompletionSource releaseLockWait = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource LockWaitStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int LockedGetCount { get; private set; }
+
+        public async Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
+        {
+            Assert.Equal(candidate.Id, id);
+            LockWaitStarted.TrySetResult();
+            await releaseLockWait.Task.WaitAsync(cancellationToken);
+        }
+
+        public void ReleaseLockWait() => releaseLockWait.TrySetResult();
+
+        public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
+            Task.FromResult<User?>(account == candidate.Username ? candidate : null);
+
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
+        {
+            LockedGetCount++;
+            return Task.FromResult<User?>(id == lockedUser.Id ? lockedUser : null);
+        }
+
+        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeUnitOfWork : IUnitOfWork
@@ -501,8 +766,48 @@ public sealed class UserManagementTests
         }
     }
 
+    private sealed class CapturingUserTokenCacheService : IUserTokenCacheService
+    {
+        public IReadOnlyList<Guid> InvalidatedUserIds { get; private set; } = [];
+        public bool SetInvalidBeforeResult { get; init; } = true;
+        public Exception? SetInvalidBeforeException { get; init; }
+
+        public Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            if (SetInvalidBeforeException is not null)
+            {
+                throw SetInvalidBeforeException;
+            }
+            InvalidatedUserIds = [.. InvalidatedUserIds, userId];
+            return Task.FromResult(SetInvalidBeforeResult);
+        }
+
+        public Task<bool> SaveAsync(Guid userId, Guid sessionId, TokenPair tokens, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> RefreshAsync(Guid userId, Guid sessionId, long issuedAtUnixTimeSeconds, string refreshToken, TokenPair tokens, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> DeleteAsync(Guid userId, Guid sessionId, string refreshToken, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(Guid userId, long issuedAtUnixTimeSeconds, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class FakeUserInfoCacheInvalidationPublisher : IUserInfoCacheInvalidationPublisher
+    {
+        public IReadOnlyList<Guid> UserIds { get; private set; } = [];
+
+        public Task PublishAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            UserIds = [.. UserIds, userId];
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class ThrowingUserRepository : IUserRepository
     {
+        public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("失效的刷新令牌不应查询用户");
 
