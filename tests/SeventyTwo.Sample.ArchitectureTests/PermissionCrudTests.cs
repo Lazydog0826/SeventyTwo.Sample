@@ -141,6 +141,60 @@ public sealed class PermissionCrudTests
         Assert.False(inMemoryDatabase.StringExists(permissionCacheKey));
     }
 
+    /// <summary>
+    /// 验证普通用户权限缓存键包含全局版本，且超级管理员失效流程会切换该版本。
+    /// </summary>
+    [Fact]
+    public async Task UserPermissionCache_ShouldUseVersionAndRotateItWithSuperAdminInvalidation()
+    {
+        var user = User.Restore(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "用户",
+            "13800000000",
+            "user@example.com"
+        );
+        var repository = new FakePermissionRepository([]);
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
+        var redisCacheService = new FakeRedisCacheService(database);
+        var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
+        var service = new UserPermissionCacheService(
+            repository,
+            new UserInfoCacheService(
+                new FakeUserRepository(user),
+                redisCacheService,
+                cacheConfiguration
+            ),
+            redisCacheService,
+            cacheConfiguration
+        );
+        var versionKey = cacheConfiguration.Value.Data("permissions", "user-codes:version");
+
+        await service.GetCodesAsync(user.Id, CancellationToken.None);
+        var oldVersion = inMemoryDatabase.GetString(versionKey).ToString();
+        var oldCacheKey = cacheConfiguration.Value.Data(
+            "permissions",
+            $"user-codes:{oldVersion}:{user.Id}"
+        );
+
+        await service.DeleteSuperAdminAsync(CancellationToken.None);
+        var newVersion = inMemoryDatabase.GetString(versionKey).ToString();
+
+        Assert.NotEmpty(oldVersion);
+        Assert.True(inMemoryDatabase.StringExists(oldCacheKey));
+        Assert.NotEqual(oldVersion, newVersion);
+
+        await service.GetCodesAsync(user.Id, CancellationToken.None);
+        var newCacheKey = cacheConfiguration.Value.Data(
+            "permissions",
+            $"user-codes:{newVersion}:{user.Id}"
+        );
+        Assert.True(inMemoryDatabase.StringExists(newCacheKey));
+        Assert.Equal(2, repository.GetCodesByUserIdCount);
+    }
+
     [Theory]
     [InlineData(nameof(PermissionsController.CreateAsync), "create", "permissionsCreate")]
     [InlineData(nameof(PermissionsController.UpdateAsync), "update", "permissionsUpdate")]
@@ -278,6 +332,9 @@ public sealed class PermissionCrudTests
         Assert.True(database.StringExists(versionKey));
     }
 
+    /// <summary>
+    /// 验证授权编辑回显包含禁用权限，并在保存后发布指定用户的缓存失效消息。
+    /// </summary>
     [Fact]
     public async Task Authorization_ShouldReturnValidSelectionsAndPublishUserInvalidation()
     {
@@ -307,6 +364,9 @@ public sealed class PermissionCrudTests
         Assert.Equal([new UserPermissionCacheInvalidationMessage(user.Id, false)], publisher.Messages);
     }
 
+    /// <summary>
+    /// 验证授权保存拒绝重复权限和不完整祖先链，但允许保存禁用权限。
+    /// </summary>
     [Fact]
     public async Task Authorization_ShouldRejectInvalidSelections()
     {
@@ -695,6 +755,9 @@ public sealed class PermissionCrudTests
         }
     }
 
+    /// <summary>
+    /// 验证授权关联保留禁用权限，而有效权限查询会过滤禁用祖先的完整后代链。
+    /// </summary>
     [Fact]
     public async Task RepositoryPermissionQueries_ShouldFilterDisabledHierarchyOnlyForEffectivePermissions()
     {
@@ -889,6 +952,7 @@ public sealed class PermissionCrudTests
     private sealed class FakeUserRepository(User user) : IUserRepository
     {
         public int GetCount { get; private set; }
+        /// <summary>测试期间被安全锁锁定的用户 ID。</summary>
         public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
 
         public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
@@ -966,9 +1030,14 @@ public sealed class PermissionCrudTests
     {
         private readonly List<Permission> items = [.. permissions];
 
+        /// <summary>测试仓储保存的用户权限关联 ID。</summary>
         public IReadOnlyList<Guid> AssociatedPermissionIds { get; set; } = [];
 
+        /// <summary>有效权限列表查询次数。</summary>
         public int GetAllCount { get; private set; }
+
+        /// <summary>用户有效权限编码查询次数。</summary>
+        public int GetCodesByUserIdCount { get; private set; }
 
         public Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult(items.SingleOrDefault(permission => permission.Id == id));
@@ -1007,8 +1076,11 @@ public sealed class PermissionCrudTests
             );
         }
 
-        public Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<string>>([]);
+        public Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            GetCodesByUserIdCount++;
+            return Task.FromResult<IReadOnlyList<string>>([]);
+        }
 
         public Task<IReadOnlyList<Guid>> GetIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult(AssociatedPermissionIds);
