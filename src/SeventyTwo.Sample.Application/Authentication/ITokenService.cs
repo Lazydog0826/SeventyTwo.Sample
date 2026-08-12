@@ -42,4 +42,12 @@ public sealed record TokenPair(string AccessToken, string RefreshToken, DateTime
 /// <param name="DisplayName">用户显示名称。</param>
 /// <param name="TokenType">令牌类型。</param>
 /// <param name="SessionId">登录会话 ID。</param>
-public sealed record TokenPayload(Guid UserId, string Username, string DisplayName, string TokenType, Guid SessionId);
+/// <param name="IssuedAtUnixTimeSeconds">令牌颁发时间的 UTC Unix 秒时间戳。</param>
+public sealed record TokenPayload(
+    Guid UserId,
+    string Username,
+    string DisplayName,
+    string TokenType,
+    Guid SessionId,
+    long IssuedAtUnixTimeSeconds
+);

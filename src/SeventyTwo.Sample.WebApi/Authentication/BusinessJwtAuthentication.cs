@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application.Authentication;
+using SeventyTwo.Sample.Application.Users;
 
 namespace SeventyTwo.Sample.WebApi.Authentication;
 
@@ -37,6 +38,7 @@ public sealed class BusinessJwtAuthenticationHandler(
     ILoggerFactory logger,
     UrlEncoder encoder,
     ITokenService tokenService,
+    IUserTokenCacheService userTokenCacheService,
     IRedisCacheService redisCacheService,
     IOptions<CacheConfiguration> cacheConfiguration
 ) : AuthenticationHandler<BusinessJwtAuthenticationOptions>(options, logger, encoder)
@@ -66,6 +68,18 @@ public sealed class BusinessJwtAuthenticationHandler(
         if (!tokenService.TryValidate(token, out var payload) || payload is not { TokenType: "access" })
         {
             return AuthenticateResult.Fail("访问令牌无效");
+        }
+
+        // 用户发生密码变更、禁用或强制退出等安全事件后，拒绝该事件之前颁发的所有访问令牌。
+        if (
+            !await userTokenCacheService.IsTokenIssuedAfterInvalidBeforeAsync(
+                payload.UserId,
+                payload.IssuedAtUnixTimeSeconds,
+                Context.RequestAborted
+            )
+        )
+        {
+            return AuthenticateResult.Fail("访问令牌已失效");
         }
 
         // 根据 Token 中的会话 ID 生成 Redis Key，并一次读取当前会话保存的

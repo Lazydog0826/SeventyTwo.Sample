@@ -151,6 +151,11 @@ public sealed class UserApplication(
             string.IsNullOrWhiteSpace(refreshToken)
             || !tokenService.TryValidate(refreshToken, out var payload)
             || payload is not { TokenType: "refresh" }
+            || !await userTokenCacheService.IsTokenIssuedAfterInvalidBeforeAsync(
+                payload.UserId,
+                payload.IssuedAtUnixTimeSeconds,
+                cancellationToken
+            )
         )
         {
             throw new TokenAuthenticationException(MessageKeys.Authentication.RefreshTokenInvalid);
@@ -167,6 +172,7 @@ public sealed class UserApplication(
             !await userTokenCacheService.RefreshAsync(
                 payload.UserId,
                 payload.SessionId,
+                payload.IssuedAtUnixTimeSeconds,
                 refreshToken,
                 tokens,
                 cancellationToken

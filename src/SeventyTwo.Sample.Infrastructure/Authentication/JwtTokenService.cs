@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -65,18 +66,25 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
             var displayName = principal.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
             var tokenType = principal.FindFirst("token_type")?.Value;
             var sessionIdValue = principal.FindFirst("session_id")?.Value;
+            var issuedAtValue = principal.FindFirst(JwtRegisteredClaimNames.Iat)?.Value;
             if (
                 !Guid.TryParse(userIdValue, out var userId)
                 || string.IsNullOrWhiteSpace(username)
                 || string.IsNullOrWhiteSpace(displayName)
                 || string.IsNullOrWhiteSpace(tokenType)
                 || !Guid.TryParse(sessionIdValue, out var sessionId)
+                || !long.TryParse(
+                    issuedAtValue,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var issuedAtUnixTimeSeconds
+                )
             )
             {
                 return false;
             }
 
-            payload = new TokenPayload(userId, username, displayName, tokenType, sessionId);
+            payload = new TokenPayload(userId, username, displayName, tokenType, sessionId, issuedAtUnixTimeSeconds);
             return true;
         }
         catch (SecurityTokenException)
