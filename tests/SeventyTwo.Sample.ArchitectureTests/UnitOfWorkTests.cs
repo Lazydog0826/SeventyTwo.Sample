@@ -1,10 +1,16 @@
 using System.Reflection;
+using System.Text.Json;
 using DotNetCore.CAP;
 using DotNetCore.CAP.Transport;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using SeventyTwo.Sample.Application.Authentication;
+using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Domain.Permissions;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure;
 using SeventyTwo.Sample.Infrastructure.Permissions;
+using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
 namespace SeventyTwo.Sample.ArchitectureTests;
@@ -137,6 +143,107 @@ public sealed class UnitOfWorkTests
         }
     }
 
+    [Fact]
+    public async Task UserDelete_ShouldHoldPostgreSqlSecurityLockUntilCommitAndRejectWaitingLogin()
+    {
+        var connectionString = GetRemotePostgreSqlConnectionString();
+        using var setup = CreatePostgreSqlDatabase(connectionString);
+        using var deleteFixture = CreatePostgreSqlFixture(connectionString);
+        using var loginFixture = CreatePostgreSqlFixture(connectionString);
+        var userId = Guid.CreateVersion7();
+        var version = Guid.CreateVersion7();
+        var username = $"integration-delete-{userId:N}";
+        const string password = "integration-password";
+        var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
+        var organizationId = await setup.Queryable<OrganizationIdRecord>()
+            .Where(x => x.DeleteAt == null)
+            .Select(x => x.Id)
+            .FirstAsync();
+        await setup.Insertable(
+                new UserAccountRecord
+                {
+                    Id = userId,
+                    Username = username,
+                    PasswordHash = passwordHash,
+                    DisplayName = "并发删除集成测试用户",
+                    Phone = "13800000000",
+                    Email = $"{userId:N}@example.com",
+                    OrgId = organizationId,
+                    Version = version,
+                }
+            )
+            .ExecuteCommandAsync();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        BlockingTokenCacheService? deletionGate = null;
+        Task? deleteTask = null;
+        Task? loginTask = null;
+        try
+        {
+            deletionGate = new BlockingTokenCacheService();
+            var deleteApplication = new UserApplication(
+                new UserRepository(deleteFixture.Database),
+                null!,
+                null!,
+                deleteFixture.UnitOfWork,
+                null!,
+                deletionGate,
+                new NoOpUserInfoCacheInvalidationPublisher()
+            );
+            var loginRepository = new LockRequestSignalingUserRepository(
+                new UserRepository(loginFixture.Database)
+            );
+            var loginApplication = new UserApplication(
+                loginRepository,
+                null!,
+                null!,
+                loginFixture.UnitOfWork,
+                new FixedTokenService(),
+                new SuccessfulTokenCacheService(),
+                null!
+            );
+
+            deleteTask = deleteApplication.DeleteAsync(userId, version, cancellationTokenSource.Token);
+            await deletionGate.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            loginTask = loginApplication.LoginAsync(
+                new(username, password),
+                cancellationTokenSource.Token
+            );
+            await loginRepository.LockRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.False(loginTask.IsCompleted);
+
+            deletionGate.Release();
+            await deleteTask.WaitAsync(TimeSpan.FromSeconds(10));
+            var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+                loginTask.WaitAsync(TimeSpan.FromSeconds(10))
+            );
+            Assert.Equal(Common.MessageKeys.MessageKeys.Users.CredentialsInvalid, exception.Message);
+        }
+        finally
+        {
+            deletionGate?.Release();
+            await cancellationTokenSource.CancelAsync();
+            await ObserveCompletionAsync(deleteTask);
+            await ObserveCompletionAsync(loginTask);
+            await setup.Deleteable<UserPermissionRecord>().Where(x => x.UserId == userId).ExecuteCommandAsync();
+            await setup.Deleteable<UserAccountRecord>().Where(x => x.Id == userId).ExecuteCommandAsync();
+        }
+    }
+
+    private static async Task ObserveCompletionAsync(Task? task)
+    {
+        if (task is null)
+            return;
+        try
+        {
+            await task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch (Exception)
+        {
+            // 主测试路径负责断言异常；清理阶段只确保后台事务退出并释放数据库锁。
+        }
+    }
+
     private static UnitOfWorkFixture CreateFixture()
     {
         var database = new SqlSugarClient(
@@ -154,6 +261,43 @@ public sealed class UnitOfWorkTests
         var publisher = DispatchProxy.Create<ICapPublisher, CapPublisherDispatchProxy>();
         ((CapPublisherDispatchProxy)(object)publisher).ServiceProvider = serviceProvider;
         return new UnitOfWorkFixture(database, publisher, serviceProvider);
+    }
+
+    private static UnitOfWorkFixture CreatePostgreSqlFixture(string connectionString)
+    {
+        var database = CreatePostgreSqlDatabase(connectionString);
+        var dispatcher = DispatchProxy.Create<IDispatcher, NoOpDispatchProxy>();
+        var serviceProvider = new ServiceCollection().AddSingleton(dispatcher).BuildServiceProvider();
+        var publisher = DispatchProxy.Create<ICapPublisher, CapPublisherDispatchProxy>();
+        ((CapPublisherDispatchProxy)(object)publisher).ServiceProvider = serviceProvider;
+        return new UnitOfWorkFixture(database, publisher, serviceProvider);
+    }
+
+    private static SqlSugarClient CreatePostgreSqlDatabase(string connectionString) =>
+        new(
+            new ConnectionConfig
+            {
+                DbType = DbType.PostgreSQL,
+                ConnectionString = connectionString,
+                IsAutoCloseConnection = false,
+            }
+        );
+
+    private static string GetRemotePostgreSqlConnectionString()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var path = Path.Combine(directory.FullName, "src", "SeventyTwo.Sample.WebApi", "appsettings.json");
+            if (File.Exists(path))
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(path));
+                return document.RootElement.GetProperty("ConnectionStrings").GetProperty("PostgreSQL").GetString()
+                    ?? throw new InvalidOperationException("未配置远程 PostgreSQL 连接字符串");
+            }
+            directory = directory.Parent;
+        }
+        throw new InvalidOperationException("未找到 WebApi appsettings.json");
     }
 
     private static PermissionRecord CreatePermissionRecord(Guid permissionId)
@@ -179,6 +323,86 @@ public sealed class UnitOfWorkTests
     }
 
     private sealed class TestTransactionException : Exception;
+
+    [SugarTable("organization")]
+    private sealed class OrganizationIdRecord
+    {
+        [SugarColumn(ColumnName = "id")]
+        public Guid Id { get; init; }
+
+        [SugarColumn(ColumnName = "delete_at")]
+        public DateTimeOffset? DeleteAt { get; init; }
+    }
+
+    private sealed class LockRequestSignalingUserRepository(IUserRepository inner) : IUserRepository
+    {
+        public TaskCompletionSource LockRequested { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
+        {
+            LockRequested.TrySetResult();
+            await inner.AcquireSecurityLockAsync(id, cancellationToken);
+        }
+
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+            inner.GetAsync(id, cancellationToken);
+        public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
+            inner.GetByAccountAsync(account, cancellationToken);
+        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+            inner.GetListAsync(cancellationToken);
+        public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
+            inner.UsernameExistsAsync(username, cancellationToken);
+        public Task AddAsync(User user, CancellationToken cancellationToken) => inner.AddAsync(user, cancellationToken);
+        public Task SaveAsync(User user, CancellationToken cancellationToken) => inner.SaveAsync(user, cancellationToken);
+        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
+            inner.DeleteAsync(id, version, cancellationToken);
+    }
+
+    private sealed class BlockingTokenCacheService : SuccessfulTokenCacheService
+    {
+        private readonly TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Entered { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override async Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            Entered.TrySetResult();
+            await release.Task.WaitAsync(cancellationToken);
+            return true;
+        }
+
+        public void Release() => release.TrySetResult();
+    }
+
+    private class SuccessfulTokenCacheService : IUserTokenCacheService
+    {
+        public virtual Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken) =>
+            Task.FromResult(true);
+        public Task<bool> SaveAsync(Guid userId, Guid sessionId, TokenPair tokens, CancellationToken cancellationToken) =>
+            Task.FromResult(true);
+        public Task<bool> RefreshAsync(Guid userId, Guid sessionId, long issuedAtUnixTimeSeconds, string refreshToken, TokenPair tokens, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> DeleteAsync(Guid userId, Guid sessionId, string refreshToken, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(Guid userId, long issuedAtUnixTimeSeconds, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class FixedTokenService : ITokenService
+    {
+        public TokenPair Generate(User user, Guid sessionId) => new("access", "refresh", DateTime.UtcNow.AddDays(1));
+        public bool TryValidate(string token, out TokenPayload? payload)
+        {
+            payload = null;
+            return false;
+        }
+    }
+
+    private sealed class NoOpUserInfoCacheInvalidationPublisher : IUserInfoCacheInvalidationPublisher
+    {
+        public Task PublishAsync(Guid userId, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
 
     private class NoOpDispatchProxy : DispatchProxy
     {
@@ -213,8 +437,10 @@ public sealed class UnitOfWorkTests
         ServiceProvider serviceProvider
     ) : IDisposable
     {
-        private readonly string databasePath = database.CurrentConnectionConfig.ConnectionString
-            .Split(';', StringSplitOptions.RemoveEmptyEntries)[0]["Data Source=".Length..];
+        private readonly string? databasePath = database.CurrentConnectionConfig.DbType == DbType.Sqlite
+            ? database.CurrentConnectionConfig.ConnectionString
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)[0]["Data Source=".Length..]
+            : null;
 
         public SqlSugarClient Database { get; } = database;
 
@@ -227,7 +453,10 @@ public sealed class UnitOfWorkTests
             Database.Ado.Close();
             Database.Dispose();
             serviceProvider.Dispose();
-            File.Delete(databasePath);
+            if (databasePath is not null)
+            {
+                File.Delete(databasePath);
+            }
         }
     }
 }

@@ -181,6 +181,57 @@ public sealed class UserManagementTests
     }
 
     [Fact]
+    public async Task Delete_ShouldLockUserInvalidateTokensAndUserInfoCache()
+    {
+        var user = CreateUser(enable: true);
+        var calls = new List<string>();
+        var userRepository = new CapturingUserRepository(user, calls);
+        var tokenCacheService = new CapturingUserTokenCacheService(calls);
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher(calls);
+        var application = new UserApplication(
+            userRepository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCacheService,
+            cacheInvalidationPublisher
+        );
+
+        await application.DeleteAsync(user.Id, user.Version, CancellationToken.None);
+
+        Assert.Equal([user.Id], userRepository.LockedUserIds);
+        Assert.Equal(1, userRepository.GetAfterSecurityLockCount);
+        Assert.Equal([user.Id], userRepository.DeletedUserIds);
+        Assert.Equal([user.Id], tokenCacheService.InvalidatedUserIds);
+        Assert.Equal([user.Id], cacheInvalidationPublisher.UserIds);
+        Assert.Equal(["lock", "get", "delete", "invalidate-tokens", "publish-cache-invalidation"], calls);
+    }
+
+    [Fact]
+    public async Task Delete_WhenTokenInvalidationFails_ShouldNotPublishCacheMessage()
+    {
+        var user = CreateUser(enable: true);
+        var tokenCacheService = new CapturingUserTokenCacheService { SetInvalidBeforeResult = false };
+        var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCacheService,
+            cacheInvalidationPublisher
+        );
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            application.DeleteAsync(user.Id, user.Version, CancellationToken.None)
+        );
+
+        Assert.Empty(cacheInvalidationPublisher.UserIds);
+    }
+
+    [Fact]
     public async Task Create_WithDisabledOrganization_ShouldFail()
     {
         var organization = CreateOrganization(false);
@@ -594,21 +645,24 @@ public sealed class UserManagementTests
         };
     }
 
-    private sealed class CapturingUserRepository(User? existingUser = null) : IUserRepository
+    private sealed class CapturingUserRepository(User? existingUser = null, List<string>? calls = null) : IUserRepository
     {
         public User? AddedUser { get; private set; }
         public User? SavedUser { get; private set; }
+        public IReadOnlyList<Guid> DeletedUserIds { get; private set; } = [];
         public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
         public int GetAfterSecurityLockCount { get; private set; }
 
         public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
         {
+            calls?.Add("lock");
             LockedUserIds = [.. LockedUserIds, id];
             return Task.CompletedTask;
         }
 
         public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
         {
+            calls?.Add("get");
             if (LockedUserIds.Contains(id))
             {
                 GetAfterSecurityLockCount++;
@@ -637,7 +691,12 @@ public sealed class UserManagementTests
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
+        {
+            calls?.Add("delete");
+            DeletedUserIds = [.. DeletedUserIds, id];
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class WaitingSecurityLockUserRepository(User candidate, User lockedUser) : IUserRepository
@@ -768,7 +827,7 @@ public sealed class UserManagementTests
         }
     }
 
-    private sealed class CapturingUserTokenCacheService : IUserTokenCacheService
+    private sealed class CapturingUserTokenCacheService(List<string>? calls = null) : IUserTokenCacheService
     {
         public IReadOnlyList<Guid> InvalidatedUserIds { get; private set; } = [];
         public bool SetInvalidBeforeResult { get; init; } = true;
@@ -776,6 +835,7 @@ public sealed class UserManagementTests
 
         public Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken)
         {
+            calls?.Add("invalidate-tokens");
             if (SetInvalidBeforeException is not null)
             {
                 throw SetInvalidBeforeException;
@@ -794,12 +854,14 @@ public sealed class UserManagementTests
             throw new NotSupportedException();
     }
 
-    private sealed class FakeUserInfoCacheInvalidationPublisher : IUserInfoCacheInvalidationPublisher
+    private sealed class FakeUserInfoCacheInvalidationPublisher(List<string>? calls = null)
+        : IUserInfoCacheInvalidationPublisher
     {
         public IReadOnlyList<Guid> UserIds { get; private set; } = [];
 
         public Task PublishAsync(Guid userId, CancellationToken cancellationToken)
         {
+            calls?.Add("publish-cache-invalidation");
             UserIds = [.. UserIds, userId];
             return Task.CompletedTask;
         }

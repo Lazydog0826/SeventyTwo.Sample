@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
+using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
 using StackExchange.Redis;
 
@@ -20,7 +21,7 @@ public sealed class UserTokenCacheServiceTests
         var cachedValue = long.Parse(redis.GetString(cacheKey).ToString());
         Assert.True(result);
         Assert.InRange(cachedValue, before, after);
-        Assert.Equal(TimeSpan.FromDays(7), redis.LastStringSetExpiry);
+        Assert.Equal(TimeSpan.FromDays(30), redis.LastStringSetExpiry);
     }
 
     [Fact]
@@ -106,7 +107,14 @@ public sealed class UserTokenCacheServiceTests
         var redis = (InMemoryRedisDatabase)(object)database;
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
         var cacheKey = cacheConfiguration.Value.Data("token-invalid-before", userId.ToString());
-        var service = new UserTokenCacheService(new FakeRedisCacheService(database), cacheConfiguration);
+        var tokenLifetimeConfiguration = Options.Create(
+            new TokenLifetimeConfiguration { RefreshTokenExpirationDays = 30 }
+        );
+        var service = new UserTokenCacheService(
+            new FakeRedisCacheService(database),
+            cacheConfiguration,
+            tokenLifetimeConfiguration
+        );
         return (service, redis, userId, cacheKey);
     }
 }
