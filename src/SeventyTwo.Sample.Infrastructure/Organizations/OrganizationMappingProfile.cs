@@ -9,7 +9,7 @@ public sealed class OrganizationMappingProfile : IRegister
     {
         config
             .NewConfig<OrganizationRecord, Organization>()
-            .ConstructUsing(x => new Organization(x.Id, x.Code, x.Name, x.ParentId))
+            .ConstructUsing(x => new Organization(x.Id, x.Code, x.Name, x.ParentId, x.Path))
             .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
     }
 }

@@ -59,6 +59,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             Name = organization.Name,
             Enable = organization.Enable,
             ParentId = organization.ParentId,
+            Path = organization.Path,
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
             OrgId = organization.OrgId,
@@ -77,6 +78,15 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
 
     public async Task SaveAsync(Organization organization, CancellationToken cancellationToken)
     {
+        var persisted = await db.Queryable<OrganizationRecord>()
+            .Where(entity => entity.Id == organization.Id && entity.DeleteAt == null)
+            .FirstAsync(cancellationToken);
+        if (persisted is null)
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.NotFound, DomainErrorType.NotFound);
+        }
+
+        var oldPath = persisted.Path;
         var nextVersion = Guid.CreateVersion7();
         var record = new OrganizationRecord
         {
@@ -85,6 +95,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             Name = organization.Name,
             Enable = organization.Enable,
             ParentId = organization.ParentId,
+            Path = organization.Path,
             UpdatedBy = organization.UpdatedBy,
             UpdatedAt = organization.UpdatedAt,
             Version = nextVersion,
@@ -96,6 +107,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
                 entity.Name,
                 entity.Enable,
                 entity.ParentId,
+                entity.Path,
                 entity.UpdatedBy,
                 entity.UpdatedAt,
                 entity.Version,
@@ -116,6 +128,36 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
         }
 
         organization.Version = nextVersion;
+
+        if (oldPath != organization.Path)
+        {
+            var descendantPrefix = $"{oldPath}/";
+            var descendants = await db.Queryable<OrganizationRecord>()
+                .Where(entity => entity.Path.StartsWith(descendantPrefix) && entity.DeleteAt == null)
+                .ToListAsync(cancellationToken);
+            var descendantUpdates = descendants
+                .Select(descendant => new OrganizationRecord
+                {
+                    Id = descendant.Id,
+                    Path = $"{organization.Path}{descendant.Path[oldPath.Length..]}",
+                    Version = Guid.CreateVersion7(),
+                    UpdatedBy = organization.UpdatedBy,
+                    UpdatedAt = organization.UpdatedAt,
+                })
+                .ToList();
+            if (descendantUpdates.Count > 0)
+            {
+                await db.Updateable(descendantUpdates)
+                    .UpdateColumns(entity => new
+                    {
+                        entity.Path,
+                        entity.Version,
+                        entity.UpdatedBy,
+                        entity.UpdatedAt,
+                    })
+                    .ExecuteCommandAsync(cancellationToken);
+            }
+        }
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)

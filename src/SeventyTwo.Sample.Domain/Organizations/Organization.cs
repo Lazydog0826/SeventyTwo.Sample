@@ -17,7 +17,8 @@ public sealed class Organization : AggregateRoot
     /// <param name="code">机构编码。</param>
     /// <param name="name">机构名称。</param>
     /// <param name="parentId">上级机构 ID；根机构为 <see langword="null"/>。</param>
-    public Organization(Guid id, string code, string name, Guid? parentId = null)
+    /// <param name="path"></param>
+    public Organization(Guid id, string code, string name, Guid? parentId = null, string? path = null)
     {
         if (id == Guid.Empty)
         {
@@ -38,6 +39,7 @@ public sealed class Organization : AggregateRoot
         Code = RequireText(code, MessageKeys.Organizations.CodeRequired);
         Name = RequireText(name, MessageKeys.Organizations.NameRequired);
         ParentId = parentId;
+        Path = parentId is null ? id.ToString() : RequirePath(path);
     }
 
     /// <summary>
@@ -54,6 +56,11 @@ public sealed class Organization : AggregateRoot
     /// 上级机构 ID；根机构为 <see langword="null"/>。
     /// </summary>
     public Guid? ParentId { get; private set; }
+
+    /// <summary>
+    /// 由机构 ID 组成的完整层级路径。
+    /// </summary>
+    public string Path { get; private set; } = string.Empty;
 
     /// <summary>
     /// 修改机构信息，并校验客户端持有的并发版本。
@@ -104,6 +111,14 @@ public sealed class Organization : AggregateRoot
     }
 
     /// <summary>
+    /// 根据新的上级机构更新层级路径。
+    /// </summary>
+    public void ChangePath(string parentPath)
+    {
+        Path = $"{RequirePath(parentPath)}/{Id}";
+    }
+
+    /// <summary>
     /// 校验并规范化必填文本。
     /// </summary>
     /// <param name="value">待校验的文本。</param>
@@ -112,5 +127,12 @@ public sealed class Organization : AggregateRoot
     private static string RequireText(string value, string message)
     {
         return string.IsNullOrWhiteSpace(value) ? throw new OrganizationDomainException(message) : value.Trim();
+    }
+
+    private static string RequirePath(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path)
+            ? throw new ArgumentException("上级机构 Path 不能为空。", nameof(path))
+            : path;
     }
 }

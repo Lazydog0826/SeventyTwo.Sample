@@ -27,4 +27,10 @@ internal sealed class OrganizationRecord : BaseEntity
     /// </summary>
     [SugarColumn(ColumnName = "parent_id", IsNullable = true, ColumnDataType = "uuid")]
     public Guid? ParentId { get; init; }
+
+    /// <summary>
+    /// 由机构 ID 组成的完整层级路径。
+    /// </summary>
+    [SugarColumn(ColumnName = "path", ColumnDataType = "text")]
+    public string Path { get; init; } = string.Empty;
 }

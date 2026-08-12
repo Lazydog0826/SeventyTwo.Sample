@@ -21,10 +21,17 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             async () =>
             {
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
-                var orgId = input.ParentId is null
-                    ? id
-                    : (await GetRequiredAsync(input.ParentId.Value, cancellationToken)).OrgId;
-                organization = new Organization(id, input.Code, input.Name, input.ParentId)
+                var parent = input.ParentId is null
+                    ? null
+                    : await GetRequiredAsync(input.ParentId.Value, cancellationToken);
+                var orgId = parent?.OrgId ?? id;
+                organization = new Organization(
+                    id,
+                    input.Code,
+                    input.Name,
+                    input.ParentId,
+                    parent is null ? null : $"{parent.Path}/{id}"
+                )
                 {
                     Enable = input.Enable,
                     OrgId = orgId,
@@ -50,7 +57,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             {
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
                 var organization = await GetRequiredAsync(id, cancellationToken);
-                await ValidateParentChangeAsync(organization, input.ParentId, cancellationToken);
+                var parent = await ValidateParentChangeAsync(organization, input.ParentId, cancellationToken);
                 var normalizedCode = string.IsNullOrWhiteSpace(input.Code)
                     ? throw new OrganizationDomainException(MessageKeys.Organizations.CodeRequired)
                     : input.Code.Trim();
@@ -64,6 +71,10 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
                     SystemIds.System,
                     DateTimeExtension.Now()
                 );
+                if (parent is not null)
+                {
+                    organization.ChangePath(parent.Path);
+                }
                 await organizationRepository.SaveAsync(organization, cancellationToken);
             },
             cancellationToken
@@ -108,7 +119,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
         }
     }
 
-    private async Task ValidateParentChangeAsync(
+    private async Task<Organization?> ValidateParentChangeAsync(
         Organization organization,
         Guid? parentId,
         CancellationToken cancellationToken
@@ -124,7 +135,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
         }
         if (parentId is null)
         {
-            return;
+            return null;
         }
 
         var organizations = await organizationRepository.GetListAsync(cancellationToken);
@@ -155,6 +166,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             }
             currentId = byId.TryGetValue(currentId.Value, out var current) ? current.ParentId : null;
         }
+        return parent;
     }
 
     private static void ValidateParentReference(Guid id, Guid? parentId)
