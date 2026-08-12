@@ -40,7 +40,6 @@ try
     db.CodeFirst.InitTables(entityTypes);
     Console.WriteLine($"已根据 {entityTypes.Length} 个数据库实体完成建表。");
 
-    var organizationId = Guid.Empty;
     var userId = Guid.CreateVersion7();
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
@@ -90,7 +89,7 @@ try
                 RouteName = "home",
                 ParentId = null,
                 MetaData = new PermissionMetaData(true),
-                OrgId = organizationId,
+                OrgId = Guid.Empty,
             }
         )
         .ExecuteCommand();
@@ -110,7 +109,7 @@ try
                     RouteName = string.Empty,
                     ParentId = null,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -125,7 +124,7 @@ try
                     RouteName = "Permissions.List",
                     ParentId = permissionsPermissionId,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -136,7 +135,7 @@ try
                     SortOrder = 102,
                     ParentId = permissionsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -147,7 +146,7 @@ try
                     SortOrder = 103,
                     ParentId = permissionsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -158,7 +157,7 @@ try
                     SortOrder = 104,
                     ParentId = permissionsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -173,7 +172,7 @@ try
                     RouteName = string.Empty,
                     ParentId = null,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -188,7 +187,7 @@ try
                     RouteName = "Organizations.List",
                     ParentId = organizationsPermissionId,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -199,7 +198,7 @@ try
                     SortOrder = 202,
                     ParentId = organizationsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -210,7 +209,7 @@ try
                     SortOrder = 203,
                     ParentId = organizationsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -221,7 +220,7 @@ try
                     SortOrder = 204,
                     ParentId = organizationsListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -236,7 +235,7 @@ try
                     RouteName = string.Empty,
                     ParentId = null,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -251,7 +250,7 @@ try
                     RouteName = "DataDictionaries.List",
                     ParentId = dataDictionariesPermissionId,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -262,7 +261,7 @@ try
                     SortOrder = 302,
                     ParentId = dataDictionariesListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -273,7 +272,7 @@ try
                     SortOrder = 303,
                     ParentId = dataDictionariesListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -284,7 +283,7 @@ try
                     SortOrder = 304,
                     ParentId = dataDictionariesListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -299,7 +298,7 @@ try
                     RouteName = string.Empty,
                     ParentId = null,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -314,7 +313,7 @@ try
                     RouteName = "Users.List",
                     ParentId = usersPermissionId,
                     MetaData = new PermissionMetaData(true),
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -325,7 +324,7 @@ try
                     SortOrder = 402,
                     ParentId = usersListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -336,7 +335,7 @@ try
                     SortOrder = 403,
                     ParentId = usersListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
                 new PermissionRecord
                 {
@@ -347,7 +346,7 @@ try
                     SortOrder = 404,
                     ParentId = usersListPermissionId,
                     MetaData = default,
-                    OrgId = organizationId,
+                    OrgId = Guid.Empty,
                 },
             }
         )
