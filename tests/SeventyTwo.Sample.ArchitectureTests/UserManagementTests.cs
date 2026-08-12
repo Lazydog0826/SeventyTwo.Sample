@@ -7,6 +7,7 @@ using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain.Users;
+using SeventyTwo.Sample.Domain.Organizations;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -24,8 +25,11 @@ public sealed class UserManagementTests
     {
         const string password = " abcdef ";
         var repository = new CapturingUserRepository();
+        var organization = CreateOrganization();
+        var organizationRepository = new FakeOrganizationRepository(organization);
         var application = new UserApplication(
             repository,
+            organizationRepository,
             null!,
             new FakeUnitOfWork(),
             null!,
@@ -33,11 +37,13 @@ public sealed class UserManagementTests
         );
 
         await application.CreateAsync(
-            new("user", password, "测试用户", "13800000000", "user@example.com", true),
+            new("user", password, "测试用户", "13800000000", "user@example.com", true, organization.Id),
             CancellationToken.None
         );
 
         var user = Assert.IsType<User>(repository.AddedUser);
+        Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
+        Assert.Equal(organization.Id, user.OrgId);
         var hasher = new PasswordHasher<string>();
         Assert.NotEqual(
             PasswordVerificationResult.Failed,
@@ -47,6 +53,117 @@ public sealed class UserManagementTests
             PasswordVerificationResult.Failed,
             hasher.VerifyHashedPassword(user.Username, user.PasswordHash, password.Trim())
         );
+    }
+
+    [Fact]
+    public async Task Update_ShouldAcquireOrganizationMutationLockBeforeValidation()
+    {
+        var organization = CreateOrganization();
+        var user = new User(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com"
+        )
+        {
+            Version = Guid.CreateVersion7(),
+            OrgId = organization.Id,
+        };
+        var userRepository = new CapturingUserRepository(user);
+        var organizationRepository = new FakeOrganizationRepository(organization);
+        var application = new UserApplication(
+            userRepository,
+            organizationRepository,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!
+        );
+
+        await application.UpdateAsync(
+            user.Id,
+            new("新姓名", "13900000000", "new@example.com", organization.Id, user.Version),
+            CancellationToken.None
+        );
+
+        Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
+        Assert.Same(user, userRepository.SavedUser);
+    }
+
+    [Fact]
+    public async Task Create_WithDisabledOrganization_ShouldFail()
+    {
+        var organization = CreateOrganization(false);
+        var application = new UserApplication(
+            new CapturingUserRepository(),
+            new FakeOrganizationRepository(organization),
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.CreateAsync(
+                new("user", "password", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                CancellationToken.None
+            )
+        );
+
+        Assert.Equal(MessageKeys.Users.OrganizationDisabled, exception.Message);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidPassword_ShouldFailBeforeOpeningUnitOfWork()
+    {
+        var organization = CreateOrganization();
+        var unitOfWork = new CapturingUnitOfWork();
+        var application = new UserApplication(
+            new CapturingUserRepository(),
+            new FakeOrganizationRepository(organization),
+            null!,
+            unitOfWork,
+            null!,
+            null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.CreateAsync(
+                new("user", " ", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                CancellationToken.None
+            )
+        );
+
+        Assert.Equal(MessageKeys.Validation.PasswordRequired, exception.Message);
+        Assert.Equal(0, unitOfWork.ExecuteCount);
+    }
+
+    [Fact]
+    public async Task Create_WhenCanceled_ShouldFailBeforeOpeningUnitOfWork()
+    {
+        var organization = CreateOrganization();
+        var unitOfWork = new CapturingUnitOfWork();
+        var application = new UserApplication(
+            new CapturingUserRepository(),
+            new FakeOrganizationRepository(organization),
+            null!,
+            unitOfWork,
+            null!,
+            null!
+        );
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await cancellationTokenSource.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            application.CreateAsync(
+                new("user", "password", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                cancellationTokenSource.Token
+            )
+        );
+
+        Assert.Equal(0, unitOfWork.ExecuteCount);
     }
 
     [Fact]
@@ -60,6 +177,7 @@ public sealed class UserManagementTests
         var tokenCacheService = new RejectingUserTokenCacheService();
         var application = new UserApplication(
             new ThrowingUserRepository(),
+            null!,
             null!,
             new FakeUnitOfWork(),
             tokenService,
@@ -104,6 +222,8 @@ public sealed class UserManagementTests
             var repository = new UserRepository(db);
             var user = Assert.IsType<User>(await repository.GetAsync(record.Id, CancellationToken.None));
             var version = user.Version;
+            var organizationId = Guid.CreateVersion7();
+            user.OrgId = organizationId;
             user.UpdateProfile("新姓名", "13900000000", "new@example.com", version, Guid.Empty, DateTimeOffset.UtcNow);
 
             await repository.SaveAsync(user, CancellationToken.None);
@@ -112,6 +232,7 @@ public sealed class UserManagementTests
             Assert.Equal(record.Username, saved.Username);
             Assert.Equal(record.PasswordHash, saved.PasswordHash);
             Assert.Equal("新姓名", saved.DisplayName);
+            Assert.Equal(organizationId, saved.OrgId);
             Assert.NotEqual(version, saved.Version);
         }
         finally { File.Delete(path); }
@@ -185,11 +306,20 @@ public sealed class UserManagementTests
         DisplayName = "测试用户", Phone = "13800000000", Email = "user@example.com", Version = Guid.CreateVersion7(),
     };
 
-    private sealed class CapturingUserRepository : IUserRepository
+    private static Organization CreateOrganization(bool enable = true)
+    {
+        var organization = new Organization(Guid.CreateVersion7(), "ORG", "测试机构") { Enable = enable };
+        organization.OrgId = organization.Id;
+        return organization;
+    }
+
+    private sealed class CapturingUserRepository(User? existingUser = null) : IUserRepository
     {
         public User? AddedUser { get; private set; }
+        public User? SavedUser { get; private set; }
 
-        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<User?>(null);
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(existingUser?.Id == id ? existingUser : null);
 
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             Task.FromResult<User?>(null);
@@ -206,7 +336,11 @@ public sealed class UserManagementTests
             return Task.CompletedTask;
         }
 
-        public Task SaveAsync(User user, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SaveAsync(User user, CancellationToken cancellationToken)
+        {
+            SavedUser = user;
+            return Task.CompletedTask;
+        }
 
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
     }
@@ -214,6 +348,40 @@ public sealed class UserManagementTests
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken) => action();
+    }
+
+    private sealed class CapturingUnitOfWork : IUnitOfWork
+    {
+        public int ExecuteCount { get; private set; }
+
+        public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken)
+        {
+            ExecuteCount++;
+            await action();
+        }
+    }
+
+    private sealed class FakeOrganizationRepository(Organization organization) : IOrganizationRepository
+    {
+        public int MutationLockAcquireCount { get; private set; }
+
+        public Task AcquireMutationLockAsync(CancellationToken cancellationToken)
+        {
+            MutationLockAcquireCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task<Organization?> FindAsync(Guid id, CancellationToken cancellationToken) =>
+            MutationLockAcquireCount == 0
+                ? throw new InvalidOperationException("验证机构前必须先获取机构变更锁")
+                : Task.FromResult(id == organization.Id ? organization : null);
+        public Task<IReadOnlyList<Organization>> GetListAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Organization>>([organization]);
+        public Task<bool> CodeExistsAsync(Guid orgId, string code, Guid? excludedId, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+        public Task AddAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SaveAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class FixedTokenService(TokenPayload payload) : ITokenService

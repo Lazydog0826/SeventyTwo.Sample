@@ -141,6 +141,24 @@ public sealed class ProductTests
     }
 
     [Fact]
+    public void Update_WithMissingUpdatedAt_ShouldNotChangeProduct()
+    {
+        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m)
+        {
+            Version = Guid.CreateVersion7(),
+        };
+
+        var exception = Assert.Throws<ProductDomainException>(() =>
+            product.Update("新商品", 2m, product.Version, SystemIds.System, default)
+        );
+
+        Assert.Equal(MessageKeys.Products.ModifiedAtRequired, exception.Message);
+        Assert.Equal("旧商品", product.Name);
+        Assert.Equal(1m, product.Price);
+        Assert.Null(product.UpdatedAt);
+    }
+
+    [Fact]
     public void Delete_ShouldDisableProductAndSetAuditFields()
     {
         var product = new Product(Guid.CreateVersion7(), "测试商品", 1m);
@@ -151,5 +169,17 @@ public sealed class ProductTests
         Assert.False(product.Enable);
         Assert.Equal(SystemIds.System, product.DeleteBy);
         Assert.Equal(deletedAt, product.DeleteAt);
+    }
+
+    [Fact]
+    public void Delete_WithMissingDeletedAt_ShouldNotChangeProduct()
+    {
+        var product = new Product(Guid.CreateVersion7(), "测试商品", 1m);
+
+        var exception = Assert.Throws<ProductDomainException>(() => product.Delete(SystemIds.System, default));
+
+        Assert.Equal(MessageKeys.Products.DeletedAtRequired, exception.Message);
+        Assert.True(product.Enable);
+        Assert.Null(product.DeleteAt);
     }
 }

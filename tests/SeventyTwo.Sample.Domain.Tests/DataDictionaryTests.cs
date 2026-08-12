@@ -16,20 +16,50 @@ public sealed class DataDictionaryTests
     }
 
     [Fact]
-    public void ItemMutations_ShouldMaintainAggregateItems()
+    public void AddItem_ShouldAddNormalizedItemAndSetAuditFields()
     {
         var dictionary = CreateDictionary();
         var itemId = Guid.CreateVersion7();
+        var updatedBy = Guid.CreateVersion7();
+        var updatedAt = new DateTimeOffset(2026, 8, 12, 10, 0, 0, TimeSpan.Zero);
 
-        dictionary.AddItem(itemId, " 1 ", " 启用 ", 1, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
-        dictionary.UpdateItem(itemId, "2", "禁用", 2, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
+        dictionary.AddItem(itemId, " 1 ", " 启用 ", 1, dictionary.Version, updatedBy, updatedAt);
+
+        var item = Assert.Single(dictionary.Items);
+        Assert.Equal(itemId, item.Id);
+        Assert.Equal("1", item.Value);
+        Assert.Equal("启用", item.Label);
+        Assert.Equal(1, item.SortOrder);
+        Assert.Equal(updatedBy, dictionary.UpdatedBy);
+        Assert.Equal(updatedAt, dictionary.UpdatedAt);
+    }
+
+    [Fact]
+    public void UpdateItem_ShouldUpdateRequestedItem()
+    {
+        var dictionary = CreateDictionary();
+        var itemId = Guid.CreateVersion7();
+        var updatedAt = new DateTimeOffset(2026, 8, 12, 10, 0, 0, TimeSpan.Zero);
+        dictionary.AddItem(itemId, "1", "启用", 1, dictionary.Version, Guid.Empty, updatedAt);
+
+        dictionary.UpdateItem(itemId, " 2 ", " 禁用 ", 2, dictionary.Version, Guid.Empty, updatedAt);
 
         var item = Assert.Single(dictionary.Items);
         Assert.Equal("2", item.Value);
         Assert.Equal("禁用", item.Label);
         Assert.Equal(2, item.SortOrder);
+    }
 
-        dictionary.RemoveItem(itemId, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
+    [Fact]
+    public void RemoveItem_ShouldRemoveRequestedItem()
+    {
+        var dictionary = CreateDictionary();
+        var itemId = Guid.CreateVersion7();
+        var updatedAt = new DateTimeOffset(2026, 8, 12, 10, 0, 0, TimeSpan.Zero);
+        dictionary.AddItem(itemId, "1", "启用", 1, dictionary.Version, Guid.Empty, updatedAt);
+
+        dictionary.RemoveItem(itemId, dictionary.Version, Guid.Empty, updatedAt);
+
         Assert.Empty(dictionary.Items);
     }
 

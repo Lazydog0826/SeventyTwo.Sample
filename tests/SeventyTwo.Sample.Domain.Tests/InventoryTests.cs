@@ -60,6 +60,17 @@ public sealed class InventoryTests
     }
 
     [Fact]
+    public void Increase_WhenQuantityWouldOverflow_ShouldNotChangeInventory()
+    {
+        var inventory = CreateInventory(int.MaxValue);
+
+        var exception = Assert.Throws<InventoryDomainException>(() => inventory.Increase(1));
+
+        Assert.Equal(MessageKeys.Inventories.QuantityOutOfRange, exception.Message);
+        Assert.Equal(int.MaxValue, inventory.Quantity);
+    }
+
+    [Fact]
     public void Change_ShouldDecreaseNewestInventoryFirst()
     {
         var olderInventoryId = Guid.CreateVersion7();

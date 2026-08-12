@@ -7,6 +7,7 @@ using SeventyTwo.Sample.Application.Organizations;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain.Organizations;
 using SeventyTwo.Sample.Infrastructure.Organizations;
+using SeventyTwo.Sample.Infrastructure.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Controllers;
 using SqlSugar;
@@ -251,7 +252,7 @@ public sealed class OrganizationCrudTests
         try
         {
             using var db = CreateDatabase(path);
-            db.CodeFirst.InitTables<OrganizationRecord>();
+            db.CodeFirst.InitTables<OrganizationRecord, UserAccountRecord>();
             var id = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(id, "ROOT", null, id)).ExecuteCommandAsync();
             await db.Insertable(CreateRecord(Guid.CreateVersion7(), "CHILD", id, id)).ExecuteCommandAsync();
@@ -274,7 +275,7 @@ public sealed class OrganizationCrudTests
         try
         {
             using var db = CreateDatabase(path);
-            db.CodeFirst.InitTables<OrganizationRecord>();
+            db.CodeFirst.InitTables<OrganizationRecord, UserAccountRecord>();
             var id = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(id, "REUSE", null, id)).ExecuteCommandAsync();
 

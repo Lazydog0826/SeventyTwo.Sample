@@ -18,13 +18,27 @@ public sealed class OrganizationTests
     }
 
     [Fact]
-    public void CreateChild_ShouldBuildPathFromParentPath()
+    public void ChangePath_ShouldAppendOrganizationIdToParentPath()
     {
         var rootId = Guid.CreateVersion7();
         var childId = Guid.CreateVersion7();
-        var child = new Organization(childId, "child", "子机构", rootId, $"{rootId}/{childId}");
+        var child = new Organization(childId, "child", "子机构", rootId, rootId.ToString());
+
+        child.ChangePath(rootId.ToString());
 
         Assert.Equal($"{rootId}/{child.Id}", child.Path);
+    }
+
+    [Fact]
+    public void Create_WithSelfAsParent_ShouldFail()
+    {
+        var id = Guid.CreateVersion7();
+
+        var exception = Assert.Throws<OrganizationDomainException>(() =>
+            new Organization(id, "code", "名称", id, id.ToString())
+        );
+
+        Assert.Equal(MessageKeys.Organizations.SelfCannotBeParent, exception.Message);
     }
 
     [Theory]
@@ -70,6 +84,24 @@ public sealed class OrganizationTests
         );
 
         Assert.Equal(MessageKeys.Organizations.DataChanged, exception.Message);
+    }
+
+    [Fact]
+    public void Update_WithMissingUpdatedAt_ShouldNotChangeOrganization()
+    {
+        var organization = new Organization(Guid.CreateVersion7(), "old", "旧名称")
+        {
+            Version = Guid.CreateVersion7(),
+        };
+
+        var exception = Assert.Throws<OrganizationDomainException>(() =>
+            organization.Update("new", "新名称", false, null, organization.Version, SystemIds.System, default)
+        );
+
+        Assert.Equal(MessageKeys.Organizations.ModifiedAtRequired, exception.Message);
+        Assert.Equal("old", organization.Code);
+        Assert.Equal("旧名称", organization.Name);
+        Assert.True(organization.Enable);
     }
 
     [Fact]
