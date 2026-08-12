@@ -167,6 +167,71 @@ public sealed class UserManagementTests
     }
 
     [Fact]
+    public async Task Login_WithDisabledUser_ShouldReportDisabled()
+    {
+        const string username = "disabled-user";
+        const string password = "password";
+        var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
+        var user = new User(
+            Guid.CreateVersion7(),
+            username,
+            passwordHash,
+            "禁用用户",
+            "13800000000",
+            "disabled@example.com"
+        )
+        {
+            Enable = false,
+        };
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.LoginAsync(new(username, password), CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Users.Disabled, exception.Message);
+    }
+
+    [Fact]
+    public async Task Login_WithDisabledUserAndInvalidPassword_ShouldRejectCredentials()
+    {
+        const string username = "disabled-user";
+        var passwordHash = new PasswordHasher<string>().HashPassword(username, "password");
+        var user = new User(
+            Guid.CreateVersion7(),
+            username,
+            passwordHash,
+            "禁用用户",
+            "13800000000",
+            "disabled@example.com"
+        )
+        {
+            Enable = false,
+        };
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.LoginAsync(new(username, "invalid-password"), CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Users.CredentialsInvalid, exception.Message);
+    }
+
+    [Fact]
     public async Task RefreshTokenAsync_ShouldRejectTokenIssuedBeforeInvalidBefore()
     {
         const long issuedAt = 1_800_000_000;
@@ -322,7 +387,7 @@ public sealed class UserManagementTests
             Task.FromResult(existingUser?.Id == id ? existingUser : null);
 
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
-            Task.FromResult<User?>(null);
+            Task.FromResult(existingUser?.Username == account ? existingUser : null);
 
         public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<User>>([]);
