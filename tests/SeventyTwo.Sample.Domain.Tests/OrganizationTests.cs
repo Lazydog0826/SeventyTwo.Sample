@@ -48,11 +48,12 @@ public sealed class OrganizationTests
         };
         var updatedAt = DateTimeOffset.UtcNow;
 
-        organization.Update(" new ", " 新名称 ", false, null, organization.Version, SystemIds.System, updatedAt);
+        organization.Update(" new ", " 新名称 ", false, null, organization.Version, SystemIds.System, updatedAt, 2);
 
         Assert.Equal("new", organization.Code);
         Assert.Equal("新名称", organization.Name);
         Assert.False(organization.Enable);
+        Assert.Equal(2, organization.SortOrder);
         Assert.Equal(updatedAt, organization.UpdatedAt);
     }
 
@@ -69,5 +70,15 @@ public sealed class OrganizationTests
         );
 
         Assert.Equal(MessageKeys.Organizations.DataChanged, exception.Message);
+    }
+
+    [Fact]
+    public void Create_WithNegativeSortOrder_ShouldFail()
+    {
+        var exception = Assert.Throws<OrganizationDomainException>(() =>
+            new Organization(Guid.CreateVersion7(), "code", "名称", sortOrder: -1)
+        );
+
+        Assert.Equal(MessageKeys.Organizations.SortMustNotBeNegative, exception.Message);
     }
 }

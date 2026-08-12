@@ -152,6 +152,31 @@ public sealed class OrganizationCrudTests
     }
 
     [Fact]
+    public async Task CreateEndpoint_ShouldPassSortOrderToApplication()
+    {
+        var application = new CapturingOrganizationApplication();
+        var controller = new OrganizationsController(application);
+
+        await controller.CreateAsync(new("CODE", "机构", true, null, 3), CancellationToken.None);
+
+        Assert.Equal(3, Assert.IsType<CreateOrganizationInput>(application.CreateInput).SortOrder);
+    }
+
+    [Fact]
+    public async Task UpdateEndpoint_ShouldPassSortOrderToApplication()
+    {
+        var application = new CapturingOrganizationApplication();
+        var controller = new OrganizationsController(application);
+
+        await controller.UpdateAsync(
+            new(Guid.CreateVersion7(), "CODE", "机构", true, null, Guid.CreateVersion7(), 4),
+            CancellationToken.None
+        );
+
+        Assert.Equal(4, Assert.IsType<UpdateOrganizationInput>(application.UpdateInput).SortOrder);
+    }
+
+    [Fact]
     public async Task Repository_ShouldPersistUpdateAndAdvanceVersion()
     {
         var path = Path.Combine(Path.GetTempPath(), $"organization-update-{Guid.NewGuid():N}.db");
@@ -302,6 +327,33 @@ public sealed class OrganizationCrudTests
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken) => action();
+    }
+
+    private sealed class CapturingOrganizationApplication : IOrganizationApplication
+    {
+        public CreateOrganizationInput? CreateInput { get; private set; }
+
+        public UpdateOrganizationInput? UpdateInput { get; private set; }
+
+        public Task<OrganizationListOutput> CreateAsync(
+            CreateOrganizationInput input,
+            CancellationToken cancellationToken
+        )
+        {
+            CreateInput = input;
+            return Task.FromResult(new OrganizationListOutput());
+        }
+
+        public Task UpdateAsync(Guid id, UpdateOrganizationInput input, CancellationToken cancellationToken)
+        {
+            UpdateInput = input;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<OrganizationListOutput>> GetListAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<OrganizationListOutput>>([]);
     }
 
     private sealed class FakeOrganizationRepository(IEnumerable<Organization> organizations) : IOrganizationRepository
