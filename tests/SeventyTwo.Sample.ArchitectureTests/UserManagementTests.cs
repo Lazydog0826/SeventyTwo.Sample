@@ -100,7 +100,7 @@ public sealed class UserManagementTests
         {
             using var db = CreateDatabase(path);
             db.CodeFirst.InitTables<UserAccountRecord>();
-            var superAdmin = CreateRecord("superadmin");
+            var superAdmin = CreateRecord(SystemUsernames.SuperAdmin);
             var regularUser = CreateRecord();
             await db.Insertable(new[] { superAdmin, regularUser }).ExecuteCommandAsync();
 

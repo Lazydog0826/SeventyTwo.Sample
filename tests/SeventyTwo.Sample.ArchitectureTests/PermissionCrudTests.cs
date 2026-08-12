@@ -60,7 +60,7 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var userRepository = new FakeUserRepository(new User(userId, "superadmin", "hash", "超级管理员", "13800000000", "admin@example.com"));
+        var userRepository = new FakeUserRepository(User.Restore(userId, SystemUsernames.SuperAdmin, "hash", "超级管理员", "13800000000", "admin@example.com"));
         var userPermissionCacheService = new UserPermissionCacheService(
             repository,
             new UserInfoCacheService(userRepository, redisCacheService, cacheConfiguration),

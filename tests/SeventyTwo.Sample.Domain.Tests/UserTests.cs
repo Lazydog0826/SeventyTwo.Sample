@@ -29,6 +29,16 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void Create_WithSuperAdminUsername_ShouldFail()
+    {
+        var exception = Assert.Throws<UserDomainException>(() =>
+            CreateUser(SystemUsernames.SuperAdmin)
+        );
+
+        Assert.Equal(MessageKeys.Users.UsernameReserved, exception.Message);
+    }
+
+    [Fact]
     public void UpdateProfile_WithStaleVersion_ShouldFail()
     {
         var user = CreateUser("user");
@@ -44,7 +54,15 @@ public sealed class UserTests
     [InlineData("delete")]
     public void SuperAdmin_ShouldRejectAllManagementMutations(string operation)
     {
-        var user = CreateUser("superadmin");
+        var user = User.Restore(
+            Guid.CreateVersion7(),
+            SystemUsernames.SuperAdmin,
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com"
+        );
+        user.Version = Guid.CreateVersion7();
 
         var exception = Assert.Throws<UserDomainException>(() =>
         {
