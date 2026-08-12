@@ -28,6 +28,15 @@ public static partial class MessageKeys
         /// <summary>电子邮箱不能为空。</summary>
         public const string EmailRequired = "user.emailRequired";
 
+        /// <summary>用户所属机构不能为空。</summary>
+        public const string OrgIdRequired = "user.orgIdRequired";
+
+        /// <summary>用户所属机构不存在。</summary>
+        public const string OrganizationNotFound = "user.organizationNotFound";
+
+        /// <summary>用户所属机构已禁用。</summary>
+        public const string OrganizationDisabled = "user.organizationDisabled";
+
         /// <summary>用户名已存在。</summary>
         public const string UsernameExists = "user.usernameExists";
 

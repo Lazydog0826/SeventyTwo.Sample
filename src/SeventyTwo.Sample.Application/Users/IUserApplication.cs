@@ -112,6 +112,7 @@ public sealed record UserOutput(Guid Id, string Username, string DisplayName, st
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
+/// <param name="OrgId">所属机构 ID。</param>
 /// <param name="Version">并发版本。</param>
 public sealed record UserListOutput(
     Guid Id,
@@ -120,6 +121,7 @@ public sealed record UserListOutput(
     string Phone,
     string Email,
     bool Enable,
+    Guid OrgId,
     Guid Version
 );
 
@@ -132,13 +134,15 @@ public sealed record UserListOutput(
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
+/// <param name="OrgId">所属机构 ID。</param>
 public sealed record CreateUserInput(
     string Username,
     string Password,
     string DisplayName,
     string Phone,
     string Email,
-    bool Enable
+    bool Enable,
+    Guid OrgId
 );
 
 /// <summary>
@@ -148,7 +152,7 @@ public sealed record CreateUserInput(
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
-public sealed record UpdateUserInput(string DisplayName, string Phone, string Email, Guid Version);
+public sealed record UpdateUserInput(string DisplayName, string Phone, string Email, Guid OrgId, Guid Version);
 
 /// <summary>
 /// 用户启用状态设置输入。

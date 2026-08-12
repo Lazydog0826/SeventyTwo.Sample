@@ -4,6 +4,7 @@ using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
+using SeventyTwo.Sample.Application.Organizations;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -15,9 +16,11 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 /// 用户接口。
 /// </summary>
 /// <param name="userApplication">用户应用服务。</param>
+/// <param name="organizationApplication">机构应用服务。</param>
 [ApiController]
 [Route("api/users")]
-public sealed class UsersController(IUserApplication userApplication) : ControllerBase
+public sealed class UsersController(IUserApplication userApplication, IOrganizationApplication organizationApplication)
+    : ControllerBase
 {
     /// <summary>
     /// 获取用户管理列表。
@@ -33,6 +36,18 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     }
 
     /// <summary>
+    /// 获取用户新增、编辑时可选择的已启用机构。
+    /// </summary>
+    [HttpGet("organization-options")]
+    [Permission(PermissionMatchMode.Any, "usersCreate", "usersUpdate")]
+    public async Task<IActionResult> GetOrganizationOptionsAsync(CancellationToken cancellationToken)
+    {
+        var organizations = await organizationApplication.GetListAsync(cancellationToken);
+        var data = organizations.Where(organization => organization.Enable);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 创建用户。
     /// </summary>
     /// <param name="request">用户创建请求。</param>
@@ -43,7 +58,15 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
         var data = await userApplication.CreateAsync(
-            new(request.Username, request.Password, request.DisplayName, request.Phone, request.Email, request.Enable),
+            new(
+                request.Username,
+                request.Password,
+                request.DisplayName,
+                request.Phone,
+                request.Email,
+                request.Enable,
+                request.OrgId
+            ),
             cancellationToken
         );
         return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
@@ -61,7 +84,7 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
     {
         await userApplication.UpdateAsync(
             request.Id,
-            new(request.DisplayName, request.Phone, request.Email, request.Version),
+            new(request.DisplayName, request.Phone, request.Email, request.OrgId, request.Version),
             cancellationToken
         );
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
@@ -206,6 +229,7 @@ public sealed record LoginRequest(
 /// <param name="Phone">手机号。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
+/// <param name="OrgId">所属机构 ID。</param>
 public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Validation.AccountRequired)]
     [StringLength(50, MinimumLength = 3, ErrorMessage = MessageKeys.Validation.AccountLengthInvalid)]
@@ -216,7 +240,8 @@ public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Users.DisplayNameRequired)] string DisplayName,
     [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
-    bool Enable
+    bool Enable,
+    Guid OrgId
 );
 
 /// <summary>
@@ -226,12 +251,14 @@ public sealed record CreateUserRequest(
 /// <param name="DisplayName">显示名称。</param>
 /// <param name="Phone">手机号。</param>
 /// <param name="Email">电子邮箱。</param>
+/// <param name="OrgId">所属机构 ID。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
 public sealed record UpdateUserRequest(
     Guid Id,
     [Required(ErrorMessage = MessageKeys.Users.DisplayNameRequired)] string DisplayName,
     [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
+    Guid OrgId,
     Guid Version
 );
 

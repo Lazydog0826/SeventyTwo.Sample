@@ -49,6 +49,9 @@ public static partial class MessageKeys
         /// <summary>机构存在下级机构，无法删除。</summary>
         public const string HasChildren = "organization.hasChildren";
 
+        /// <summary>机构存在成员，无法删除。</summary>
+        public const string HasMembers = "organization.hasMembers";
+
         /// <summary>机构数据已变更，需要刷新后重试。</summary>
         public const string DataChanged = "organization.dataChanged";
 

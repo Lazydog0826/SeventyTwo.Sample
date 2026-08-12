@@ -4,6 +4,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain;
+using SeventyTwo.Sample.Domain.Organizations;
 using SeventyTwo.Sample.Domain.Users;
 
 // ReSharper disable ConvertIfStatementToReturnStatement
@@ -16,6 +17,7 @@ namespace SeventyTwo.Sample.Application.Users;
 [AutofacDependency(typeof(IUserApplication))]
 public sealed class UserApplication(
     IUserRepository userRepository,
+    IOrganizationRepository organizationRepository,
     UserInfoCacheService userInfoCacheService,
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
@@ -30,17 +32,20 @@ public sealed class UserApplication(
 
     public async Task<UserListOutput> CreateAsync(CreateUserInput input, CancellationToken cancellationToken)
     {
+        var username = RequireText(input.Username, MessageKeys.Users.UsernameRequired);
+        var password = RequirePassword(input.Password);
+        cancellationToken.ThrowIfCancellationRequested();
+        var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
         User? user = null;
         await unitOfWork.ExecuteAsync(
             async () =>
             {
-                var username = RequireText(input.Username, MessageKeys.Users.UsernameRequired);
-                var password = RequirePassword(input.Password);
+                await organizationRepository.AcquireMutationLockAsync(cancellationToken);
+                await ValidateOrganizationAsync(input.OrgId, cancellationToken);
                 if (await userRepository.UsernameExistsAsync(username, cancellationToken))
                 {
                     throw new UserDomainException(MessageKeys.Users.UsernameExists, DomainErrorType.Conflict);
                 }
-                var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
                 user = new User(
                     Guid.CreateVersion7(),
                     username,
@@ -51,7 +56,7 @@ public sealed class UserApplication(
                 )
                 {
                     Enable = input.Enable,
-                    OrgId = Guid.Empty,
+                    OrgId = input.OrgId,
                 };
                 await userRepository.AddAsync(user, cancellationToken);
             },
@@ -65,7 +70,9 @@ public sealed class UserApplication(
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await organizationRepository.AcquireMutationLockAsync(cancellationToken);
                 var user = await GetRequiredAsync(id, cancellationToken);
+                await ValidateOrganizationAsync(input.OrgId, cancellationToken);
                 user.UpdateProfile(
                     input.DisplayName,
                     input.Phone,
@@ -74,6 +81,7 @@ public sealed class UserApplication(
                     SystemIds.System,
                     DateTimeExtension.Now()
                 );
+                user.OrgId = input.OrgId;
                 await userRepository.SaveAsync(user, cancellationToken);
             },
             cancellationToken
@@ -216,6 +224,17 @@ public sealed class UserApplication(
             ? throw new UserDomainException(MessageKeys.Validation.PasswordRequired)
             : value;
 
+    private async Task ValidateOrganizationAsync(Guid orgId, CancellationToken cancellationToken)
+    {
+        if (orgId == Guid.Empty)
+            throw new UserDomainException(MessageKeys.Users.OrgIdRequired);
+        var organization =
+            await organizationRepository.FindAsync(orgId, cancellationToken)
+            ?? throw new UserDomainException(MessageKeys.Users.OrganizationNotFound, DomainErrorType.NotFound);
+        if (!organization.Enable)
+            throw new UserDomainException(MessageKeys.Users.OrganizationDisabled);
+    }
+
     private static UserListOutput ToListOutput(User user) =>
-        new(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, user.Enable, user.Version);
+        new(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, user.Enable, user.OrgId, user.Version);
 }

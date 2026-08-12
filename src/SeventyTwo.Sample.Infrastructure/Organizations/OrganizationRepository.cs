@@ -4,6 +4,7 @@ using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Organizations;
+using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
 namespace SeventyTwo.Sample.Infrastructure.Organizations;
@@ -165,6 +166,15 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
+        if (
+            await db.Queryable<UserAccountRecord>()
+                .Where(user => user.OrgId == id && user.DeleteAt == null)
+                .AnyAsync(cancellationToken)
+        )
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.HasMembers, DomainErrorType.Conflict);
+        }
+
         if (
             await db.Queryable<OrganizationRecord>()
                 .Where(organization => organization.ParentId == id && organization.DeleteAt == null)

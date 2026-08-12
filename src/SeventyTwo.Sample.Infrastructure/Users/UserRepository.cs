@@ -56,7 +56,7 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
             Enable = user.Enable,
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
-            OrgId = Guid.Empty,
+            OrgId = user.OrgId,
             Version = Guid.CreateVersion7(),
         };
         var affectedRows = await db.Insertable(record)
@@ -79,6 +79,7 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
             Phone = user.Phone,
             Email = user.Email,
             Enable = user.Enable,
+            OrgId = user.OrgId,
             UpdatedBy = user.UpdatedBy,
             UpdatedAt = user.UpdatedAt,
             Version = nextVersion,
@@ -90,6 +91,7 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
                 x.Phone,
                 x.Email,
                 x.Enable,
+                x.OrgId,
                 x.UpdatedBy,
                 x.UpdatedAt,
                 x.Version,
