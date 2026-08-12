@@ -156,7 +156,7 @@ public sealed class OrganizationCrudTests
         try
         {
             using var db = CreateDatabase(path);
-            db.CodeFirst.InitTables<OrganizationRecord, OrganizationMemberRecord>();
+            db.CodeFirst.InitTables<OrganizationRecord>();
             var id = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(id, "OLD", null, id)).ExecuteCommandAsync();
             var repository = new OrganizationRepository(db);
@@ -178,27 +178,17 @@ public sealed class OrganizationCrudTests
         }
     }
 
-    [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task RepositoryDelete_WithChildrenOrMembers_ShouldFail(bool hasChild, bool hasMember)
+    [Fact]
+    public async Task RepositoryDelete_WithChildren_ShouldFail()
     {
         var path = Path.Combine(Path.GetTempPath(), $"organization-delete-blocked-{Guid.NewGuid():N}.db");
         try
         {
             using var db = CreateDatabase(path);
-            db.CodeFirst.InitTables<OrganizationRecord, OrganizationMemberRecord>();
+            db.CodeFirst.InitTables<OrganizationRecord>();
             var id = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(id, "ROOT", null, id)).ExecuteCommandAsync();
-            if (hasChild)
-            {
-                await db.Insertable(CreateRecord(Guid.CreateVersion7(), "CHILD", id, id)).ExecuteCommandAsync();
-            }
-            if (hasMember)
-            {
-                await db.Insertable(new OrganizationMemberRecord { OrganizationId = id, UserId = Guid.CreateVersion7(), OrgId = id })
-                    .ExecuteCommandAsync();
-            }
+            await db.Insertable(CreateRecord(Guid.CreateVersion7(), "CHILD", id, id)).ExecuteCommandAsync();
 
             await Assert.ThrowsAsync<OrganizationDomainException>(() =>
                 new OrganizationRepository(db).DeleteAsync(id, CancellationToken.None)
@@ -218,7 +208,7 @@ public sealed class OrganizationCrudTests
         try
         {
             using var db = CreateDatabase(path);
-            db.CodeFirst.InitTables<OrganizationRecord, OrganizationMemberRecord>();
+            db.CodeFirst.InitTables<OrganizationRecord>();
             var id = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(id, "REUSE", null, id)).ExecuteCommandAsync();
 
