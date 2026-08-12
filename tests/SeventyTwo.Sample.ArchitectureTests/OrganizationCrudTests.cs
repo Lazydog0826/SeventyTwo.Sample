@@ -34,6 +34,7 @@ public sealed class OrganizationCrudTests
         Assert.Equal(root1.Id, repository.Items.Single(item => item.Id == root1.Id).OrgId);
         Assert.Equal(root2.Id, repository.Items.Single(item => item.Id == root2.Id).OrgId);
         Assert.Equal(root1.Id, repository.Items.Single(item => item.Id == child.Id).OrgId);
+        Assert.Equal($"{root1.Id}/{child.Id}", repository.Items.Single(item => item.Id == child.Id).Path);
     }
 
     [Fact]
@@ -75,6 +76,7 @@ public sealed class OrganizationCrudTests
         );
 
         Assert.Equal(right.Id, left.ParentId);
+        Assert.Equal($"{root.Id}/{right.Id}/{left.Id}", left.Path);
     }
 
     [Fact]
@@ -179,6 +181,45 @@ public sealed class OrganizationCrudTests
     }
 
     [Fact]
+    public async Task RepositoryReparent_ShouldUpdateDescendantPaths()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"organization-reparent-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(databasePath);
+            db.CodeFirst.InitTables<OrganizationRecord>();
+            var rootId = Guid.CreateVersion7();
+            var leftId = Guid.CreateVersion7();
+            var rightId = Guid.CreateVersion7();
+            var childId = Guid.CreateVersion7();
+            await db.Insertable(
+                    new[]
+                    {
+                        CreateRecord(rootId, "ROOT", null, rootId),
+                        CreateRecord(leftId, "LEFT", rootId, rootId, $"{rootId}/{leftId}"),
+                        CreateRecord(rightId, "RIGHT", rootId, rootId, $"{rootId}/{rightId}"),
+                        CreateRecord(childId, "CHILD", leftId, rootId, $"{rootId}/{leftId}/{childId}"),
+                    }
+                )
+                .ExecuteCommandAsync();
+            var repository = new OrganizationRepository(db);
+            var left = Assert.IsType<Organization>(await repository.FindAsync(leftId, CancellationToken.None));
+            left.Update("LEFT", "LEFT", true, rightId, left.Version, Guid.Empty, DateTimeOffset.UtcNow);
+            left.ChangePath($"{rootId}/{rightId}");
+
+            await repository.SaveAsync(left, CancellationToken.None);
+
+            var child = await db.Queryable<OrganizationRecord>().SingleAsync(item => item.Id == childId);
+            Assert.Equal($"{rootId}/{rightId}/{leftId}/{childId}", child.Path);
+            db.Ado.Close();
+        }
+        finally
+        {
+            File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task RepositoryDelete_WithChildren_ShouldFail()
     {
         var path = Path.Combine(Path.GetTempPath(), $"organization-delete-blocked-{Guid.NewGuid():N}.db");
@@ -227,7 +268,9 @@ public sealed class OrganizationCrudTests
 
     private static Organization CreateOrganization(string code, Guid? parentId, Guid? orgId = null)
     {
-        var organization = new Organization(Guid.CreateVersion7(), code, code, parentId)
+        var id = Guid.CreateVersion7();
+        var path = parentId is null ? null : $"{(orgId ?? parentId).Value}/{id}";
+        var organization = new Organization(id, code, code, parentId, path)
         {
             Version = Guid.CreateVersion7(),
         };
@@ -238,8 +281,23 @@ public sealed class OrganizationCrudTests
     private static SqlSugarClient CreateDatabase(string path) =>
         new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
 
-    private static OrganizationRecord CreateRecord(Guid id, string code, Guid? parentId, Guid orgId) =>
-        new() { Id = id, Code = code, Name = code, ParentId = parentId, OrgId = orgId, Version = Guid.CreateVersion7() };
+    private static OrganizationRecord CreateRecord(
+        Guid id,
+        string code,
+        Guid? parentId,
+        Guid orgId,
+        string? path = null
+    ) =>
+        new()
+        {
+            Id = id,
+            Code = code,
+            Name = code,
+            ParentId = parentId,
+            Path = path ?? (parentId is null ? id.ToString() : $"{orgId}/{id}"),
+            OrgId = orgId,
+            Version = Guid.CreateVersion7(),
+        };
 
     private sealed class FakeUnitOfWork : IUnitOfWork
     {

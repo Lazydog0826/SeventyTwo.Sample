@@ -14,6 +14,17 @@ public sealed class OrganizationTests
         Assert.Equal("code", organization.Code);
         Assert.Equal("name", organization.Name);
         Assert.Null(organization.ParentId);
+        Assert.Equal(organization.Id.ToString(), organization.Path);
+    }
+
+    [Fact]
+    public void CreateChild_ShouldBuildPathFromParentPath()
+    {
+        var rootId = Guid.CreateVersion7();
+        var childId = Guid.CreateVersion7();
+        var child = new Organization(childId, "child", "子机构", rootId, $"{rootId}/{childId}");
+
+        Assert.Equal($"{rootId}/{child.Id}", child.Path);
     }
 
     [Theory]
