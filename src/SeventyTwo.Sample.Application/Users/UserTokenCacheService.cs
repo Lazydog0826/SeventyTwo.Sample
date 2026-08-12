@@ -15,10 +15,13 @@ namespace SeventyTwo.Sample.Application.Users;
 [AutofacDependency(typeof(IUserTokenCacheService))]
 public sealed class UserTokenCacheService(
     IRedisCacheService redisCacheService,
-    IOptions<CacheConfiguration> cacheConfiguration
+    IOptions<CacheConfiguration> cacheConfiguration,
+    IOptions<TokenLifetimeConfiguration> tokenLifetimeConfiguration
 ) : IUserTokenCacheService
 {
-    private static readonly TimeSpan InvalidBeforeExpiration = TimeSpan.FromDays(7);
+    private readonly TimeSpan _invalidBeforeExpiration = TimeSpan.FromDays(
+        tokenLifetimeConfiguration.Value.RefreshTokenExpirationDays
+    );
 
     /// <inheritdoc />
     public async Task<bool> SaveAsync(
@@ -113,7 +116,7 @@ public sealed class UserTokenCacheService(
         var invalidBefore = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var result = await redisCacheService
             .GetDatabase()
-            .StringSetAsync(GetInvalidBeforeCacheKey(userId), invalidBefore, InvalidBeforeExpiration);
+            .StringSetAsync(GetInvalidBeforeCacheKey(userId), invalidBefore, _invalidBeforeExpiration);
         cancellationToken.ThrowIfCancellationRequested();
         return result;
     }

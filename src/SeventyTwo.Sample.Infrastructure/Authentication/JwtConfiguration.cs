@@ -2,7 +2,7 @@
 namespace SeventyTwo.Sample.Infrastructure.Authentication;
 
 /// <summary>
-/// JWT 签名、加密及有效期配置。
+/// JWT 签名和加密配置。
 /// </summary>
 public sealed class JwtConfiguration
 {
@@ -25,14 +25,4 @@ public sealed class JwtConfiguration
     /// 获取用于 A256CBC-HS512 加密的 Base64 密钥，解码后必须为 64 字节。
     /// </summary>
     public string EncryptionKey { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 获取 Access Token 有效时长，单位为分钟。
-    /// </summary>
-    public int AccessTokenExpirationMinutes { get; init; }
-
-    /// <summary>
-    /// 获取 Refresh Token 有效时长，单位为天。
-    /// </summary>
-    public int RefreshTokenExpirationDays { get; init; }
 }

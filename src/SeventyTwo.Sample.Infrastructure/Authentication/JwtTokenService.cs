@@ -15,9 +15,13 @@ namespace SeventyTwo.Sample.Infrastructure.Authentication;
 /// </summary>
 /// <param name="options">JWT 配置。</param>
 [AutofacDependency(typeof(ITokenService))]
-public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : ITokenService
+public sealed class JwtTokenService(
+    IOptions<JwtConfiguration> options,
+    IOptions<TokenLifetimeConfiguration> tokenLifetimeOptions
+) : ITokenService
 {
     private readonly JwtConfiguration _configuration = options.Value;
+    private readonly TokenLifetimeConfiguration _tokenLifetimeConfiguration = tokenLifetimeOptions.Value;
     private readonly SymmetricSecurityKey _signingKey = new(Encoding.UTF8.GetBytes(options.Value.SigningKey));
     private readonly EncryptingCredentials _encryptingCredentials = CreateEncryptingCredentials(
         options.Value.EncryptionKey
@@ -27,8 +31,10 @@ public sealed class JwtTokenService(IOptions<JwtConfiguration> options) : IToken
     public TokenPair Generate(User user, Guid sessionId)
     {
         var now = DateTime.UtcNow;
-        var accessTokenExpireTime = now.Add(TimeSpan.FromMinutes(_configuration.AccessTokenExpirationMinutes));
-        var refreshTokenExpireTime = now.Add(TimeSpan.FromDays(_configuration.RefreshTokenExpirationDays));
+        var accessTokenExpireTime = now.Add(
+            TimeSpan.FromMinutes(_tokenLifetimeConfiguration.AccessTokenExpirationMinutes)
+        );
+        var refreshTokenExpireTime = now.Add(TimeSpan.FromDays(_tokenLifetimeConfiguration.RefreshTokenExpirationDays));
         var accessToken = Generate(user, sessionId.ToString(), "access", accessTokenExpireTime);
         var refreshToken = Generate(user, sessionId.ToString(), "refresh", refreshTokenExpireTime);
         return new TokenPair(accessToken, refreshToken, refreshTokenExpireTime);

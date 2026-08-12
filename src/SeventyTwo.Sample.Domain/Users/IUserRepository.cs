@@ -6,7 +6,7 @@ namespace SeventyTwo.Sample.Domain.Users;
 public interface IUserRepository
 {
     /// <summary>
-    /// 在当前事务内获取指定用户的安全操作锁，串行化登录与启禁用操作。
+    /// 在当前事务内获取指定用户的安全操作锁，串行化登录、启禁用与删除操作。
     /// </summary>
     /// <param name="id">用户 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>

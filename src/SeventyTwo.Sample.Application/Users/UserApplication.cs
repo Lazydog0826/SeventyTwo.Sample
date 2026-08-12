@@ -114,9 +114,15 @@ public sealed class UserApplication(
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await userRepository.AcquireSecurityLockAsync(id, cancellationToken);
                 var user = await GetRequiredAsync(id, cancellationToken);
                 user.EnsureCanDelete(version);
                 await userRepository.DeleteAsync(id, version, cancellationToken);
+                if (!await userTokenCacheService.SetInvalidBeforeAsync(id, cancellationToken))
+                {
+                    throw new InvalidOperationException("设置用户令牌失效时间失败");
+                }
+                await userInfoCacheInvalidationPublisher.PublishAsync(id, cancellationToken);
             },
             cancellationToken
         );

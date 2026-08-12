@@ -7,6 +7,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Infrastructure.Authentication;
 using SeventyTwo.Sample.Infrastructure.Messaging;
 using SeventyTwo.Sample.Infrastructure.Persistence;
@@ -103,9 +104,16 @@ builder.Services.AddCacheService(builder.Configuration);
 
 #region JWT 配置
 
-// 将配置文件中的 JwtConfiguration 节绑定为强类型配置，供 JWT 令牌服务读取，
-// 用于生成及校验令牌的签发者、受众、密钥和有效期等参数。
-builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(nameof(JwtConfiguration)));
+// JWT 实现配置与令牌生命周期策略共用现有 JwtConfiguration 配置节，
+// 分别绑定到基础设施层和应用层的强类型配置。
+var jwtConfigurationSection = builder.Configuration.GetSection(nameof(JwtConfiguration));
+builder.Services.Configure<JwtConfiguration>(jwtConfigurationSection);
+builder
+    .Services.AddOptions<TokenLifetimeConfiguration>()
+    .Bind(jwtConfigurationSection)
+    .Validate(options => options.AccessTokenExpirationMinutes > 0, "AccessTokenExpirationMinutes 必须大于 0")
+    .Validate(options => options.RefreshTokenExpirationDays > 0, "RefreshTokenExpirationDays 必须大于 0")
+    .ValidateOnStart();
 
 #endregion
 
