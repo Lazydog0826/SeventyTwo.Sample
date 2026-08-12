@@ -93,6 +93,26 @@ public sealed class UserManagementTests
     }
 
     [Fact]
+    public async Task RepositoryGetList_ShouldExcludeSuperAdmin()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"user-list-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(path);
+            db.CodeFirst.InitTables<UserAccountRecord>();
+            var superAdmin = CreateRecord("superadmin");
+            var regularUser = CreateRecord();
+            await db.Insertable(new[] { superAdmin, regularUser }).ExecuteCommandAsync();
+
+            var users = await new UserRepository(db).GetListAsync(CancellationToken.None);
+
+            var user = Assert.Single(users);
+            Assert.Equal(regularUser.Id, user.Id);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task RepositoryDelete_WithPermissionAssociation_ShouldFail()
     {
         var path = Path.Combine(Path.GetTempPath(), $"user-delete-related-{Guid.NewGuid():N}.db");
@@ -134,9 +154,9 @@ public sealed class UserManagementTests
     private static SqlSugarClient CreateDatabase(string path) =>
         new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
 
-    private static UserAccountRecord CreateRecord() => new()
+    private static UserAccountRecord CreateRecord(string? username = null) => new()
     {
-        Id = Guid.CreateVersion7(), Username = $"user-{Guid.NewGuid():N}", PasswordHash = "hash",
+        Id = Guid.CreateVersion7(), Username = username ?? $"user-{Guid.NewGuid():N}", PasswordHash = "hash",
         DisplayName = "测试用户", Phone = "13800000000", Email = "user@example.com", Version = Guid.CreateVersion7(),
     };
 
