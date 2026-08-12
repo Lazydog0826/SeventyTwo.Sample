@@ -11,6 +11,11 @@ namespace SeventyTwo.Sample.Application.Permissions;
 public interface IPermissionApplication
 {
     /// <summary>
+    /// 获取指定权限的编辑详情。
+    /// </summary>
+    Task<PermissionListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 创建权限并发布权限列表缓存失效消息。
     /// </summary>
     Task<PermissionListOutput> CreateAsync(CreatePermissionInput input, CancellationToken cancellationToken);

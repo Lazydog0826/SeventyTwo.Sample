@@ -25,6 +25,16 @@ public sealed class UserApplication(
     IUserInfoCacheInvalidationPublisher userInfoCacheInvalidationPublisher
 ) : IUserApplication
 {
+    public async Task<UserListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await GetRequiredAsync(id, cancellationToken);
+        if (string.Equals(user.Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
+        {
+            throw new UserDomainException(MessageKeys.Users.SuperAdminProtected, DomainErrorType.Conflict);
+        }
+        return ToListOutput(user);
+    }
+
     public async Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var users = await userRepository.GetListAsync(cancellationToken);

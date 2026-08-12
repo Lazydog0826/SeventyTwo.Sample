@@ -8,6 +8,11 @@ namespace SeventyTwo.Sample.Application.Users;
 public interface IUserApplication
 {
     /// <summary>
+    /// 获取指定用户的编辑详情。
+    /// </summary>
+    Task<UserListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 获取用户列表。
     /// </summary>
     /// <param name="cancellationToken">取消令牌。</param>

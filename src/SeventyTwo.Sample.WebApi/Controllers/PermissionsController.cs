@@ -16,6 +16,17 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 public sealed class PermissionsController(IPermissionApplication permissionApplication) : ControllerBase
 {
     /// <summary>
+    /// 获取权限编辑详情。
+    /// </summary>
+    [HttpGet("detail")]
+    [Permission(PermissionMatchMode.All, "permissionsUpdate")]
+    public async Task<IActionResult> GetDetailAsync([FromQuery] Guid id, CancellationToken cancellationToken)
+    {
+        var result = await permissionApplication.GetDetailAsync(id, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 创建权限。
     /// </summary>
     /// <param name="request">权限创建请求。</param>

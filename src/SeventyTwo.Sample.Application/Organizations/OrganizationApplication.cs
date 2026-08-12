@@ -9,6 +9,9 @@ namespace SeventyTwo.Sample.Application.Organizations;
 public sealed class OrganizationApplication(IOrganizationRepository organizationRepository, IUnitOfWork unitOfWork)
     : IOrganizationApplication
 {
+    public async Task<OrganizationListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
+        ToListOutput(await GetRequiredAsync(id, cancellationToken));
+
     public async Task<OrganizationListOutput> CreateAsync(
         CreateOrganizationInput input,
         CancellationToken cancellationToken

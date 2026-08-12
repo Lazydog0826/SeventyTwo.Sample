@@ -15,6 +15,17 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 public sealed class OrganizationsController(IOrganizationApplication organizationApplication) : ControllerBase
 {
     /// <summary>
+    /// 获取机构编辑详情。
+    /// </summary>
+    [HttpGet("detail")]
+    [Permission(PermissionMatchMode.All, "organizationsUpdate")]
+    public async Task<IActionResult> GetDetailAsync([FromQuery] Guid id, CancellationToken cancellationToken)
+    {
+        var result = await organizationApplication.GetDetailAsync(id, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 获取机构管理列表。
     /// </summary>
     /// <param name="cancellationToken">取消令牌。</param>

@@ -7,6 +7,11 @@ namespace SeventyTwo.Sample.Application.Organizations;
 public interface IOrganizationApplication
 {
     /// <summary>
+    /// 获取指定机构的编辑详情。
+    /// </summary>
+    Task<OrganizationListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 创建机构。
     /// </summary>
     /// <param name="input">创建机构的输入。</param>

@@ -27,6 +27,17 @@ public sealed class UsersController(
 ) : ControllerBase
 {
     /// <summary>
+    /// 获取用户编辑详情。
+    /// </summary>
+    [HttpGet("detail")]
+    [Permission(PermissionMatchMode.All, "usersUpdate")]
+    public async Task<IActionResult> GetDetailAsync([FromQuery] Guid id, CancellationToken cancellationToken)
+    {
+        var data = await userApplication.GetDetailAsync(id, cancellationToken);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 获取用户管理列表。
     /// </summary>
     /// <param name="cancellationToken">取消令牌。</param>

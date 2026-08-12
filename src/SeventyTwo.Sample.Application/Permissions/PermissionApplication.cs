@@ -21,6 +21,10 @@ public sealed class PermissionApplication(
 ) : IPermissionApplication
 {
     /// <inheritdoc />
+    public async Task<PermissionListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
+        ToListOutput(await GetRequiredAsync(id, cancellationToken));
+
+    /// <inheritdoc />
     public async Task<PermissionListOutput> CreateAsync(
         CreatePermissionInput input,
         CancellationToken cancellationToken
