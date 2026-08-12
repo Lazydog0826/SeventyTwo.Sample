@@ -129,15 +129,6 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             throw new OrganizationDomainException(MessageKeys.Organizations.HasChildren, DomainErrorType.Conflict);
         }
 
-        if (
-            await db.Queryable<OrganizationMemberRecord>()
-                .Where(member => member.OrganizationId == id && member.DeleteAt == null)
-                .AnyAsync(cancellationToken)
-        )
-        {
-            throw new OrganizationDomainException(MessageKeys.Organizations.HasMembers, DomainErrorType.Conflict);
-        }
-
         var affectedRows = await db.Deleteable<OrganizationRecord>()
             .Where(organization => organization.Id == id && organization.DeleteAt == null)
             .ExecuteCommandAsync(cancellationToken);

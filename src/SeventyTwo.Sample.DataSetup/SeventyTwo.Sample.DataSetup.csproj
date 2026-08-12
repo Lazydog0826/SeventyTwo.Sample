@@ -15,4 +15,8 @@
         <ProjectReference Include="..\SeventyTwo.Sample.Infrastructure\SeventyTwo.Sample.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>

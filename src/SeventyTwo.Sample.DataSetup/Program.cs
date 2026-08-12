@@ -1,22 +1,23 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Infrastructure;
-using SeventyTwo.Sample.Infrastructure.Organizations;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
-const string connectionString =
-    "Host=xuniji.com;Port=5432;Database=SeventyTwo.Sample;Username=postgres;Password=123456";
-const string organizationCode = "DefaultOrg";
-const string organizationName = "测试机构";
 const string userName = "superadmin";
 const string displayName = "超级管理员";
 const string initialPassword = "123456";
 
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .Build();
+var connectionString = configuration.GetConnectionString("PostgreSQL");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
-    throw new InvalidOperationException("请先在 Program.cs 中填写 PostgreSQL 连接字符串。");
+    throw new InvalidOperationException("未配置 ConnectionStrings:PostgreSQL。");
 }
 
 using var db = new SqlSugarClient(
@@ -39,7 +40,7 @@ try
     db.CodeFirst.InitTables(entityTypes);
     Console.WriteLine($"已根据 {entityTypes.Length} 个数据库实体完成建表。");
 
-    var organizationId = Guid.CreateVersion7();
+    var organizationId = Guid.Empty;
     var userId = Guid.CreateVersion7();
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
@@ -65,33 +66,13 @@ try
     var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
 
     db.Insertable(
-            new OrganizationRecord
-            {
-                Id = organizationId,
-                Code = organizationCode,
-                Name = organizationName,
-                OrgId = organizationId,
-            }
-        )
-        .ExecuteCommand();
-    db.Insertable(
             new UserAccountRecord
             {
                 Id = userId,
                 Username = userName,
                 PasswordHash = passwordHash,
                 DisplayName = displayName,
-                OrgId = organizationId,
-            }
-        )
-        .ExecuteCommand();
-    db.Insertable(
-            new OrganizationMemberRecord
-            {
-                OrganizationId = organizationId,
-                UserId = userId,
-                IsPrimary = true,
-                OrgId = organizationId,
+                OrgId = Guid.Empty,
             }
         )
         .ExecuteCommand();
@@ -372,7 +353,7 @@ try
         )
         .ExecuteCommand();
     db.Ado.CommitTran();
-    Console.WriteLine("测试机构、超级管理员和权限初始化完成。");
+    Console.WriteLine("超级管理员和权限初始化完成。");
 }
 catch
 {

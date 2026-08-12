@@ -28,34 +28,3 @@ internal sealed class OrganizationRecord : BaseEntity
     [SugarColumn(ColumnName = "parent_id", IsNullable = true, ColumnDataType = "uuid")]
     public Guid? ParentId { get; init; }
 }
-
-[SugarTable("organization_member")]
-[SugarIndex(
-    "uq_organization_member_organization_user",
-    nameof(OrganizationId),
-    OrderByType.Asc,
-    nameof(UserId),
-    OrderByType.Asc,
-    true
-)]
-[SugarIndex("ix_organization_member_user_id", nameof(UserId), OrderByType.Asc)]
-internal sealed class OrganizationMemberRecord : BaseEntity
-{
-    /// <summary>
-    /// 所属机构 ID。
-    /// </summary>
-    [SugarColumn(ColumnName = "organization_id", ColumnDataType = "uuid")]
-    public Guid OrganizationId { get; init; }
-
-    /// <summary>
-    /// 用户 ID。
-    /// </summary>
-    [SugarColumn(ColumnName = "user_id", ColumnDataType = "uuid")]
-    public Guid UserId { get; init; }
-
-    /// <summary>
-    /// 是否为用户的主机构。
-    /// </summary>
-    [SugarColumn(ColumnName = "is_primary")]
-    public bool IsPrimary { get; init; }
-}

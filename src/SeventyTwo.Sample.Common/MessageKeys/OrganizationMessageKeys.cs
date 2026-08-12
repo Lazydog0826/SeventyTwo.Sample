@@ -19,9 +19,6 @@ public static partial class MessageKeys
         /// <summary>机构名称不能为空。</summary>
         public const string NameRequired = "organization.nameRequired";
 
-        /// <summary>机构成员 ID 不能为空。</summary>
-        public const string MemberIdRequired = "organization.memberIdRequired";
-
         /// <summary>机构编码已存在。</summary>
         public const string CodeExists = "organization.codeExists";
 
@@ -48,9 +45,6 @@ public static partial class MessageKeys
 
         /// <summary>机构存在下级机构，无法删除。</summary>
         public const string HasChildren = "organization.hasChildren";
-
-        /// <summary>机构存在成员，无法删除。</summary>
-        public const string HasMembers = "organization.hasMembers";
 
         /// <summary>机构数据已变更，需要刷新后重试。</summary>
         public const string DataChanged = "organization.dataChanged";
