@@ -2,6 +2,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Orders;
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Orders;
 using SqlSugar;
@@ -17,7 +18,7 @@ public sealed class RandomOrderDataService(ISqlSugarClient db, IUnitOfWork unitO
     {
         if (count <= 0)
         {
-            throw new OrderDomainException("新增数量必须大于 0");
+            throw new OrderDomainException(MessageKeys.Orders.RandomCountMustBePositive);
         }
 
         var orders = new List<OrderRecord>(count);

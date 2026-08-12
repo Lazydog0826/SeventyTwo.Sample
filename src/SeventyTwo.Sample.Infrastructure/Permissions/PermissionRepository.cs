@@ -139,7 +139,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
         // 多表删除的事务边界由应用层 IUnitOfWork 统一管理，仓储只执行数据操作。
         if (await HasChildrenAsync(id, cancellationToken))
         {
-            throw new PermissionDomainException("权限存在下级权限，不能删除", DomainErrorType.Conflict);
+            throw new PermissionDomainException(MessageKeys.Permissions.HasChildren, DomainErrorType.Conflict);
         }
 
         await db.Deleteable<UserPermissionRecord>()

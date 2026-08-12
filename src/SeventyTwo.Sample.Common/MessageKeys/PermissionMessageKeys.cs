@@ -28,6 +28,9 @@ public static partial class MessageKeys
         /// <summary>权限不能将自身或下级权限设为上级权限。</summary>
         public const string DescendantCannotBeParent = "permission.descendantCannotBeParent";
 
+        /// <summary>权限存在下级权限，无法删除。</summary>
+        public const string HasChildren = "permission.hasChildren";
+
         /// <summary>权限不能以自身作为上级权限。</summary>
         public const string SelfCannotBeParent = "permission.selfCannotBeParent";
 
