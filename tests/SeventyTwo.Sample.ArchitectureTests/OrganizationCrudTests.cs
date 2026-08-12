@@ -101,11 +101,11 @@ public sealed class OrganizationCrudTests
     }
 
     [Theory]
-    [InlineData("root-to-child")]
-    [InlineData("child-to-root")]
-    [InlineData("cross-root")]
-    [InlineData("descendant")]
-    public async Task Update_WithInvalidHierarchyChange_ShouldFail(string scenario)
+    [InlineData("root-to-child", MessageKeys.Organizations.RootCannotBeChild)]
+    [InlineData("child-to-root", MessageKeys.Organizations.ChildCannotBeRoot)]
+    [InlineData("cross-root", MessageKeys.Organizations.CrossRootMoveNotAllowed)]
+    [InlineData("descendant", MessageKeys.Organizations.DescendantCannotBeParent)]
+    public async Task Update_WithInvalidHierarchyChange_ShouldFail(string scenario, string expectedMessage)
     {
         var root1 = CreateOrganization("ROOT1", null);
         var root2 = CreateOrganization("ROOT2", null);
@@ -124,13 +124,15 @@ public sealed class OrganizationCrudTests
             _ => descendant.Id,
         };
 
-        await Assert.ThrowsAsync<OrganizationDomainException>(() =>
+        var exception = await Assert.ThrowsAsync<OrganizationDomainException>(() =>
             application.UpdateAsync(
                 target.Id,
                 new(target.Code, target.Name, target.Enable, parentId, target.Version),
                 CancellationToken.None
             )
         );
+
+        Assert.Equal(expectedMessage, exception.Message);
     }
 
     [Theory]

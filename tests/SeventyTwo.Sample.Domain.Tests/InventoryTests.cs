@@ -141,19 +141,51 @@ public sealed class InventoryTests
             [new InventoryDecreaseDraft(ProductId, WarehouseId, LocationId, 7)]
         );
         var service = new InventoryChangeService();
+        var newInventoryId = Guid.CreateVersion7();
+        var changedAt = new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero);
 
         var batch = service.Change(
             [inventory],
             draft,
-            Guid.CreateVersion7,
-            new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
+            () => newInventoryId,
+            changedAt
         );
 
         var newInventory = Assert.Single(batch.NewInventories);
+        Assert.Equal(newInventoryId, newInventory.Id);
         Assert.Equal(0, newInventory.Quantity);
         Assert.Equal(8, inventory.Quantity);
-        Assert.Single(batch.ChangedInventories);
-        Assert.Equal(3, batch.Changes.Count);
+        Assert.Same(inventory, Assert.Single(batch.ChangedInventories));
+        Assert.Collection(
+            batch.Changes,
+            change =>
+            {
+                Assert.Equal(newInventoryId, change.InventoryId);
+                Assert.Equal(InventoryChangeType.Increase, change.ChangeType);
+                Assert.Equal(5, change.Quantity);
+                Assert.Equal(0, change.BeforeQuantity);
+                Assert.Equal(5, change.AfterQuantity);
+                Assert.Equal(new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero), change.ChangedAt);
+            },
+            change =>
+            {
+                Assert.Equal(newInventoryId, change.InventoryId);
+                Assert.Equal(InventoryChangeType.Decrease, change.ChangeType);
+                Assert.Equal(5, change.Quantity);
+                Assert.Equal(5, change.BeforeQuantity);
+                Assert.Equal(0, change.AfterQuantity);
+                Assert.Equal(changedAt, change.ChangedAt);
+            },
+            change =>
+            {
+                Assert.Equal(inventory.Id, change.InventoryId);
+                Assert.Equal(InventoryChangeType.Decrease, change.ChangeType);
+                Assert.Equal(2, change.Quantity);
+                Assert.Equal(10, change.BeforeQuantity);
+                Assert.Equal(8, change.AfterQuantity);
+                Assert.Equal(changedAt, change.ChangedAt);
+            }
+        );
     }
 
     private Inventory CreateInventory(int quantity)
