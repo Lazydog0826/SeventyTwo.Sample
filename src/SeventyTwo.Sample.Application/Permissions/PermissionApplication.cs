@@ -171,25 +171,32 @@ public sealed class PermissionApplication(
         if (permissionIds.Count != permissionIds.Distinct().Count())
             throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationInvalid);
 
-        await unitOfWork.ExecuteAsync(async () =>
-        {
-            await userRepository.AcquireSecurityLockAsync(userId, cancellationToken);
-            await ValidateAuthorizableUserAsync(userId, cancellationToken);
-            var permissions = await permissionRepository.GetListAsync(cancellationToken);
-            var byId = permissions.ToDictionary(x => x.Id);
-            foreach (var permissionId in permissionIds)
+        await unitOfWork.ExecuteAsync(
+            async () =>
             {
-                if (!byId.TryGetValue(permissionId, out var permission))
-                    throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationInvalid);
-                for (var parentId = permission.ParentId; parentId.HasValue; parentId = byId[parentId.Value].ParentId)
+                await userRepository.AcquireSecurityLockAsync(userId, cancellationToken);
+                await ValidateAuthorizableUserAsync(userId, cancellationToken);
+                var permissions = await permissionRepository.GetListAsync(cancellationToken);
+                var byId = permissions.ToDictionary(x => x.Id);
+                foreach (var permissionId in permissionIds)
                 {
-                    if (!byId.ContainsKey(parentId.Value) || !permissionIds.Contains(parentId.Value))
-                        throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationHierarchyInvalid);
+                    if (!byId.TryGetValue(permissionId, out var permission))
+                        throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationInvalid);
+                    for (
+                        var parentId = permission.ParentId;
+                        parentId.HasValue;
+                        parentId = byId[parentId.Value].ParentId
+                    )
+                    {
+                        if (!byId.ContainsKey(parentId.Value) || !permissionIds.Contains(parentId.Value))
+                            throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationHierarchyInvalid);
+                    }
                 }
-            }
-            await permissionRepository.ReplaceUserPermissionsAsync(userId, permissionIds, cancellationToken);
-            await userPermissionCacheInvalidationPublisher.PublishAsync(userId, false, cancellationToken);
-        }, cancellationToken);
+                await permissionRepository.ReplaceUserPermissionsAsync(userId, permissionIds, cancellationToken);
+                await userPermissionCacheInvalidationPublisher.PublishAsync(userId, false, cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -201,10 +208,14 @@ public sealed class PermissionApplication(
     {
         if (userId == Guid.Empty)
             throw new PermissionDomainException(MessageKeys.Users.IdRequired);
-        var user = await userRepository.GetAsync(userId, cancellationToken)
+        var user =
+            await userRepository.GetAsync(userId, cancellationToken)
             ?? throw new PermissionDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
         if (string.Equals(user.Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
-            throw new PermissionDomainException(MessageKeys.Permissions.SuperAdminAuthorizationForbidden, DomainErrorType.Conflict);
+            throw new PermissionDomainException(
+                MessageKeys.Permissions.SuperAdminAuthorizationForbidden,
+                DomainErrorType.Conflict
+            );
     }
 
     /// <summary>
