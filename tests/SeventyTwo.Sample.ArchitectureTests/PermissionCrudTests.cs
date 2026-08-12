@@ -274,15 +274,19 @@ public sealed class PermissionCrudTests
     {
         var parent = CreatePermission("Parent", PermissionType.Directory);
         var child = CreatePermission("Child", PermissionType.Directory, parent.Id);
-        var repository = new FakePermissionRepository([parent, child]);
+        var repository = new FakePermissionRepository([parent, child])
+        {
+            RequireCatalogMutationLock = true,
+        };
         var (cacheService, _, _, _) = CreateCacheService();
+        var unitOfWork = new FakeUnitOfWork();
         var application = new PermissionApplication(
             repository,
             cacheService,
             new FakeUserPermissionCacheService(),
             new FakePermissionCacheInvalidationPublisher(),
             new FakeUserPermissionCacheInvalidationPublisher(),
-            new FakeUnitOfWork(),
+            unitOfWork,
             null!
         );
 
@@ -292,13 +296,18 @@ public sealed class PermissionCrudTests
         await Assert.ThrowsAsync<PermissionDomainException>(() =>
             application.UpdateAsync(parent.Id, UpdateInput(parent, child.Id), CancellationToken.None)
         );
+        Assert.Equal(2, unitOfWork.ExecuteCount);
+        Assert.Equal(2, repository.CatalogMutationLockAcquireCount);
     }
 
     [Fact]
     public async Task ApplicationMutation_ShouldPublishCacheInvalidationMessage()
     {
         var permission = CreatePermission("Editable", PermissionType.Page);
-        var repository = new FakePermissionRepository([permission]);
+        var repository = new FakePermissionRepository([permission])
+        {
+            RequireCatalogMutationLock = true,
+        };
         var (cacheService, database, configuration, _) = CreateCacheService();
         var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
         database.SetString(versionKey, "old-version");
@@ -322,6 +331,7 @@ public sealed class PermissionCrudTests
 
         Assert.Equal(3, publisher.PublishCount);
         Assert.Equal(3, unitOfWork.ExecuteCount);
+        Assert.Equal(3, repository.CatalogMutationLockAcquireCount);
         Assert.Equal(
             [
                 new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
@@ -349,7 +359,10 @@ public sealed class PermissionCrudTests
             AssociatedPermissionIds = [root.Id, page.Id, disabled.Id],
         };
         var publisher = new FakeUserPermissionCacheInvalidationPublisher();
-        var userRepository = new FakeUserRepository(user);
+        var userRepository = new FakeUserRepository(
+            user,
+            () => Assert.Equal(1, repository.CatalogSharedLockAcquireCount)
+        );
         var (cacheService, _, _, _) = CreateCacheService();
         var application = new PermissionApplication(
             repository, cacheService, new FakeUserPermissionCacheService(),
@@ -362,6 +375,8 @@ public sealed class PermissionCrudTests
 
         Assert.Equal([root.Id, page.Id, disabled.Id], output.PermissionIds);
         Assert.Equal([root.Id, page.Id], repository.AssociatedPermissionIds);
+        Assert.Equal(1, repository.CatalogSharedLockAcquireCount);
+        Assert.Equal(0, repository.CatalogMutationLockAcquireCount);
         Assert.Equal([user.Id], userRepository.LockedUserIds);
         Assert.Equal([new UserPermissionCacheInvalidationMessage(user.Id, false)], publisher.Messages);
     }
@@ -953,7 +968,7 @@ public sealed class PermissionCrudTests
         ) => Task.FromResult(false);
     }
 
-    private sealed class FakeUserRepository(User user) : IUserRepository
+    private sealed class FakeUserRepository(User user, Action? onAcquireSecurityLock = null) : IUserRepository
     {
         public int GetCount { get; private set; }
         /// <summary>测试期间被安全锁锁定的用户 ID。</summary>
@@ -961,6 +976,7 @@ public sealed class PermissionCrudTests
 
         public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
         {
+            onAcquireSecurityLock?.Invoke();
             LockedUserIds = [.. LockedUserIds, id];
             return Task.CompletedTask;
         }
@@ -1043,11 +1059,40 @@ public sealed class PermissionCrudTests
         /// <summary>用户有效权限编码查询次数。</summary>
         public int GetCodesByUserIdCount { get; private set; }
 
-        public Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken) =>
-            Task.FromResult(items.SingleOrDefault(permission => permission.Id == id));
+        /// <summary>权限目录共享锁获取次数。</summary>
+        public int CatalogSharedLockAcquireCount { get; private set; }
 
-        public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken) =>
-            Task.FromResult(items.Any(permission => permission.Code == code && permission.Id != excludedId));
+        /// <summary>权限目录变更锁获取次数。</summary>
+        public int CatalogMutationLockAcquireCount { get; private set; }
+
+        /// <summary>测试期间要求权限目录查询和写入必须已持有变更锁。</summary>
+        public bool RequireCatalogMutationLock { get; set; }
+
+        public Task AcquireCatalogSharedLockAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CatalogSharedLockAcquireCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task AcquireCatalogMutationLockAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CatalogMutationLockAcquireCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken)
+        {
+            EnsureCatalogMutationLock();
+            return Task.FromResult(items.SingleOrDefault(permission => permission.Id == id));
+        }
+
+        public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken)
+        {
+            EnsureCatalogMutationLock();
+            return Task.FromResult(items.Any(permission => permission.Code == code && permission.Id != excludedId));
+        }
 
         public Task<bool> HasChildrenAsync(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult(items.Any(permission => permission.ParentId == id));
@@ -1057,14 +1102,20 @@ public sealed class PermissionCrudTests
 
         public Task AddAsync(Permission permission, CancellationToken cancellationToken)
         {
+            EnsureCatalogMutationLock();
             items.Add(permission);
             return Task.CompletedTask;
         }
 
-        public Task SaveAsync(Permission permission, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SaveAsync(Permission permission, CancellationToken cancellationToken)
+        {
+            EnsureCatalogMutationLock();
+            return Task.CompletedTask;
+        }
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
         {
+            EnsureCatalogMutationLock();
             items.RemoveAll(permission => permission.Id == id);
             return Task.CompletedTask;
         }
@@ -1093,6 +1144,14 @@ public sealed class PermissionCrudTests
         {
             AssociatedPermissionIds = [.. permissionIds];
             return Task.CompletedTask;
+        }
+
+        private void EnsureCatalogMutationLock()
+        {
+            if (RequireCatalogMutationLock && CatalogMutationLockAcquireCount == 0)
+            {
+                throw new InvalidOperationException("权限目录查询或写入前必须先获取变更锁");
+            }
         }
     }
 }
