@@ -37,12 +37,12 @@ internal sealed class UserAccountRecord : BaseEntity
     /// <summary>
     /// 手机号。
     /// </summary>
-    [SugarColumn(ColumnName = "phone", IsNullable = true)]
-    public string? Phone { get; init; }
+    [SugarColumn(ColumnName = "phone")]
+    public string Phone { get; init; } = string.Empty;
 
     /// <summary>
     /// 电子邮箱。
     /// </summary>
-    [SugarColumn(ColumnName = "email", IsNullable = true)]
-    public string? Email { get; init; }
+    [SugarColumn(ColumnName = "email")]
+    public string Email { get; init; } = string.Empty;
 }

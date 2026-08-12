@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
+using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Users;
@@ -21,11 +22,75 @@ namespace SeventyTwo.Sample.Application.Users;
 public sealed class UserApplication(
     IUserRepository userRepository,
     UserInfoCacheService userInfoCacheService,
+    IUnitOfWork unitOfWork,
     ITokenService tokenService,
     IRedisCacheService redisCacheService,
     IOptions<CacheConfiguration> cacheConfiguration
 ) : IUserApplication
 {
+    public async Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken)
+    {
+        var users = await userRepository.GetListAsync(cancellationToken);
+        return users.Select(ToListOutput).ToList();
+    }
+
+    public async Task<UserListOutput> CreateAsync(CreateUserInput input, CancellationToken cancellationToken)
+    {
+        User? user = null;
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                var username = RequireText(input.Username, MessageKeys.Users.UsernameRequired);
+                var password = RequirePassword(input.Password);
+                if (await userRepository.UsernameExistsAsync(username, cancellationToken))
+                {
+                    throw new UserDomainException(MessageKeys.Users.UsernameExists, DomainErrorType.Conflict);
+                }
+                var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
+                user = new User(
+                    Guid.CreateVersion7(), username, passwordHash, input.DisplayName, input.Phone, input.Email
+                )
+                {
+                    Enable = input.Enable,
+                    OrgId = Guid.Empty,
+                };
+                await userRepository.AddAsync(user, cancellationToken);
+            },
+            cancellationToken
+        );
+        return ToListOutput(user!);
+    }
+
+    public async Task UpdateAsync(Guid id, UpdateUserInput input, CancellationToken cancellationToken)
+    {
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            var user = await GetRequiredAsync(id, cancellationToken);
+            user.UpdateProfile(input.DisplayName, input.Phone, input.Email, input.Version, SystemIds.System, DateTimeExtension.Now());
+            await userRepository.SaveAsync(user, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task SetEnableAsync(Guid id, SetUserEnableInput input, CancellationToken cancellationToken)
+    {
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            var user = await GetRequiredAsync(id, cancellationToken);
+            user.SetEnable(input.Enable, input.Version, SystemIds.System, DateTimeExtension.Now());
+            await userRepository.SaveAsync(user, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
+    {
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            var user = await GetRequiredAsync(id, cancellationToken);
+            user.EnsureCanDelete(version);
+            await userRepository.DeleteAsync(id, version, cancellationToken);
+        }, cancellationToken);
+    }
+
     /// <inheritdoc />
     public async Task<UserOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -156,6 +221,24 @@ public sealed class UserApplication(
     {
         return cacheConfiguration.Value.Data("token-cache-key", sessionId.ToString());
     }
+
+    private async Task<User> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty) throw new UserDomainException(MessageKeys.Users.IdRequired);
+        return await userRepository.GetAsync(id, cancellationToken)
+            ?? throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
+    }
+
+    private static string RequireText(string value, string message) =>
+        string.IsNullOrWhiteSpace(value) ? throw new UserDomainException(message) : value.Trim();
+
+    private static string RequirePassword(string value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? throw new UserDomainException(MessageKeys.Validation.PasswordRequired)
+            : value;
+
+    private static UserListOutput ToListOutput(User user) =>
+        new(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, user.Enable, user.Version);
 
     /// <summary>
     /// 计算令牌的 SHA-256 哈希值。

@@ -4,10 +4,11 @@ using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
+using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Users;
+using SeventyTwo.Sample.WebApi.Authentication;
 
 // ReSharper disable NotAccessedPositionalProperty.Global
-
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
 /// <summary>
@@ -18,6 +19,82 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 [Route("api/users")]
 public sealed class UsersController(IUserApplication userApplication) : ControllerBase
 {
+    /// <summary>
+    /// 获取用户管理列表。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>所有未删除的用户。</returns>
+    [HttpGet("list")]
+    [Permission(PermissionMatchMode.All, "usersList")]
+    public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken)
+    {
+        var data = await userApplication.GetListAsync(cancellationToken);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
+    /// 创建用户。
+    /// </summary>
+    /// <param name="request">用户创建请求。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>创建后的用户信息。</returns>
+    [HttpPost("create")]
+    [Permission(PermissionMatchMode.All, "usersCreate")]
+    public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)
+    {
+        var data = await userApplication.CreateAsync(
+            new(request.Username, request.Password, request.DisplayName, request.Phone, request.Email, request.Enable),
+            cancellationToken
+        );
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
+    /// 修改用户信息。
+    /// </summary>
+    /// <param name="request">用户修改请求，包含客户端持有的并发版本。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>操作结果。</returns>
+    [HttpPost("update")]
+    [Permission(PermissionMatchMode.All, "usersUpdate")]
+    public async Task<IActionResult> UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
+    {
+        await userApplication.UpdateAsync(
+            request.Id,
+            new(request.DisplayName, request.Phone, request.Email, request.Version),
+            cancellationToken
+        );
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
+    /// 设置用户启用状态。
+    /// </summary>
+    /// <param name="request">用户启用状态设置请求，包含客户端持有的并发版本。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>操作结果。</returns>
+    [HttpPost("set-enable")]
+    [Permission(PermissionMatchMode.All, "usersUpdate")]
+    public async Task<IActionResult> SetEnableAsync(SetUserEnableRequest request, CancellationToken cancellationToken)
+    {
+        await userApplication.SetEnableAsync(request.Id, new(request.Enable, request.Version), cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
+    /// 删除用户。
+    /// </summary>
+    /// <param name="request">用户删除请求，包含客户端持有的并发版本。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>操作结果。</returns>
+    [HttpPost("delete")]
+    [Permission(PermissionMatchMode.All, "usersDelete")]
+    public async Task<IActionResult> DeleteAsync(DeleteUserRequest request, CancellationToken cancellationToken)
+    {
+        await userApplication.DeleteAsync(request.Id, request.Version, cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
+    }
+
     /// <summary>
     /// 获取当前登录用户信息。
     /// </summary>
@@ -85,6 +162,10 @@ public sealed class UsersController(IUserApplication userApplication) : Controll
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
+    /// <summary>
+    /// 将刷新令牌写入响应 Cookie。
+    /// </summary>
+    /// <param name="data">登录结果。</param>
     private void SetRefreshTokenCookie(LoginOutput data)
     {
         Response.Cookies.Append(
@@ -115,3 +196,56 @@ public sealed record LoginRequest(
     [StringLength(100, MinimumLength = 6, ErrorMessage = MessageKeys.Validation.PasswordLengthInvalid)]
         string Password
 );
+
+/// <summary>
+/// 用户创建请求。
+/// </summary>
+/// <param name="Username">用户名。</param>
+/// <param name="Password">密码。</param>
+/// <param name="DisplayName">显示名称。</param>
+/// <param name="Phone">手机号。</param>
+/// <param name="Email">电子邮箱。</param>
+/// <param name="Enable">是否启用。</param>
+public sealed record CreateUserRequest(
+    [Required(ErrorMessage = MessageKeys.Validation.AccountRequired)]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = MessageKeys.Validation.AccountLengthInvalid)]
+        string Username,
+    [Required(ErrorMessage = MessageKeys.Validation.PasswordRequired)]
+    [StringLength(100, MinimumLength = 6, ErrorMessage = MessageKeys.Validation.PasswordLengthInvalid)]
+        string Password,
+    [Required(ErrorMessage = MessageKeys.Users.DisplayNameRequired)] string DisplayName,
+    [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
+    [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
+    bool Enable
+);
+
+/// <summary>
+/// 用户修改请求。
+/// </summary>
+/// <param name="Id">用户 ID。</param>
+/// <param name="DisplayName">显示名称。</param>
+/// <param name="Phone">手机号。</param>
+/// <param name="Email">电子邮箱。</param>
+/// <param name="Version">客户端持有的并发版本。</param>
+public sealed record UpdateUserRequest(
+    Guid Id,
+    [Required(ErrorMessage = MessageKeys.Users.DisplayNameRequired)] string DisplayName,
+    [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
+    [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
+    Guid Version
+);
+
+/// <summary>
+/// 用户启用状态设置请求。
+/// </summary>
+/// <param name="Id">用户 ID。</param>
+/// <param name="Enable">是否启用。</param>
+/// <param name="Version">客户端持有的并发版本。</param>
+public sealed record SetUserEnableRequest(Guid Id, bool Enable, Guid Version);
+
+/// <summary>
+/// 用户删除请求。
+/// </summary>
+/// <param name="Id">用户 ID。</param>
+/// <param name="Version">客户端持有的并发版本。</param>
+public sealed record DeleteUserRequest(Guid Id, Guid Version);

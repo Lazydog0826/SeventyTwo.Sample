@@ -1,6 +1,5 @@
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 // ReSharper disable ClassNeverInstantiated.Global
 namespace SeventyTwo.Sample.Domain.Users;
 
@@ -8,14 +7,7 @@ public sealed class User : AggregateRoot
 {
     private User() { }
 
-    public User(
-        Guid id,
-        string username,
-        string passwordHash,
-        string displayName,
-        string? phone = null,
-        string? email = null
-    )
+    public User(Guid id, string username, string passwordHash, string displayName, string phone, string email)
     {
         if (id == Guid.Empty)
         {
@@ -26,8 +18,8 @@ public sealed class User : AggregateRoot
         Username = RequireText(username, MessageKeys.Users.UsernameRequired);
         PasswordHash = RequireText(passwordHash, MessageKeys.Users.PasswordHashRequired);
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
-        Phone = NormalizeOptional(phone);
-        Email = NormalizeOptional(email);
+        Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
+        Email = RequireText(email, MessageKeys.Users.EmailRequired);
     }
 
     /// <summary>
@@ -48,25 +40,70 @@ public sealed class User : AggregateRoot
     /// <summary>
     /// 手机号码。
     /// </summary>
-    public string? Phone { get; private set; }
+    public string Phone { get; private set; } = string.Empty;
 
     /// <summary>
     /// 电子邮箱。
     /// </summary>
-    public string? Email { get; private set; }
+    public string Email { get; private set; } = string.Empty;
+
+    public void UpdateProfile(
+        string displayName,
+        string phone,
+        string email,
+        Guid version,
+        Guid updatedBy,
+        DateTimeOffset updatedAt
+    )
+    {
+        ValidateMutation(version, updatedAt);
+        DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
+        Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
+        Email = RequireText(email, MessageKeys.Users.EmailRequired);
+        UpdatedBy = updatedBy;
+        UpdatedAt = updatedAt;
+    }
+
+    public void SetEnable(bool enable, Guid version, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        ValidateMutation(version, updatedAt);
+        Enable = enable;
+        UpdatedBy = updatedBy;
+        UpdatedAt = updatedAt;
+    }
+
+    public void EnsureCanDelete(Guid version)
+    {
+        EnsureMutable();
+        if (version != Version)
+        {
+            throw new UserDomainException(MessageKeys.Users.DataChanged, DomainErrorType.Conflict);
+        }
+    }
+
+    private void ValidateMutation(Guid version, DateTimeOffset updatedAt)
+    {
+        EnsureMutable();
+        if (version != Version)
+        {
+            throw new UserDomainException(MessageKeys.Users.DataChanged, DomainErrorType.Conflict);
+        }
+        if (updatedAt == default)
+        {
+            throw new UserDomainException(MessageKeys.Users.ModifiedAtRequired);
+        }
+    }
+
+    private void EnsureMutable()
+    {
+        if (string.Equals(Username, "superadmin", StringComparison.Ordinal))
+        {
+            throw new UserDomainException(MessageKeys.Users.SuperAdminProtected, DomainErrorType.Conflict);
+        }
+    }
 
     private static string RequireText(string value, string message)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new UserDomainException(message);
-        }
-
-        return value.Trim();
-    }
-
-    private static string? NormalizeOptional(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        return string.IsNullOrWhiteSpace(value) ? throw new UserDomainException(message) : value.Trim();
     }
 }

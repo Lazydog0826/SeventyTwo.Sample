@@ -9,6 +9,8 @@ using SqlSugar;
 const string userName = "superadmin";
 const string displayName = "超级管理员";
 const string initialPassword = "123456";
+const string phone = "00000000000";
+const string email = "superadmin@localhost";
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -71,6 +73,8 @@ try
                 Username = userName,
                 PasswordHash = passwordHash,
                 DisplayName = displayName,
+                Phone = phone,
+                Email = email,
                 OrgId = Guid.Empty,
             }
         )
