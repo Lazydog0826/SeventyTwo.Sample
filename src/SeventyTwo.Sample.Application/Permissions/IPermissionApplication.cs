@@ -39,6 +39,22 @@ public interface IPermissionApplication
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>用户权限。</returns>
     Task<PermissionOutput> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 获取用户授权编辑数据，包含全部权限及用户当前关联的权限 ID。
+    /// </summary>
+    /// <param name="userId">目标用户 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>用户授权编辑数据。</returns>
+    Task<UserAuthorizationOutput> GetAuthorizationAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 整体保存用户授权，允许保留已禁用权限的关联。
+    /// </summary>
+    /// <param name="userId">目标用户 ID。</param>
+    /// <param name="permissionIds">完整权限 ID 集合。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task AuthorizeAsync(Guid userId, IReadOnlyCollection<Guid> permissionIds, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -114,6 +130,16 @@ public sealed record UpdatePermissionInput(
 /// <param name="Menus">目录和页面权限列表。</param>
 /// <param name="ButtonCodes">按钮权限编码集合。</param>
 public sealed record PermissionOutput(IReadOnlyList<PermissionMenuOutput> Menus, IReadOnlyList<string> ButtonCodes);
+
+/// <summary>
+/// 用户授权编辑数据。
+/// </summary>
+/// <param name="Permissions">全部未删除权限。</param>
+/// <param name="PermissionIds">用户当前关联的权限 ID，包含已禁用权限。</param>
+public sealed record UserAuthorizationOutput(
+    IReadOnlyList<PermissionListOutput> Permissions,
+    IReadOnlyList<Guid> PermissionIds
+);
 
 /// <summary>
 /// 目录或页面权限。

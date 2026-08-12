@@ -17,10 +17,14 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 /// </summary>
 /// <param name="userApplication">用户应用服务。</param>
 /// <param name="organizationApplication">机构应用服务。</param>
+/// <param name="permissionApplication">权限应用服务。</param>
 [ApiController]
 [Route("api/users")]
-public sealed class UsersController(IUserApplication userApplication, IOrganizationApplication organizationApplication)
-    : ControllerBase
+public sealed class UsersController(
+    IUserApplication userApplication,
+    IOrganizationApplication organizationApplication,
+    IPermissionApplication permissionApplication
+) : ControllerBase
 {
     /// <summary>
     /// 获取用户管理列表。
@@ -58,7 +62,7 @@ public sealed class UsersController(IUserApplication userApplication, IOrganizat
     public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
         var data = await userApplication.CreateAsync(
-            new(
+            new CreateUserInput(
                 request.Username,
                 request.Password,
                 request.DisplayName,
@@ -84,7 +88,7 @@ public sealed class UsersController(IUserApplication userApplication, IOrganizat
     {
         await userApplication.UpdateAsync(
             request.Id,
-            new(request.DisplayName, request.Phone, request.Email, request.OrgId, request.Version),
+            new UpdateUserInput(request.DisplayName, request.Phone, request.Email, request.OrgId, request.Version),
             cancellationToken
         );
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
@@ -115,6 +119,30 @@ public sealed class UsersController(IUserApplication userApplication, IOrganizat
     public async Task<IActionResult> DeleteAsync(DeleteUserRequest request, CancellationToken cancellationToken)
     {
         await userApplication.DeleteAsync(request.Id, request.Version, cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>获取指定用户的授权编辑数据。</summary>
+    /// <param name="userId">目标用户 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>授权编辑数据。</returns>
+    [HttpGet("authorization")]
+    [Permission(PermissionMatchMode.All, "usersAuthorize")]
+    public async Task<IActionResult> GetAuthorizationAsync([FromQuery] Guid userId, CancellationToken cancellationToken)
+    {
+        var data = await permissionApplication.GetAuthorizationAsync(userId, cancellationToken);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>整体保存指定用户的权限。</summary>
+    /// <param name="request">用户授权保存请求。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>操作结果。</returns>
+    [HttpPost("authorize")]
+    [Permission(PermissionMatchMode.All, "usersAuthorize")]
+    public async Task<IActionResult> AuthorizeAsync(AuthorizeUserRequest request, CancellationToken cancellationToken)
+    {
+        await permissionApplication.AuthorizeAsync(request.UserId, request.PermissionIds ?? [], cancellationToken);
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
@@ -205,6 +233,11 @@ public sealed class UsersController(IUserApplication userApplication, IOrganizat
         );
     }
 }
+
+/// <summary>用户授权保存请求。</summary>
+/// <param name="UserId">目标用户 ID。</param>
+/// <param name="PermissionIds">完整权限 ID 集合；空值按空集合处理。</param>
+public sealed record AuthorizeUserRequest(Guid UserId, IReadOnlyList<Guid>? PermissionIds);
 
 /// <summary>
 /// 用户登录请求。

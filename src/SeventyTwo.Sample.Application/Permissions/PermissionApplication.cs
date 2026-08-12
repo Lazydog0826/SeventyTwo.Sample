@@ -2,6 +2,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Permissions;
+using SeventyTwo.Sample.Domain.Users;
 
 namespace SeventyTwo.Sample.Application.Permissions;
 
@@ -15,7 +16,8 @@ public sealed class PermissionApplication(
     IUserPermissionCacheService userPermissionCacheService,
     IPermissionCacheInvalidationPublisher cacheInvalidationPublisher,
     IUserPermissionCacheInvalidationPublisher userPermissionCacheInvalidationPublisher,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IUserRepository userRepository
 ) : IPermissionApplication
 {
     /// <inheritdoc />
@@ -111,7 +113,7 @@ public sealed class PermissionApplication(
     public async Task<IReadOnlyList<PermissionListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var permissions = await permissionRepository.GetListAsync(cancellationToken);
-        return permissions.Select(ToListOutput).ToList();
+        return [.. permissions.Select(ToListOutput)];
     }
 
     /// <inheritdoc />
@@ -145,6 +147,64 @@ public sealed class PermissionApplication(
             .Distinct(StringComparer.Ordinal)
             .ToList();
         return new PermissionOutput(menus, buttonCodes);
+    }
+
+    /// <inheritdoc />
+    public async Task<UserAuthorizationOutput> GetAuthorizationAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await ValidateAuthorizableUserAsync(userId, cancellationToken);
+        var permissions = await permissionRepository.GetListAsync(cancellationToken);
+        var associatedIds = await permissionRepository.GetIdsByUserIdAsync(userId, cancellationToken);
+        return new UserAuthorizationOutput(
+            permissions.Select(ToListOutput).ToList(),
+            associatedIds.Distinct().ToList()
+        );
+    }
+
+    /// <inheritdoc />
+    public async Task AuthorizeAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> permissionIds,
+        CancellationToken cancellationToken
+    )
+    {
+        if (permissionIds.Count != permissionIds.Distinct().Count())
+            throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationInvalid);
+
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            await userRepository.AcquireSecurityLockAsync(userId, cancellationToken);
+            await ValidateAuthorizableUserAsync(userId, cancellationToken);
+            var permissions = await permissionRepository.GetListAsync(cancellationToken);
+            var byId = permissions.ToDictionary(x => x.Id);
+            foreach (var permissionId in permissionIds)
+            {
+                if (!byId.TryGetValue(permissionId, out var permission))
+                    throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationInvalid);
+                for (var parentId = permission.ParentId; parentId.HasValue; parentId = byId[parentId.Value].ParentId)
+                {
+                    if (!byId.ContainsKey(parentId.Value) || !permissionIds.Contains(parentId.Value))
+                        throw new PermissionDomainException(MessageKeys.Permissions.AuthorizationHierarchyInvalid);
+                }
+            }
+            await permissionRepository.ReplaceUserPermissionsAsync(userId, permissionIds, cancellationToken);
+            await userPermissionCacheInvalidationPublisher.PublishAsync(userId, false, cancellationToken);
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// 验证目标用户允许被授权，并拒绝空 ID、不存在用户和超级管理员。
+    /// </summary>
+    /// <param name="userId">目标用户 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    private async Task ValidateAuthorizableUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            throw new PermissionDomainException(MessageKeys.Users.IdRequired);
+        var user = await userRepository.GetAsync(userId, cancellationToken)
+            ?? throw new PermissionDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
+        if (string.Equals(user.Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
+            throw new PermissionDomainException(MessageKeys.Permissions.SuperAdminAuthorizationForbidden, DomainErrorType.Conflict);
     }
 
     /// <summary>

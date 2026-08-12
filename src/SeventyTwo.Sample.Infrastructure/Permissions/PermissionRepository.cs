@@ -169,28 +169,99 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     public async Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken)
     {
         var records = await db.Queryable<PermissionRecord>()
-            .Where(permission => permission.Enable && permission.DeleteAt == null)
+            .Where(permission => permission.DeleteAt == null)
             .OrderBy(permission => permission.SortOrder)
+            .OrderBy(permission => permission.Id)
             .ToListAsync(cancellationToken);
-        return records.Adapt<List<Permission>>();
+        var permissions = records.Adapt<List<Permission>>();
+        var byId = permissions.ToDictionary(permission => permission.Id);
+        return permissions.Where(permission => HasEnabledHierarchy(permission, byId)).ToList();
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        return await db.Queryable<UserPermissionRecord, PermissionRecord>(
-                (userPermission, permission) =>
-                    new JoinQueryInfos(JoinType.Inner, userPermission.PermissionId == permission.Id)
+        var permissionIds = await db.Queryable<UserPermissionRecord>()
+            .Where(userPermission =>
+                userPermission.UserId == userId && userPermission.Enable && userPermission.DeleteAt == null
             )
-            .Where(
-                (userPermission, permission) =>
-                    userPermission.UserId == userId
-                    && userPermission.Enable
-                    && userPermission.DeleteAt == null
-                    && permission.Enable
-                    && permission.DeleteAt == null
-            )
-            .Select((userPermission, permission) => permission.Code)
+            .Select(userPermission => userPermission.PermissionId)
             .ToListAsync(cancellationToken);
+        if (permissionIds.Count == 0)
+            return [];
+
+        var permissionIdSet = permissionIds.ToHashSet();
+        var permissions = await GetAllAsync(cancellationToken);
+        return
+        [
+            .. permissions
+                .Where(permission => permissionIdSet.Contains(permission.Id))
+                .Select(permission => permission.Code)
+                .Distinct(StringComparer.Ordinal),
+        ];
+    }
+
+    /// <summary>
+    /// 判断权限自身及其完整祖先链是否均为启用状态。
+    /// </summary>
+    /// <param name="permission">待判断权限。</param>
+    /// <param name="permissionsById">全部未删除权限的 ID 索引。</param>
+    /// <returns>权限及其完整祖先链均有效时返回 <see langword="true"/>。</returns>
+    private static bool HasEnabledHierarchy(
+        Permission permission,
+        IReadOnlyDictionary<Guid, Permission> permissionsById
+    )
+    {
+        if (!permission.Enable)
+            return false;
+
+        var visited = new HashSet<Guid> { permission.Id };
+        for (var parentId = permission.ParentId; parentId.HasValue; )
+        {
+            if (
+                !visited.Add(parentId.Value)
+                || !permissionsById.TryGetValue(parentId.Value, out var parent)
+                || !parent.Enable
+            )
+            {
+                return false;
+            }
+            parentId = parent.ParentId;
+        }
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Guid>> GetIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return await db.Queryable<UserPermissionRecord>()
+            .Where(x => x.UserId == userId && x.Enable && x.DeleteAt == null)
+            .Select(x => x.PermissionId)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task ReplaceUserPermissionsAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> permissionIds,
+        CancellationToken cancellationToken
+    )
+    {
+        await db.Deleteable<UserPermissionRecord>()
+            .Where(x => x.UserId == userId)
+            .ExecuteCommandAsync(cancellationToken);
+        if (permissionIds.Count == 0)
+            return;
+
+        var records = permissionIds
+            .Select(permissionId => new UserPermissionRecord
+            {
+                Id = Guid.CreateVersion7(),
+                UserId = userId,
+                PermissionId = permissionId,
+                OrgId = Guid.Empty,
+            })
+            .ToArray();
+        await db.Insertable(records).ExecuteCommandAsync(cancellationToken);
     }
 }

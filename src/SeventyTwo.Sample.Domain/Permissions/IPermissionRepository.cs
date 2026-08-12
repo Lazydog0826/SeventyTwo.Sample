@@ -52,17 +52,37 @@ public interface IPermissionRepository
     Task<IReadOnlyList<Permission>> GetListAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取所有有效权限。
+    /// 获取自身及完整祖先链均已启用的有效权限。
     /// </summary>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>所有有效权限。</returns>
     Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取用户拥有的权限编码。
+    /// 获取用户拥有且自身及完整祖先链均已启用的权限编码。
     /// </summary>
     /// <param name="userId">用户 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>用户拥有的权限编码。</returns>
     Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 获取用户当前关联的权限 ID，包含已禁用权限。
+    /// </summary>
+    /// <param name="userId">用户 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>用户当前关联的权限 ID。</returns>
+    Task<IReadOnlyList<Guid>> GetIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 整体替换用户权限关联，事务边界由应用层管理。
+    /// </summary>
+    /// <param name="userId">用户 ID。</param>
+    /// <param name="permissionIds">需要保存的完整权限 ID 集合。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task ReplaceUserPermissionsAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> permissionIds,
+        CancellationToken cancellationToken
+    );
 }

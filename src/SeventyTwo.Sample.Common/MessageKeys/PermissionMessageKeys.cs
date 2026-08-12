@@ -66,5 +66,14 @@ public static partial class MessageKeys
 
         /// <summary>路由元数据不能为空。</summary>
         public const string RouteMetadataRequired = "permission.routeMetadataRequired";
+
+        /// <summary>用户授权包含重复或不存在的权限。</summary>
+        public const string AuthorizationInvalid = "permission.authorizationInvalid";
+
+        /// <summary>用户授权未包含所选权限的完整祖先链。</summary>
+        public const string AuthorizationHierarchyInvalid = "permission.authorizationHierarchyInvalid";
+
+        /// <summary>禁止修改超级管理员授权。</summary>
+        public const string SuperAdminAuthorizationForbidden = "permission.superAdminAuthorizationForbidden";
     }
 }

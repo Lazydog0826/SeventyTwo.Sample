@@ -64,6 +64,7 @@ try
     var usersCreatePermissionId = Guid.CreateVersion7();
     var usersUpdatePermissionId = Guid.CreateVersion7();
     var usersDeletePermissionId = Guid.CreateVersion7();
+    var usersAuthorizePermissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(SystemUsernames.SuperAdmin, initialPassword);
 
     db.Insertable(
@@ -348,6 +349,17 @@ try
                     Title = "删除用户",
                     Type = PermissionType.Button,
                     SortOrder = 404,
+                    ParentId = usersListPermissionId,
+                    MetaData = default,
+                    OrgId = Guid.Empty,
+                },
+                new PermissionRecord
+                {
+                    Id = usersAuthorizePermissionId,
+                    Code = "usersAuthorize",
+                    Title = "用户授权",
+                    Type = PermissionType.Button,
+                    SortOrder = 405,
                     ParentId = usersListPermissionId,
                     MetaData = default,
                     OrgId = Guid.Empty,
