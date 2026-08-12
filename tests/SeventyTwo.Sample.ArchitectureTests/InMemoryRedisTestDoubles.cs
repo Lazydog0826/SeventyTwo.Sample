@@ -11,6 +11,7 @@ public class InMemoryRedisDatabase : DispatchProxy
 
     public Action<string>? StringGetCompleted { get; set; }
     public Action<string>? StringSetCompleted { get; set; }
+    public TimeSpan? LastStringSetExpiry { get; private set; }
 
     public void SetString(string key, RedisValue value)
     {
@@ -41,7 +42,11 @@ public class InMemoryRedisDatabase : DispatchProxy
         return targetMethod.Name switch
         {
             nameof(IDatabaseAsync.StringGetAsync) => GetStringAsync(key),
-            nameof(IDatabaseAsync.StringSetAsync) => SetStringAsync(key, (RedisValue)args[1]!),
+            nameof(IDatabaseAsync.StringSetAsync) => SetStringAsync(
+                key,
+                (RedisValue)args[1]!,
+                args[2] as TimeSpan?
+            ),
             nameof(IDatabaseAsync.KeyDeleteAsync) => Task.FromResult(DeleteKey(key)),
             _ => throw new NotSupportedException($"测试 Redis 未实现 {targetMethod.Name}"),
         };
@@ -54,9 +59,10 @@ public class InMemoryRedisDatabase : DispatchProxy
         return Task.FromResult(value);
     }
 
-    private Task<bool> SetStringAsync(string key, RedisValue value)
+    private Task<bool> SetStringAsync(string key, RedisValue value, TimeSpan? expiry)
     {
         SetString(key, value);
+        LastStringSetExpiry = expiry;
         StringSetCompleted?.Invoke(key);
         return Task.FromResult(true);
     }

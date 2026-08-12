@@ -3,6 +3,7 @@ using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Routing;
 using SeventyTwo.Sample.Application;
+using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain.Users;
@@ -46,6 +47,31 @@ public sealed class UserManagementTests
             PasswordVerificationResult.Failed,
             hasher.VerifyHashedPassword(user.Username, user.PasswordHash, password.Trim())
         );
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_ShouldRejectTokenIssuedBeforeInvalidBefore()
+    {
+        const long issuedAt = 1_800_000_000;
+        var userId = Guid.CreateVersion7();
+        var tokenService = new FixedTokenService(
+            new(userId, "user", "用户", "refresh", Guid.CreateVersion7(), issuedAt)
+        );
+        var tokenCacheService = new RejectingUserTokenCacheService();
+        var application = new UserApplication(
+            new ThrowingUserRepository(),
+            null!,
+            new FakeUnitOfWork(),
+            tokenService,
+            tokenCacheService
+        );
+
+        var exception = await Assert.ThrowsAsync<TokenAuthenticationException>(() =>
+            application.RefreshTokenAsync("refresh-token", CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Authentication.RefreshTokenInvalid, exception.Message);
+        Assert.Equal((userId, issuedAt), tokenCacheService.VerifiedToken);
     }
 
     [Theory]
@@ -188,5 +214,79 @@ public sealed class UserManagementTests
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken) => action();
+    }
+
+    private sealed class FixedTokenService(TokenPayload payload) : ITokenService
+    {
+        public TokenPair Generate(User user, Guid sessionId) => throw new NotSupportedException();
+
+        public bool TryValidate(string token, out TokenPayload? result)
+        {
+            result = payload;
+            return true;
+        }
+    }
+
+    private sealed class RejectingUserTokenCacheService : IUserTokenCacheService
+    {
+        public (Guid UserId, long IssuedAt)? VerifiedToken { get; private set; }
+
+        public Task<bool> SaveAsync(
+            Guid userId,
+            Guid sessionId,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> RefreshAsync(
+            Guid userId,
+            Guid sessionId,
+            long issuedAtUnixTimeSeconds,
+            string refreshToken,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> DeleteAsync(
+            Guid userId,
+            Guid sessionId,
+            string refreshToken,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(
+            Guid userId,
+            long issuedAtUnixTimeSeconds,
+            CancellationToken cancellationToken
+        )
+        {
+            VerifiedToken = (userId, issuedAtUnixTimeSeconds);
+            return Task.FromResult(false);
+        }
+    }
+
+    private sealed class ThrowingUserRepository : IUserRepository
+    {
+        public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("失效的刷新令牌不应查询用户");
+
+        public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }
