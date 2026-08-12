@@ -7,4 +7,9 @@
   <ItemGroup>
     <ProjectReference Include="..\SeventyTwo.Sample.Common\SeventyTwo.Sample.Common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SeventyTwo.Sample.Infrastructure" />
+    <InternalsVisibleTo Include="SeventyTwo.Sample.Domain.Tests" />
+    <InternalsVisibleTo Include="SeventyTwo.Sample.ArchitectureTests" />
+  </ItemGroup>
 </Project>

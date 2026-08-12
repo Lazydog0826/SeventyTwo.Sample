@@ -8,6 +8,17 @@ public sealed class User : AggregateRoot
     private User() { }
 
     public User(Guid id, string username, string passwordHash, string displayName, string phone, string email)
+        : this(id, username, passwordHash, displayName, phone, email, false) { }
+
+    private User(
+        Guid id,
+        string username,
+        string passwordHash,
+        string displayName,
+        string phone,
+        string email,
+        bool restore
+    )
     {
         if (id == Guid.Empty)
         {
@@ -16,11 +27,24 @@ public sealed class User : AggregateRoot
 
         Id = id;
         Username = RequireText(username, MessageKeys.Users.UsernameRequired);
+        if (!restore && string.Equals(Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
+        {
+            throw new UserDomainException(MessageKeys.Users.UsernameReserved);
+        }
         PasswordHash = RequireText(passwordHash, MessageKeys.Users.PasswordHashRequired);
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
         Email = RequireText(email, MessageKeys.Users.EmailRequired);
     }
+
+    internal static User Restore(
+        Guid id,
+        string username,
+        string passwordHash,
+        string displayName,
+        string phone,
+        string email
+    ) => new(id, username, passwordHash, displayName, phone, email, true);
 
     /// <summary>
     /// 用户名。
@@ -96,7 +120,7 @@ public sealed class User : AggregateRoot
 
     private void EnsureMutable()
     {
-        if (string.Equals(Username, "superadmin", StringComparison.Ordinal))
+        if (string.Equals(Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
         {
             throw new UserDomainException(MessageKeys.Users.SuperAdminProtected, DomainErrorType.Conflict);
         }

@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using SeventyTwo.Sample.Domain.Permissions;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
-const string userName = "superadmin";
 const string displayName = "超级管理员";
 const string initialPassword = "123456";
 const string phone = "00000000000";
@@ -64,13 +64,13 @@ try
     var usersCreatePermissionId = Guid.CreateVersion7();
     var usersUpdatePermissionId = Guid.CreateVersion7();
     var usersDeletePermissionId = Guid.CreateVersion7();
-    var passwordHash = new PasswordHasher<string>().HashPassword(userName, initialPassword);
+    var passwordHash = new PasswordHasher<string>().HashPassword(SystemUsernames.SuperAdmin, initialPassword);
 
     db.Insertable(
             new UserAccountRecord
             {
                 Id = userId,
-                Username = userName,
+                Username = SystemUsernames.SuperAdmin,
                 PasswordHash = passwordHash,
                 DisplayName = displayName,
                 Phone = phone,

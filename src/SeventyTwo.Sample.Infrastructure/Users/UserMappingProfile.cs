@@ -9,7 +9,7 @@ public sealed class UserMappingProfile : IRegister
     {
         config
             .NewConfig<UserAccountRecord, User>()
-            .ConstructUsing(x => new User(x.Id, x.Username, x.PasswordHash, x.DisplayName, x.Phone, x.Email))
+            .ConstructUsing(x => User.Restore(x.Id, x.Username, x.PasswordHash, x.DisplayName, x.Phone, x.Email))
             .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
     }
 }

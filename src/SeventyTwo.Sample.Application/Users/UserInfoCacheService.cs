@@ -24,7 +24,6 @@ public sealed class UserInfoCacheService(
     private static readonly TimeSpan LockLeaseDuration = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LockExecutionTimeout = TimeSpan.FromSeconds(30);
     private const string EmptyCacheValue = "null";
-    private const string SuperAdmin = "superadmin";
 
     /// <summary>
     /// 获取指定用户的缓存键。
@@ -172,6 +171,6 @@ public sealed class UserInfoCacheService(
     public async Task<bool> IsSuperAdminAsync(Guid id, CancellationToken cancellationToken)
     {
         var userInfo = await FindAsync(id, cancellationToken);
-        return SuperAdmin == userInfo?.Username;
+        return SystemUsernames.SuperAdmin == userInfo?.Username;
     }
 }

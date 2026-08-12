@@ -31,6 +31,9 @@ public static partial class MessageKeys
         /// <summary>用户名已存在。</summary>
         public const string UsernameExists = "user.usernameExists";
 
+        /// <summary>用户名为系统保留账号。</summary>
+        public const string UsernameReserved = "user.usernameReserved";
+
         /// <summary>用户数据已变更，需要刷新后重试。</summary>
         public const string DataChanged = "user.dataChanged";
 

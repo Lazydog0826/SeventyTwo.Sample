@@ -12,8 +12,6 @@ namespace SeventyTwo.Sample.Infrastructure.Users;
 [AutofacDependency(typeof(IUserRepository))]
 public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
 {
-    private const string SuperAdminUsername = "superadmin";
-
     public async Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await db.Queryable<UserAccountRecord>()
@@ -33,7 +31,7 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
     public async Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken)
     {
         var records = await db.Queryable<UserAccountRecord>()
-            .Where(x => x.DeleteAt == null && x.Username != SuperAdminUsername)
+            .Where(x => x.DeleteAt == null && x.Username != SystemUsernames.SuperAdmin)
             .OrderBy(x => x.CreatedAt)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
