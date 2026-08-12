@@ -6,6 +6,7 @@ using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Common.MessageKeys;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Domain.Organizations;
 using SeventyTwo.Sample.Infrastructure.Permissions;
@@ -19,6 +20,56 @@ namespace SeventyTwo.Sample.ArchitectureTests;
 public sealed class UserManagementTests
 {
     static UserManagementTests() => new UserMappingProfile().Register(TypeAdapterConfig.GlobalSettings);
+
+    [Fact]
+    public async Task GetDetail_ShouldRejectSuperAdmin()
+    {
+        var user = User.Restore(
+            Guid.CreateVersion7(),
+            SystemUsernames.SuperAdmin,
+            "hash",
+            "超级管理员",
+            "13800000000",
+            "superadmin@example.com"
+        );
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.GetDetailAsync(user.Id, CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Users.SuperAdminProtected, exception.Message);
+        Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetDetail_ShouldReturnRegularUser()
+    {
+        var user = CreateUser(enable: true);
+        var application = new UserApplication(
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!
+        );
+
+        var output = await application.GetDetailAsync(user.Id, CancellationToken.None);
+
+        Assert.Equal(user.Id, output.Id);
+        Assert.Equal(user.Username, output.Username);
+        Assert.Equal(user.Version, output.Version);
+    }
 
     [Fact]
     public async Task Create_ShouldPreservePasswordWhitespace()
@@ -508,6 +559,7 @@ public sealed class UserManagementTests
 
     [Theory]
     [InlineData(nameof(UsersController.GetListAsync), "list", "usersList")]
+    [InlineData(nameof(UsersController.GetDetailAsync), "detail", "usersUpdate")]
     [InlineData(nameof(UsersController.CreateAsync), "create", "usersCreate")]
     [InlineData(nameof(UsersController.UpdateAsync), "update", "usersUpdate")]
     [InlineData(nameof(UsersController.SetEnableAsync), "set-enable", "usersUpdate")]

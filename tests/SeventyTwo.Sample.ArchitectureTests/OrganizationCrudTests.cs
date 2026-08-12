@@ -137,6 +137,7 @@ public sealed class OrganizationCrudTests
 
     [Theory]
     [InlineData(nameof(OrganizationsController.GetListAsync), "list", "organizationsList")]
+    [InlineData(nameof(OrganizationsController.GetDetailAsync), "detail", "organizationsUpdate")]
     [InlineData(nameof(OrganizationsController.CreateAsync), "create", "organizationsCreate")]
     [InlineData(nameof(OrganizationsController.UpdateAsync), "update", "organizationsUpdate")]
     [InlineData(nameof(OrganizationsController.DeleteAsync), "delete", "organizationsDelete")]
@@ -334,6 +335,9 @@ public sealed class OrganizationCrudTests
 
     private sealed class CapturingOrganizationApplication : IOrganizationApplication
     {
+        public Task<OrganizationListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(new OrganizationListOutput { Id = id });
+
         public CreateOrganizationInput? CreateInput { get; private set; }
 
         public UpdateOrganizationInput? UpdateInput { get; private set; }

@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application;
@@ -198,10 +199,11 @@ public sealed class PermissionCrudTests
     }
 
     [Theory]
+    [InlineData(nameof(PermissionsController.GetDetailAsync), "detail", "permissionsUpdate")]
     [InlineData(nameof(PermissionsController.CreateAsync), "create", "permissionsCreate")]
     [InlineData(nameof(PermissionsController.UpdateAsync), "update", "permissionsUpdate")]
     [InlineData(nameof(PermissionsController.DeleteAsync), "delete", "permissionsDelete")]
-    public async Task MutationEndpoints_ShouldRequireDedicatedPermission(
+    public async Task ManagementEndpoints_ShouldRequireDedicatedPermission(
         string methodName,
         string route,
         string code
@@ -209,9 +211,9 @@ public sealed class PermissionCrudTests
     {
         var action = typeof(PermissionsController).GetMethod(methodName);
 
-        var httpPost = Assert.IsType<HttpPostAttribute>(action?.GetCustomAttribute<HttpPostAttribute>());
+        var httpMethod = Assert.Single(action!.GetCustomAttributes().OfType<HttpMethodAttribute>());
         var permission = Assert.IsType<PermissionAttribute>(action?.GetCustomAttribute<PermissionAttribute>());
-        Assert.Equal(route, httpPost.Template);
+        Assert.Equal(route, httpMethod.Template);
 
         var policyProvider = new PermissionPolicyProvider(Options.Create(new AuthorizationOptions()));
         var policy = await policyProvider.GetPolicyAsync(Assert.IsType<string>(permission.Policy));
