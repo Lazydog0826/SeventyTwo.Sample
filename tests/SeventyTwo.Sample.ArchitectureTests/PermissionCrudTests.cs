@@ -23,7 +23,7 @@ public sealed class PermissionCrudTests
     public async Task UserInfoCache_ShouldReloadWhenCachedValueIsInvalidJson()
     {
         var userId = Guid.CreateVersion7();
-        var user = new User(userId, "user", "hash", "测试用户");
+        var user = new User(userId, "user", "hash", "测试用户", "13800000000", "user@example.com");
         var userRepository = new FakeUserRepository(user);
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisDatabase = (InMemoryRedisDatabase)(object)database;
@@ -60,7 +60,7 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var userRepository = new FakeUserRepository(new User(userId, "superadmin", "hash", "超级管理员"));
+        var userRepository = new FakeUserRepository(new User(userId, "superadmin", "hash", "超级管理员", "13800000000", "admin@example.com"));
         var userPermissionCacheService = new UserPermissionCacheService(
             repository,
             new UserInfoCacheService(userRepository, redisCacheService, cacheConfiguration),
@@ -767,6 +767,16 @@ public sealed class PermissionCrudTests
                 string.Equals(account, user.Username, StringComparison.Ordinal) ? user : null
             );
         }
+
+        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<User>>([user]);
+
+        public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
+            Task.FromResult(username == user.Username);
+
+        public Task AddAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SaveAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class FakePermissionCacheInvalidationPublisher
