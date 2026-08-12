@@ -28,7 +28,6 @@ public sealed class UserManagementTests
             null!,
             new FakeUnitOfWork(),
             null!,
-            null!,
             null!
         );
 
