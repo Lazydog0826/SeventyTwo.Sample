@@ -19,7 +19,14 @@ public sealed class Organization : AggregateRoot
     /// <param name="parentId">上级机构 ID；根机构为 <see langword="null"/>。</param>
     /// <param name="path"></param>
     /// <param name="sortOrder"></param>
-    public Organization(Guid id, string code, string name, Guid? parentId = null, string? path = null, int sortOrder = 0)
+    public Organization(
+        Guid id,
+        string code,
+        string name,
+        Guid? parentId = null,
+        string? path = null,
+        int sortOrder = 0
+    )
     {
         if (id == Guid.Empty)
         {
@@ -148,6 +155,7 @@ public sealed class Organization : AggregateRoot
             ? throw new ArgumentException("上级机构 Path 不能为空。", nameof(path))
             : path;
     }
+
     private static void ValidateSortOrder(int sortOrder)
     {
         if (sortOrder < 0)
