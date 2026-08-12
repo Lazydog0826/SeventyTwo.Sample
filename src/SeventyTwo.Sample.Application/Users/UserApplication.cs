@@ -48,7 +48,12 @@ public sealed class UserApplication(
                 }
                 var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
                 user = new User(
-                    Guid.CreateVersion7(), username, passwordHash, input.DisplayName, input.Phone, input.Email
+                    Guid.CreateVersion7(),
+                    username,
+                    passwordHash,
+                    input.DisplayName,
+                    input.Phone,
+                    input.Email
                 )
                 {
                     Enable = input.Enable,
@@ -63,32 +68,48 @@ public sealed class UserApplication(
 
     public async Task UpdateAsync(Guid id, UpdateUserInput input, CancellationToken cancellationToken)
     {
-        await unitOfWork.ExecuteAsync(async () =>
-        {
-            var user = await GetRequiredAsync(id, cancellationToken);
-            user.UpdateProfile(input.DisplayName, input.Phone, input.Email, input.Version, SystemIds.System, DateTimeExtension.Now());
-            await userRepository.SaveAsync(user, cancellationToken);
-        }, cancellationToken);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                var user = await GetRequiredAsync(id, cancellationToken);
+                user.UpdateProfile(
+                    input.DisplayName,
+                    input.Phone,
+                    input.Email,
+                    input.Version,
+                    SystemIds.System,
+                    DateTimeExtension.Now()
+                );
+                await userRepository.SaveAsync(user, cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     public async Task SetEnableAsync(Guid id, SetUserEnableInput input, CancellationToken cancellationToken)
     {
-        await unitOfWork.ExecuteAsync(async () =>
-        {
-            var user = await GetRequiredAsync(id, cancellationToken);
-            user.SetEnable(input.Enable, input.Version, SystemIds.System, DateTimeExtension.Now());
-            await userRepository.SaveAsync(user, cancellationToken);
-        }, cancellationToken);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                var user = await GetRequiredAsync(id, cancellationToken);
+                user.SetEnable(input.Enable, input.Version, SystemIds.System, DateTimeExtension.Now());
+                await userRepository.SaveAsync(user, cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     public async Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
     {
-        await unitOfWork.ExecuteAsync(async () =>
-        {
-            var user = await GetRequiredAsync(id, cancellationToken);
-            user.EnsureCanDelete(version);
-            await userRepository.DeleteAsync(id, version, cancellationToken);
-        }, cancellationToken);
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                var user = await GetRequiredAsync(id, cancellationToken);
+                user.EnsureCanDelete(version);
+                await userRepository.DeleteAsync(id, version, cancellationToken);
+            },
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
@@ -224,7 +245,8 @@ public sealed class UserApplication(
 
     private async Task<User> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty) throw new UserDomainException(MessageKeys.Users.IdRequired);
+        if (id == Guid.Empty)
+            throw new UserDomainException(MessageKeys.Users.IdRequired);
         return await userRepository.GetAsync(id, cancellationToken)
             ?? throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
     }
