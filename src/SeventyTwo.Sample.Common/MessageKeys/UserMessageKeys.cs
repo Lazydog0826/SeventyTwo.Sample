@@ -22,6 +22,9 @@ public static partial class MessageKeys
         /// <summary>账号或密码错误。</summary>
         public const string CredentialsInvalid = "user.credentialsInvalid";
 
+        /// <summary>用户已禁用。</summary>
+        public const string Disabled = "user.disabled";
+
         /// <summary>手机号码不能为空。</summary>
         public const string PhoneRequired = "user.phoneRequired";
 

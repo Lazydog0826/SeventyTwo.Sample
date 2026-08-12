@@ -141,6 +141,11 @@ public sealed class UserApplication(
             throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
         }
 
+        if (!user.Enable)
+        {
+            throw new UserDomainException(MessageKeys.Users.Disabled);
+        }
+
         var sessionId = Guid.CreateVersion7();
         var tokens = tokenService.Generate(user, sessionId);
 
