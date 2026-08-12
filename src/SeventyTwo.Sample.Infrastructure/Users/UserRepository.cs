@@ -12,6 +12,15 @@ namespace SeventyTwo.Sample.Infrastructure.Users;
 [AutofacDependency(typeof(IUserRepository))]
 public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
 {
+    public async Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await db.Ado.ExecuteCommandAsync(
+            "SELECT pg_advisory_xact_lock(hashtextextended(@userId, 0))",
+            new { userId = id.ToString() },
+            cancellationToken
+        );
+    }
+
     public async Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await db.Queryable<UserAccountRecord>()

@@ -21,7 +21,8 @@ public sealed class UserApplication(
     UserInfoCacheService userInfoCacheService,
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
-    IUserTokenCacheService userTokenCacheService
+    IUserTokenCacheService userTokenCacheService,
+    IUserInfoCacheInvalidationPublisher userInfoCacheInvalidationPublisher
 ) : IUserApplication
 {
     public async Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken)
@@ -83,6 +84,7 @@ public sealed class UserApplication(
                 );
                 user.OrgId = input.OrgId;
                 await userRepository.SaveAsync(user, cancellationToken);
+                await userInfoCacheInvalidationPublisher.PublishAsync(id, cancellationToken);
             },
             cancellationToken
         );
@@ -93,9 +95,15 @@ public sealed class UserApplication(
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await userRepository.AcquireSecurityLockAsync(id, cancellationToken);
                 var user = await GetRequiredAsync(id, cancellationToken);
                 user.SetEnable(input.Enable, input.Version, SystemIds.System, DateTimeExtension.Now());
                 await userRepository.SaveAsync(user, cancellationToken);
+                if (!input.Enable && !await userTokenCacheService.SetInvalidBeforeAsync(id, cancellationToken))
+                {
+                    throw new InvalidOperationException("设置用户令牌失效时间失败");
+                }
+                await userInfoCacheInvalidationPublisher.PublishAsync(id, cancellationToken);
             },
             cancellationToken
         );
@@ -124,37 +132,53 @@ public sealed class UserApplication(
     /// <inheritdoc />
     public async Task<LoginOutput> LoginAsync(LoginInput request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByAccountAsync(request.Account, cancellationToken);
-        if (user == null)
+        var candidate = await userRepository.GetByAccountAsync(request.Account, cancellationToken);
+        if (candidate == null)
         {
             throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
         }
 
         var valid = new PasswordHasher<string>().VerifyHashedPassword(
             request.Account,
-            user.PasswordHash,
+            candidate.PasswordHash,
             request.Password
         );
-
         if (valid.Equals(PasswordVerificationResult.Failed))
         {
             throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
         }
 
-        if (!user.Enable)
-        {
-            throw new UserDomainException(MessageKeys.Users.Disabled);
-        }
+        TokenPair? tokens = null;
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                await userRepository.AcquireSecurityLockAsync(candidate.Id, cancellationToken);
+                // 等待锁期间用户状态可能已发生变化，必须在锁内重新读取。
+                var user = await userRepository.GetAsync(candidate.Id, cancellationToken);
+                if (user == null)
+                {
+                    throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
+                }
 
-        var sessionId = Guid.CreateVersion7();
-        var tokens = tokenService.Generate(user, sessionId);
+                if (!string.Equals(user.PasswordHash, candidate.PasswordHash, StringComparison.Ordinal))
+                {
+                    throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
+                }
+                if (!user.Enable)
+                {
+                    throw new UserDomainException(MessageKeys.Users.Disabled);
+                }
 
-        if (!await userTokenCacheService.SaveAsync(user.Id, sessionId, tokens, cancellationToken))
-        {
-            throw new InvalidOperationException("保存登录会话失败");
-        }
-
-        return tokens.Adapt<LoginOutput>();
+                var sessionId = Guid.CreateVersion7();
+                tokens = tokenService.Generate(user, sessionId);
+                if (!await userTokenCacheService.SaveAsync(user.Id, sessionId, tokens, cancellationToken))
+                {
+                    throw new InvalidOperationException("保存登录会话失败");
+                }
+            },
+            cancellationToken
+        );
+        return tokens!.Adapt<LoginOutput>();
     }
 
     /// <inheritdoc />
