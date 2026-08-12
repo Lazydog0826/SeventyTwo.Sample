@@ -37,6 +37,7 @@ public sealed class ChangeInventoryService(
 
         var keys = await CheckInventoriesKeyExistAsync(allKeys);
 
+        // 规范：Redis 只用于减少锁记录的幂等插入；维度锁初始化必须在无外层数据库事务时提交，且事务内基于数据库行锁的锁完整性校验不得移除。
         // 扣减才需要确保维度锁，纯新增不需要
         if (keys.Any())
         {
