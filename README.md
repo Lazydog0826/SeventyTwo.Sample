@@ -38,13 +38,13 @@ tests/
 
 ## 初始化数据库
 
-创建 PostgreSQL 数据库 `SeventyTwo.Sample`，根据本地环境修改 `src/SeventyTwo.Sample.DataSetup/Program.cs` 中的连接字符串、初始机构和管理员信息，然后运行初始化服务：
+创建 PostgreSQL 数据库 `SeventyTwo.Sample`，根据本地环境修改 `src/SeventyTwo.Sample.DataSetup/Program.cs` 中的连接字符串和管理员信息，然后运行初始化服务：
 
 ```powershell
 dotnet run --project src/SeventyTwo.Sample.DataSetup
 ```
 
-初始化服务通过 SqlSugar Code First 创建表和索引，并写入初始机构、超级管理员、机构成员、页面权限及用户权限。初始化账号和密码由 `Program.cs` 中的 `userName` 和 `initialPassword` 常量配置。
+初始化服务通过 SqlSugar Code First 创建表和索引，并写入不关联机构的超级管理员、页面权限及用户权限。初始化账号和密码由 `Program.cs` 中的 `userName` 和 `initialPassword` 常量配置。
 
 ## 配置
 
