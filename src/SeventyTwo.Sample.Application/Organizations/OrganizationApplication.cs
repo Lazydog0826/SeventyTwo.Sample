@@ -30,7 +30,8 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
                     input.Code,
                     input.Name,
                     input.ParentId,
-                    parent is null ? null : $"{parent.Path}/{id}"
+                    parent is null ? null : $"{parent.Path}/{id}",
+                    input.SortOrder
                 )
                 {
                     Enable = input.Enable,
@@ -69,7 +70,8 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
                     input.ParentId,
                     input.Version,
                     SystemIds.System,
-                    DateTimeExtension.Now()
+                    DateTimeExtension.Now(),
+                    input.SortOrder
                 );
                 if (parent is not null)
                 {
@@ -190,6 +192,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             Name = organization.Name,
             Enable = organization.Enable,
             ParentId = organization.ParentId,
+            SortOrder = organization.SortOrder,
             Version = organization.Version,
         };
 }

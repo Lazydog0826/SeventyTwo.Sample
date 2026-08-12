@@ -19,6 +19,9 @@ public static partial class MessageKeys
         /// <summary>机构名称不能为空。</summary>
         public const string NameRequired = "organization.nameRequired";
 
+        /// <summary>机构排序号不能小于零。</summary>
+        public const string SortMustNotBeNegative = "organization.sortMustNotBeNegative";
+
         /// <summary>机构编码已存在。</summary>
         public const string CodeExists = "organization.codeExists";
 

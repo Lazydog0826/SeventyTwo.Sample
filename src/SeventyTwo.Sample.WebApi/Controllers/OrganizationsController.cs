@@ -38,7 +38,13 @@ public sealed class OrganizationsController(IOrganizationApplication organizatio
     public async Task<IActionResult> CreateAsync(CreateOrganizationRequest request, CancellationToken cancellationToken)
     {
         var result = await organizationApplication.CreateAsync(
-            new CreateOrganizationInput(request.Code, request.Name, request.Enable, request.ParentId),
+            new CreateOrganizationInput(
+                request.Code,
+                request.Name,
+                request.Enable,
+                request.ParentId,
+                request.SortOrder
+            ),
             cancellationToken
         );
         return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
@@ -56,7 +62,14 @@ public sealed class OrganizationsController(IOrganizationApplication organizatio
     {
         await organizationApplication.UpdateAsync(
             request.Id,
-            new UpdateOrganizationInput(request.Code, request.Name, request.Enable, request.ParentId, request.Version),
+            new UpdateOrganizationInput(
+                request.Code,
+                request.Name,
+                request.Enable,
+                request.ParentId,
+                request.Version,
+                request.SortOrder
+            ),
             cancellationToken
         );
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
@@ -84,7 +97,8 @@ public sealed class OrganizationsController(IOrganizationApplication organizatio
 /// <param name="Name">机构名称。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="ParentId">上级机构 ID；为空时创建根机构。</param>
-public record CreateOrganizationRequest(string Code, string Name, bool Enable, Guid? ParentId);
+/// <param name="SortOrder">排序号。</param>
+public record CreateOrganizationRequest(string Code, string Name, bool Enable, Guid? ParentId, int SortOrder = 0);
 
 /// <summary>
 /// 机构修改请求。
@@ -95,14 +109,16 @@ public record CreateOrganizationRequest(string Code, string Name, bool Enable, G
 /// <param name="Enable">是否启用。</param>
 /// <param name="ParentId">上级机构 ID。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
+/// <param name="SortOrder">排序号。</param>
 public sealed record UpdateOrganizationRequest(
     Guid Id,
     string Code,
     string Name,
     bool Enable,
     Guid? ParentId,
-    Guid Version
-) : CreateOrganizationRequest(Code, Name, Enable, ParentId);
+    Guid Version,
+    int SortOrder = 0
+) : CreateOrganizationRequest(Code, Name, Enable, ParentId, SortOrder);
 
 /// <summary>
 /// 机构删除请求。

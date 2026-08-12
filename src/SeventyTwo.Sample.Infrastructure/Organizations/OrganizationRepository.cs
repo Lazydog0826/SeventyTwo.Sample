@@ -34,7 +34,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
     {
         var records = await db.Queryable<OrganizationRecord>()
             .Where(organization => organization.DeleteAt == null)
-            .OrderBy(organization => organization.CreatedAt)
+            .OrderBy(organization => organization.SortOrder)
             .OrderBy(organization => organization.Id)
             .ToListAsync(cancellationToken);
         return records.Adapt<List<Organization>>();
@@ -57,6 +57,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             Id = organization.Id,
             Code = organization.Code,
             Name = organization.Name,
+            SortOrder = organization.SortOrder,
             Enable = organization.Enable,
             ParentId = organization.ParentId,
             Path = organization.Path,
@@ -93,6 +94,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             Id = organization.Id,
             Code = organization.Code,
             Name = organization.Name,
+            SortOrder = organization.SortOrder,
             Enable = organization.Enable,
             ParentId = organization.ParentId,
             Path = organization.Path,
@@ -105,6 +107,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
             {
                 entity.Code,
                 entity.Name,
+                entity.SortOrder,
                 entity.Enable,
                 entity.ParentId,
                 entity.Path,

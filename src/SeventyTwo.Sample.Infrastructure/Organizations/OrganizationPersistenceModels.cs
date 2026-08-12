@@ -23,6 +23,12 @@ internal sealed class OrganizationRecord : BaseEntity
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
+    /// 排序号。
+    /// </summary>
+    [SugarColumn(ColumnName = "sort_order")]
+    public int SortOrder { get; init; }
+
+    /// <summary>
     /// 上级机构 ID。
     /// </summary>
     [SugarColumn(ColumnName = "parent_id", IsNullable = true, ColumnDataType = "uuid")]

@@ -68,6 +68,11 @@ public sealed record OrganizationListOutput
     public Guid? ParentId { get; init; }
 
     /// <summary>
+    /// 排序号。
+    /// </summary>
+    public int SortOrder { get; init; }
+
+    /// <summary>
     /// 并发版本。
     /// </summary>
     public Guid Version { get; init; }
@@ -80,7 +85,8 @@ public sealed record OrganizationListOutput
 /// <param name="Name">机构名称。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="ParentId">上级机构 ID；根机构为 <see langword="null"/>。</param>
-public record CreateOrganizationInput(string Code, string Name, bool Enable, Guid? ParentId);
+/// <param name="SortOrder">排序号。</param>
+public record CreateOrganizationInput(string Code, string Name, bool Enable, Guid? ParentId, int SortOrder = 0);
 
 /// <summary>
 /// 更新机构的输入。
@@ -89,6 +95,13 @@ public record CreateOrganizationInput(string Code, string Name, bool Enable, Gui
 /// <param name="Name">机构名称。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="ParentId">上级机构 ID；根机构为 <see langword="null"/>。</param>
+/// <param name="SortOrder">排序号。</param>
 /// <param name="Version">客户端读取机构时获得的并发版本。</param>
-public sealed record UpdateOrganizationInput(string Code, string Name, bool Enable, Guid? ParentId, Guid Version)
-    : CreateOrganizationInput(Code, Name, Enable, ParentId);
+public sealed record UpdateOrganizationInput(
+    string Code,
+    string Name,
+    bool Enable,
+    Guid? ParentId,
+    Guid Version,
+    int SortOrder = 0
+) : CreateOrganizationInput(Code, Name, Enable, ParentId, SortOrder);

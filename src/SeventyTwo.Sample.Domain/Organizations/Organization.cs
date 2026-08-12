@@ -18,7 +18,8 @@ public sealed class Organization : AggregateRoot
     /// <param name="name">机构名称。</param>
     /// <param name="parentId">上级机构 ID；根机构为 <see langword="null"/>。</param>
     /// <param name="path"></param>
-    public Organization(Guid id, string code, string name, Guid? parentId = null, string? path = null)
+    /// <param name="sortOrder"></param>
+    public Organization(Guid id, string code, string name, Guid? parentId = null, string? path = null, int sortOrder = 0)
     {
         if (id == Guid.Empty)
         {
@@ -35,11 +36,14 @@ public sealed class Organization : AggregateRoot
             throw new OrganizationDomainException(MessageKeys.Organizations.SelfCannotBeParent);
         }
 
+        ValidateSortOrder(sortOrder);
+
         Id = id;
         Code = RequireText(code, MessageKeys.Organizations.CodeRequired);
         Name = RequireText(name, MessageKeys.Organizations.NameRequired);
         ParentId = parentId;
         Path = parentId is null ? id.ToString() : RequirePath(path);
+        SortOrder = sortOrder;
     }
 
     /// <summary>
@@ -63,6 +67,11 @@ public sealed class Organization : AggregateRoot
     public string Path { get; private set; } = string.Empty;
 
     /// <summary>
+    /// 排序号。
+    /// </summary>
+    public int SortOrder { get; private set; }
+
+    /// <summary>
     /// 修改机构信息，并校验客户端持有的并发版本。
     /// </summary>
     /// <param name="code">机构编码。</param>
@@ -72,6 +81,7 @@ public sealed class Organization : AggregateRoot
     /// <param name="version">客户端读取机构时获得的版本。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
+    /// <param name="sortOrder"></param>
     public void Update(
         string code,
         string name,
@@ -79,7 +89,8 @@ public sealed class Organization : AggregateRoot
         Guid? parentId,
         Guid version,
         Guid updatedBy,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        int sortOrder = 0
     )
     {
         if (version != Version)
@@ -101,11 +112,13 @@ public sealed class Organization : AggregateRoot
         {
             throw new OrganizationDomainException(MessageKeys.Organizations.SelfCannotBeParent);
         }
+        ValidateSortOrder(sortOrder);
 
         Code = RequireText(code, MessageKeys.Organizations.CodeRequired);
         Name = RequireText(name, MessageKeys.Organizations.NameRequired);
         Enable = enable;
         ParentId = parentId;
+        SortOrder = sortOrder;
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;
     }
@@ -134,5 +147,12 @@ public sealed class Organization : AggregateRoot
         return string.IsNullOrWhiteSpace(path)
             ? throw new ArgumentException("上级机构 Path 不能为空。", nameof(path))
             : path;
+    }
+    private static void ValidateSortOrder(int sortOrder)
+    {
+        if (sortOrder < 0)
+        {
+            throw new OrganizationDomainException(MessageKeys.Organizations.SortMustNotBeNegative);
+        }
     }
 }
