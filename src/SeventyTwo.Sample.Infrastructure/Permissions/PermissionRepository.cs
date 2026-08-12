@@ -11,6 +11,28 @@ namespace SeventyTwo.Sample.Infrastructure.Permissions;
 [AutofacDependency(typeof(IPermissionRepository))]
 public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionRepository
 {
+    private const long CatalogLockKey = 0x5045524D49535349;
+
+    /// <inheritdoc />
+    public async Task AcquireCatalogSharedLockAsync(CancellationToken cancellationToken)
+    {
+        await db.Ado.ExecuteCommandAsync(
+            "SELECT pg_advisory_xact_lock_shared(@lockKey)",
+            new { lockKey = CatalogLockKey },
+            cancellationToken
+        );
+    }
+
+    /// <inheritdoc />
+    public async Task AcquireCatalogMutationLockAsync(CancellationToken cancellationToken)
+    {
+        await db.Ado.ExecuteCommandAsync(
+            "SELECT pg_advisory_xact_lock(@lockKey)",
+            new { lockKey = CatalogLockKey },
+            cancellationToken
+        );
+    }
+
     /// <inheritdoc />
     public async Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken)
     {

@@ -6,6 +6,20 @@ namespace SeventyTwo.Sample.Domain.Permissions;
 public interface IPermissionRepository
 {
     /// <summary>
+    /// 在当前事务内获取权限目录共享锁，允许用户授权并发读取和校验权限树，
+    /// 但与权限目录变更互斥。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task AcquireCatalogSharedLockAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 在当前事务内获取权限目录独占锁，串行化权限新增、修改和删除，
+    /// 并与用户授权的权限树读取和校验互斥。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task AcquireCatalogMutationLockAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// 根据 ID 获取未删除权限。
     /// </summary>
     /// <returns>权限不存在时返回 <see langword="null"/>。</returns>

@@ -42,11 +42,12 @@ public sealed class PermissionApplication(
         {
             Enable = input.Enable,
         };
-        await ValidateCodeAsync(permission.Code, null, cancellationToken);
-        await ValidateParentAsync(permission.Id, permission.ParentId, cancellationToken);
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
+                await ValidateCodeAsync(permission.Code, null, cancellationToken);
+                await ValidateParentAsync(permission.Id, permission.ParentId, cancellationToken);
                 await permissionRepository.AddAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
@@ -59,33 +60,34 @@ public sealed class PermissionApplication(
     /// <inheritdoc />
     public async Task UpdateAsync(Guid id, UpdatePermissionInput input, CancellationToken cancellationToken)
     {
-        var permission = await GetRequiredAsync(id, cancellationToken);
         if (string.IsNullOrWhiteSpace(input.Code))
         {
             throw new PermissionDomainException(MessageKeys.Permissions.CodeRequired);
         }
 
-        await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
-        await ValidateParentAsync(id, input.ParentId, cancellationToken);
-        permission.Update(
-            input.Code,
-            input.Title,
-            input.Type,
-            input.Enable,
-            input.SortOrder,
-            input.Icon,
-            input.VueComponentPath,
-            input.RoutePath,
-            input.RouteName,
-            input.ParentId,
-            input.MetaData,
-            input.Version,
-            SystemIds.System,
-            DateTimeExtension.Now()
-        );
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
+                var permission = await GetRequiredAsync(id, cancellationToken);
+                await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
+                await ValidateParentAsync(id, input.ParentId, cancellationToken);
+                permission.Update(
+                    input.Code,
+                    input.Title,
+                    input.Type,
+                    input.Enable,
+                    input.SortOrder,
+                    input.Icon,
+                    input.VueComponentPath,
+                    input.RoutePath,
+                    input.RouteName,
+                    input.ParentId,
+                    input.MetaData,
+                    input.Version,
+                    SystemIds.System,
+                    DateTimeExtension.Now()
+                );
                 await permissionRepository.SaveAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
@@ -97,10 +99,11 @@ public sealed class PermissionApplication(
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        _ = await GetRequiredAsync(id, cancellationToken);
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
+                _ = await GetRequiredAsync(id, cancellationToken);
                 await permissionRepository.DeleteAsync(id, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
@@ -174,6 +177,8 @@ public sealed class PermissionApplication(
         await unitOfWork.ExecuteAsync(
             async () =>
             {
+                // 固定按“权限目录锁 -> 用户锁”的顺序获取，避免与其他复合操作形成死锁。
+                await permissionRepository.AcquireCatalogSharedLockAsync(cancellationToken);
                 await userRepository.AcquireSecurityLockAsync(userId, cancellationToken);
                 await ValidateAuthorizableUserAsync(userId, cancellationToken);
                 var permissions = await permissionRepository.GetListAsync(cancellationToken);
