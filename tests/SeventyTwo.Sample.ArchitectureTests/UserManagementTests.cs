@@ -461,6 +461,8 @@ public sealed class UserManagementTests
     [InlineData(nameof(UsersController.UpdateAsync), "update", "usersUpdate")]
     [InlineData(nameof(UsersController.SetEnableAsync), "set-enable", "usersUpdate")]
     [InlineData(nameof(UsersController.DeleteAsync), "delete", "usersDelete")]
+    [InlineData(nameof(UsersController.GetAuthorizationAsync), "authorization", "usersAuthorize")]
+    [InlineData(nameof(UsersController.AuthorizeAsync), "authorize", "usersAuthorize")]
     public async Task Endpoints_ShouldUseDedicatedPermission(string methodName, string route, string code)
     {
         var method = typeof(UsersController).GetMethod(methodName)!;

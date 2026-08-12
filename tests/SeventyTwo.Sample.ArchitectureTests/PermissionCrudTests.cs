@@ -226,7 +226,8 @@ public sealed class PermissionCrudTests
             new FakeUserPermissionCacheService(),
             new FakePermissionCacheInvalidationPublisher(),
             new FakeUserPermissionCacheInvalidationPublisher(),
-            new FakeUnitOfWork()
+            new FakeUnitOfWork(),
+            null!
         );
 
         await Assert.ThrowsAsync<PermissionDomainException>(() =>
@@ -255,7 +256,8 @@ public sealed class PermissionCrudTests
             userPermissionCacheService,
             publisher,
             userPermissionCacheInvalidationPublisher,
-            unitOfWork
+            unitOfWork,
+            null!
         );
 
         await application.UpdateAsync(permission.Id, UpdateInput(permission, null), CancellationToken.None);
@@ -274,6 +276,56 @@ public sealed class PermissionCrudTests
         );
         Assert.Equal(0, userPermissionCacheService.DeleteSuperAdminCount);
         Assert.True(database.StringExists(versionKey));
+    }
+
+    [Fact]
+    public async Task Authorization_ShouldReturnValidSelectionsAndPublishUserInvalidation()
+    {
+        var root = CreatePermission("Root", PermissionType.Directory);
+        var page = CreatePermission("Page", PermissionType.Page, root.Id);
+        var disabled = CreatePermission("Disabled", PermissionType.Button, page.Id, false);
+        var user = User.Restore(Guid.CreateVersion7(), "user", "hash", "用户", "13800000000", "user@example.com");
+        var repository = new FakePermissionRepository([root, page, disabled])
+        {
+            AssociatedPermissionIds = [root.Id, page.Id, disabled.Id],
+        };
+        var publisher = new FakeUserPermissionCacheInvalidationPublisher();
+        var userRepository = new FakeUserRepository(user);
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository, cacheService, new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(), publisher,
+            new FakeUnitOfWork(), userRepository
+        );
+
+        var output = await application.GetAuthorizationAsync(user.Id, CancellationToken.None);
+        await application.AuthorizeAsync(user.Id, [root.Id, page.Id], CancellationToken.None);
+
+        Assert.Equal([root.Id, page.Id, disabled.Id], output.PermissionIds);
+        Assert.Equal([root.Id, page.Id], repository.AssociatedPermissionIds);
+        Assert.Equal([user.Id], userRepository.LockedUserIds);
+        Assert.Equal([new UserPermissionCacheInvalidationMessage(user.Id, false)], publisher.Messages);
+    }
+
+    [Fact]
+    public async Task Authorization_ShouldRejectInvalidSelections()
+    {
+        var root = CreatePermission("Root", PermissionType.Directory);
+        var page = CreatePermission("Page", PermissionType.Page, root.Id);
+        var disabled = CreatePermission("Disabled", PermissionType.Button, page.Id, false);
+        var user = User.Restore(Guid.CreateVersion7(), "user", "hash", "用户", "13800000000", "user@example.com");
+        var repository = new FakePermissionRepository([root, page, disabled]);
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository, cacheService, new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(), new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(), new FakeUserRepository(user)
+        );
+
+        await Assert.ThrowsAsync<PermissionDomainException>(() => application.AuthorizeAsync(user.Id, [root.Id, root.Id], CancellationToken.None));
+        await application.AuthorizeAsync(user.Id, [root.Id, page.Id, disabled.Id], CancellationToken.None);
+        Assert.Equal([root.Id, page.Id, disabled.Id], repository.AssociatedPermissionIds);
+        await Assert.ThrowsAsync<PermissionDomainException>(() => application.AuthorizeAsync(user.Id, [page.Id], CancellationToken.None));
     }
 
     [Fact]
@@ -643,6 +695,53 @@ public sealed class PermissionCrudTests
         }
     }
 
+    [Fact]
+    public async Task RepositoryPermissionQueries_ShouldFilterDisabledHierarchyOnlyForEffectivePermissions()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"permission-enabled-hierarchy-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(databasePath);
+            db.CodeFirst.InitTables<PermissionRecord, UserPermissionRecord>();
+            var rootId = Guid.CreateVersion7();
+            var pageId = Guid.CreateVersion7();
+            var buttonId = Guid.CreateVersion7();
+            var userId = Guid.CreateVersion7();
+            await db.Insertable(
+                    new[]
+                    {
+                        CreateRecord(rootId, "Root", null, false),
+                        CreateRecord(pageId, "Page", rootId),
+                        CreateRecord(buttonId, "Button", pageId),
+                    }
+                )
+                .ExecuteCommandAsync();
+            await db.Insertable(
+                    new[]
+                    {
+                        new UserPermissionRecord { UserId = userId, PermissionId = rootId },
+                        new UserPermissionRecord { UserId = userId, PermissionId = pageId },
+                        new UserPermissionRecord { UserId = userId, PermissionId = buttonId },
+                    }
+                )
+                .ExecuteCommandAsync();
+            var repository = new PermissionRepository(db);
+
+            var associatedIds = await repository.GetIdsByUserIdAsync(userId, CancellationToken.None);
+            var effectivePermissions = await repository.GetAllAsync(CancellationToken.None);
+            var effectiveCodes = await repository.GetCodesByUserIdAsync(userId, CancellationToken.None);
+
+            Assert.Equal([rootId, pageId, buttonId], associatedIds);
+            Assert.Empty(effectivePermissions);
+            Assert.Empty(effectiveCodes);
+            db.Ado.Close();
+        }
+        finally
+        {
+            File.Delete(databasePath);
+        }
+    }
+
     private static Permission CreatePermission(
         string code,
         PermissionType type,
@@ -735,7 +834,7 @@ public sealed class PermissionCrudTests
         );
     }
 
-    private static PermissionRecord CreateRecord(Guid id, string code, Guid? parentId)
+    private static PermissionRecord CreateRecord(Guid id, string code, Guid? parentId, bool enable = true)
     {
         return new PermissionRecord
         {
@@ -746,6 +845,7 @@ public sealed class PermissionCrudTests
             Icon = "Folder",
             ParentId = parentId,
             MetaData = new PermissionMetaData(true),
+            Enable = enable,
         };
     }
 
@@ -789,8 +889,13 @@ public sealed class PermissionCrudTests
     private sealed class FakeUserRepository(User user) : IUserRepository
     {
         public int GetCount { get; private set; }
+        public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
 
-        public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
+        {
+            LockedUserIds = [.. LockedUserIds, id];
+            return Task.CompletedTask;
+        }
 
         public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken)
         {
@@ -861,6 +966,8 @@ public sealed class PermissionCrudTests
     {
         private readonly List<Permission> items = [.. permissions];
 
+        public IReadOnlyList<Guid> AssociatedPermissionIds { get; set; } = [];
+
         public int GetAllCount { get; private set; }
 
         public Task<Permission?> FindAsync(Guid id, CancellationToken cancellationToken) =>
@@ -902,5 +1009,14 @@ public sealed class PermissionCrudTests
 
         public Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<string>>([]);
+
+        public Task<IReadOnlyList<Guid>> GetIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
+            Task.FromResult(AssociatedPermissionIds);
+
+        public Task ReplaceUserPermissionsAsync(Guid userId, IReadOnlyCollection<Guid> permissionIds, CancellationToken cancellationToken)
+        {
+            AssociatedPermissionIds = [.. permissionIds];
+            return Task.CompletedTask;
+        }
     }
 }
