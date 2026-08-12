@@ -7,6 +7,8 @@ using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Users;
+using SeventyTwo.Sample.Common.MessageKeys;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure.Messaging;
@@ -743,9 +745,11 @@ public sealed class PermissionCrudTests
                 .ExecuteCommandAsync();
             var repository = new PermissionRepository(db);
 
-            await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            var exception = await Assert.ThrowsAsync<PermissionDomainException>(() =>
                 repository.DeleteAsync(parentId, CancellationToken.None)
             );
+            Assert.Equal(MessageKeys.Permissions.HasChildren, exception.Message);
+            Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
             Assert.Equal(2, await db.Queryable<PermissionRecord>().CountAsync());
             db.Ado.Close();
         }
