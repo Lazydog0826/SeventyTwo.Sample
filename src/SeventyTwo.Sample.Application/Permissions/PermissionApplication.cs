@@ -134,11 +134,23 @@ public sealed class PermissionApplication(
     )
     {
         var permissions = await permissionRepository.GetAllAsync(cancellationToken);
+        var permissionsById = permissions.ToDictionary(permission => permission.Id);
         return
         [
             .. permissions
                 .Where(permission => permission.Type == PermissionType.Page)
-                .Select(permission => permission.Adapt<DefaultPageOptionOutput>()),
+                .Select(permission => new DefaultPageOptionOutput(
+                    permission.Id,
+                    // Path 按根节点到当前节点排列，用它生成可辨识同名页面的完整层级标题。
+                    string.Join(
+                        " / ",
+                        permission
+                            .Path.Split('/', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(Guid.Parse)
+                            .Select(id => permissionsById[id].Title)
+                    ),
+                    permission.SortOrder
+                )),
         ];
     }
 
