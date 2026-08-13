@@ -196,15 +196,11 @@ public sealed class UserApplication(
                 await userRepository.AcquireSecurityLockAsync(candidate.Id, cancellationToken);
                 // 等待锁期间用户状态可能已发生变化，必须在锁内重新读取。
                 var user = await userRepository.GetAsync(candidate.Id, cancellationToken);
-                if (user == null)
+                if (user == null || !string.Equals(user.PasswordHash, candidate.PasswordHash, StringComparison.Ordinal))
                 {
                     throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
                 }
 
-                if (!string.Equals(user.PasswordHash, candidate.PasswordHash, StringComparison.Ordinal))
-                {
-                    throw new UserDomainException(MessageKeys.Users.CredentialsInvalid);
-                }
                 if (!user.Enable)
                 {
                     throw new UserDomainException(MessageKeys.Users.Disabled);
