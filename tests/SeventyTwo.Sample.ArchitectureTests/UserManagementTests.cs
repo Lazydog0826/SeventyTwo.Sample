@@ -560,13 +560,18 @@ public sealed class UserManagementTests
     [Theory]
     [InlineData(nameof(UsersController.GetListAsync), "list", "usersList")]
     [InlineData(nameof(UsersController.GetDetailAsync), "detail", "usersUpdate")]
+    [InlineData(nameof(UsersController.GetDefaultPageOptionsAsync), "default-page-options", "usersCreate", "usersUpdate")]
     [InlineData(nameof(UsersController.CreateAsync), "create", "usersCreate")]
     [InlineData(nameof(UsersController.UpdateAsync), "update", "usersUpdate")]
     [InlineData(nameof(UsersController.SetEnableAsync), "set-enable", "usersUpdate")]
     [InlineData(nameof(UsersController.DeleteAsync), "delete", "usersDelete")]
     [InlineData(nameof(UsersController.GetAuthorizationAsync), "authorization", "usersAuthorize")]
     [InlineData(nameof(UsersController.AuthorizeAsync), "authorize", "usersAuthorize")]
-    public async Task Endpoints_ShouldUseDedicatedPermission(string methodName, string route, string code)
+    public async Task Endpoints_ShouldUseDedicatedPermission(
+        string methodName,
+        string route,
+        params string[] codes
+    )
     {
         var method = typeof(UsersController).GetMethod(methodName)!;
         Assert.Equal(route, method.GetCustomAttributes().OfType<HttpMethodAttribute>().Single().Template);
@@ -574,7 +579,7 @@ public sealed class UserManagementTests
         var policy = await new PermissionPolicyProvider(
             Microsoft.Extensions.Options.Options.Create(new Microsoft.AspNetCore.Authorization.AuthorizationOptions())
         ).GetPolicyAsync(permission.Policy!);
-        Assert.Equal([code], Assert.Single(policy!.Requirements.OfType<PermissionRequirement>()).PermissionCodes);
+        Assert.Equal(codes, Assert.Single(policy!.Requirements.OfType<PermissionRequirement>()).PermissionCodes);
     }
 
     [Fact]
@@ -591,8 +596,17 @@ public sealed class UserManagementTests
             var user = Assert.IsType<User>(await repository.GetAsync(record.Id, CancellationToken.None));
             var version = user.Version;
             var organizationId = Guid.CreateVersion7();
+            var defaultPageId = Guid.CreateVersion7();
             user.OrgId = organizationId;
-            user.UpdateProfile("新姓名", "13900000000", "new@example.com", version, Guid.Empty, DateTimeOffset.UtcNow);
+            user.UpdateProfile(
+                "新姓名",
+                "13900000000",
+                "new@example.com",
+                defaultPageId,
+                version,
+                Guid.Empty,
+                DateTimeOffset.UtcNow
+            );
 
             await repository.SaveAsync(user, CancellationToken.None);
 
@@ -601,6 +615,7 @@ public sealed class UserManagementTests
             Assert.Equal(record.PasswordHash, saved.PasswordHash);
             Assert.Equal("新姓名", saved.DisplayName);
             Assert.Equal(organizationId, saved.OrgId);
+            Assert.Equal(defaultPageId, saved.DefaultPageId);
             Assert.NotEqual(version, saved.Version);
         }
         finally { File.Delete(path); }
@@ -668,10 +683,11 @@ public sealed class UserManagementTests
     private static SqlSugarClient CreateDatabase(string path) =>
         new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
 
-    private static UserAccountRecord CreateRecord(string? username = null) => new()
+    private static UserAccountRecord CreateRecord(string? username = null, Guid? defaultPageId = null) => new()
     {
         Id = Guid.CreateVersion7(), Username = username ?? $"user-{Guid.NewGuid():N}", PasswordHash = "hash",
         DisplayName = "测试用户", Phone = "13800000000", Email = "user@example.com", Version = Guid.CreateVersion7(),
+        DefaultPageId = defaultPageId,
     };
 
     private static Organization CreateOrganization(bool enable = true)

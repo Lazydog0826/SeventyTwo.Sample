@@ -22,17 +22,99 @@ namespace SeventyTwo.Sample.ArchitectureTests;
 
 public sealed class PermissionCrudTests
 {
+    [Theory]
+    [InlineData(PermissionType.Page, "/Default")]
+    [InlineData(PermissionType.Directory, "")]
+    public async Task UserGet_ShouldReturnDefaultPagePathOnlyForPagePermission(
+        PermissionType permissionType,
+        string expectedPath
+    )
+    {
+        var permission = CreatePermission("Default", permissionType);
+        var user = new User(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            permission.Id
+        );
+        var (cacheService, _, _, redisCacheService) = CreateCacheService();
+        var userInfoCacheService = new UserInfoCacheService(
+            new FakeUserRepository(user),
+            redisCacheService,
+            Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info" })
+        );
+        var application = new UserApplication(
+            new FakeUserRepository(user),
+            null!,
+            userInfoCacheService,
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!,
+            new FakePermissionRepository([permission])
+        );
+
+        var output = await application.GetAsync(user.Id, CancellationToken.None);
+
+        Assert.Equal(expectedPath, output.DefaultPagePath);
+    }
+
+    [Fact]
+    public async Task UserGet_ShouldReturnEmptyDefaultPagePathWhenPermissionDoesNotExist()
+    {
+        var user = new User(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            Guid.CreateVersion7()
+        );
+        var (_, _, _, redisCacheService) = CreateCacheService();
+        var application = new UserApplication(
+            new FakeUserRepository(user),
+            null!,
+            new UserInfoCacheService(
+                new FakeUserRepository(user),
+                redisCacheService,
+                Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info-missing" })
+            ),
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!,
+            new FakePermissionRepository([])
+        );
+
+        var output = await application.GetAsync(user.Id, CancellationToken.None);
+
+        Assert.Equal("", output.DefaultPagePath);
+    }
+
     [Fact]
     public async Task UserInfoCache_ShouldReloadWhenCachedValueIsInvalidJson()
     {
         var userId = Guid.CreateVersion7();
-        var user = new User(userId, "user", "hash", "测试用户", "13800000000", "user@example.com");
+        var defaultPage = CreatePermission("Default", PermissionType.Page);
+        var user = new User(
+            userId,
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            defaultPage.Id
+        );
         var userRepository = new FakeUserRepository(user);
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisDatabase = (InMemoryRedisDatabase)(object)database;
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var cacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
+        var cacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{userId}");
         redisDatabase.SetString(cacheKey, "invalid json");
         var service = new UserInfoCacheService(
             userRepository,
@@ -44,10 +126,13 @@ public sealed class PermissionCrudTests
 
         Assert.NotNull(output);
         Assert.Equal(userId, output.Id);
+        Assert.Equal(defaultPage.Id, output.DefaultPageId);
         Assert.Equal(1, userRepository.GetCount);
-        Assert.NotNull(
-            JsonSerializer.Deserialize<UserOutput>(redisDatabase.GetString(cacheKey).ToString())
+        var cachedOutput = JsonSerializer.Deserialize<UserInfoCacheOutput>(
+            redisDatabase.GetString(cacheKey).ToString()
         );
+        Assert.NotNull(cachedOutput);
+        Assert.Equal(defaultPage.Id, cachedOutput.DefaultPageId);
     }
 
     [Fact]
@@ -58,8 +143,8 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var userCacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
-        var otherUserCacheKey = cacheConfiguration.Value.Data("users", $"info:{otherUserId}");
+        var userCacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{userId}");
+        var otherUserCacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{otherUserId}");
         inMemoryDatabase.SetString(userCacheKey, "cached-user");
         inMemoryDatabase.SetString(otherUserCacheKey, "cached-other-user");
         var userInfoCacheService = new UserInfoCacheService(
@@ -1156,4 +1241,5 @@ public sealed class PermissionCrudTests
             }
         }
     }
+
 }

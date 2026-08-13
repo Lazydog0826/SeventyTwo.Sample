@@ -48,6 +48,35 @@ public sealed class UserTests
         Assert.Equal(MessageKeys.Users.DataChanged, exception.Message);
     }
 
+    [Fact]
+    public void UpdateProfile_ShouldSetAndClearDefaultPage()
+    {
+        var user = CreateUser("user");
+        var pageId = Guid.CreateVersion7();
+
+        user.UpdateProfile(
+            "新姓名",
+            "13900000000",
+            "new@example.com",
+            pageId,
+            user.Version,
+            Guid.Empty,
+            DateTimeOffset.UtcNow
+        );
+        Assert.Equal(pageId, user.DefaultPageId);
+
+        user.UpdateProfile(
+            "新姓名",
+            "13900000000",
+            "new@example.com",
+            Guid.Empty,
+            user.Version,
+            Guid.Empty,
+            DateTimeOffset.UtcNow
+        );
+        Assert.Null(user.DefaultPageId);
+    }
+
     [Theory]
     [InlineData("update")]
     [InlineData("enable")]

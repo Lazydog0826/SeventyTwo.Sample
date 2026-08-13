@@ -150,6 +150,7 @@ public sealed class UnitOfWorkTests
         using var setup = CreatePostgreSqlDatabase(connectionString);
         using var deleteFixture = CreatePostgreSqlFixture(connectionString);
         using var loginFixture = CreatePostgreSqlFixture(connectionString);
+        setup.CodeFirst.InitTables<UserAccountRecord>();
         var userId = Guid.CreateVersion7();
         var version = Guid.CreateVersion7();
         var username = $"integration-delete-{userId:N}";
