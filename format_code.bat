@@ -1,1 +1,1 @@
-dotnet csharpier format src
+dotnet csharpier format .
