@@ -237,6 +237,9 @@ public sealed class UsersController(
             {
                 HttpOnly = true,
                 Secure = true,
+                // 当前前后端即使端口不同，只要仍是同一 schemeful site，Lax 即可满足刷新 Cookie。
+                // 若生产环境部署为不同站点（不同 scheme 或注册域），规范要求改用 SameSite=None；
+                // 同时继续强制 Secure，并将 CORS 精确限制为可信前端来源；优先通过同站反向代理部署。
                 SameSite = SameSiteMode.Lax,
                 Expires = data.ExpireTime,
                 Path = "/",
