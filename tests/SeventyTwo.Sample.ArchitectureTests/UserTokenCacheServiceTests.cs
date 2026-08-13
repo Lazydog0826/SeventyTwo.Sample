@@ -52,11 +52,7 @@ public sealed class UserTokenCacheServiceTests
         redis.SetString(cacheKey, invalidBefore);
         var issuedAt = invalidBefore + issuedAtOffsetSeconds;
 
-        var result = await service.IsTokenIssuedAfterInvalidBeforeAsync(
-            userId,
-            issuedAt,
-            CancellationToken.None
-        );
+        var result = await service.IsTokenIssuedAfterInvalidBeforeAsync(userId, issuedAt, CancellationToken.None);
 
         Assert.Equal(expected, result);
     }

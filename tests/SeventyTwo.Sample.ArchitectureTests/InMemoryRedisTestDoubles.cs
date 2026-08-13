@@ -42,11 +42,7 @@ public class InMemoryRedisDatabase : DispatchProxy
         return targetMethod.Name switch
         {
             nameof(IDatabaseAsync.StringGetAsync) => GetStringAsync(key),
-            nameof(IDatabaseAsync.StringSetAsync) => SetStringAsync(
-                key,
-                (RedisValue)args[1]!,
-                args[2] as TimeSpan?
-            ),
+            nameof(IDatabaseAsync.StringSetAsync) => SetStringAsync(key, (RedisValue)args[1]!, args[2] as TimeSpan?),
             nameof(IDatabaseAsync.KeyDeleteAsync) => Task.FromResult(DeleteKey(key)),
             _ => throw new NotSupportedException($"测试 Redis 未实现 {targetMethod.Name}"),
         };

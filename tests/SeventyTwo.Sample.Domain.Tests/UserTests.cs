@@ -39,9 +39,7 @@ public sealed class UserTests
     [Fact]
     public void Create_WithSuperAdminUsername_ShouldFail()
     {
-        var exception = Assert.Throws<UserDomainException>(() =>
-            CreateUser(SystemUsernames.SuperAdmin)
-        );
+        var exception = Assert.Throws<UserDomainException>(() => CreateUser(SystemUsernames.SuperAdmin));
 
         Assert.Equal(MessageKeys.Users.UsernameReserved, exception.Message);
     }
@@ -85,7 +83,14 @@ public sealed class UserTests
     {
         var user = CreateUser("user");
         var exception = Assert.Throws<UserDomainException>(() =>
-            user.UpdateProfile("新姓名", "13900000000", "new@example.com", Guid.CreateVersion7(), Guid.Empty, DateTimeOffset.UtcNow)
+            user.UpdateProfile(
+                "新姓名",
+                "13900000000",
+                "new@example.com",
+                Guid.CreateVersion7(),
+                Guid.Empty,
+                DateTimeOffset.UtcNow
+            )
         );
         Assert.Equal(MessageKeys.Users.DataChanged, exception.Message);
     }
@@ -138,9 +143,19 @@ public sealed class UserTests
 
         var exception = Assert.Throws<UserDomainException>(() =>
         {
-            if (operation == "update") user.UpdateProfile("管理员", "13900000000", "new@example.com", user.Version, Guid.Empty, DateTimeOffset.UtcNow);
-            else if (operation == "enable") user.SetEnable(false, user.Version, Guid.Empty, DateTimeOffset.UtcNow);
-            else user.EnsureCanDelete(user.Version);
+            if (operation == "update")
+                user.UpdateProfile(
+                    "管理员",
+                    "13900000000",
+                    "new@example.com",
+                    user.Version,
+                    Guid.Empty,
+                    DateTimeOffset.UtcNow
+                );
+            else if (operation == "enable")
+                user.SetEnable(false, user.Version, Guid.Empty, DateTimeOffset.UtcNow);
+            else
+                user.EnsureCanDelete(user.Version);
         });
 
         Assert.Equal(MessageKeys.Users.SuperAdminProtected, exception.Message);

@@ -144,12 +144,7 @@ public sealed class InventoryTests
         var newInventoryId = Guid.CreateVersion7();
         var changedAt = new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero);
 
-        var batch = service.Change(
-            [inventory],
-            draft,
-            () => newInventoryId,
-            changedAt
-        );
+        var batch = service.Change([inventory], draft, () => newInventoryId, changedAt);
 
         var newInventory = Assert.Single(batch.NewInventories);
         Assert.Equal(newInventoryId, newInventory.Id);

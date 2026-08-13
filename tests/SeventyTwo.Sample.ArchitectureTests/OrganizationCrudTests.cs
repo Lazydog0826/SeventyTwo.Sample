@@ -43,7 +43,10 @@ public sealed class OrganizationCrudTests
     {
         var root = CreateOrganization("ROOT", null);
         var existing = CreateOrganization("DUP", root.Id, root.Id);
-        var application = new OrganizationApplication(new FakeOrganizationRepository([root, existing]), new FakeUnitOfWork());
+        var application = new OrganizationApplication(
+            new FakeOrganizationRepository([root, existing]),
+            new FakeUnitOfWork()
+        );
 
         await Assert.ThrowsAsync<OrganizationDomainException>(() =>
             application.CreateAsync(new("DUP", "重复", true, root.Id), CancellationToken.None)
@@ -68,7 +71,10 @@ public sealed class OrganizationCrudTests
         var root = CreateOrganization("ROOT", null);
         var left = CreateOrganization("LEFT", root.Id, root.Id);
         var right = CreateOrganization("RIGHT", root.Id, root.Id);
-        var application = new OrganizationApplication(new FakeOrganizationRepository([root, left, right]), new FakeUnitOfWork());
+        var application = new OrganizationApplication(
+            new FakeOrganizationRepository([root, left, right]),
+            new FakeUnitOfWork()
+        );
 
         await application.UpdateAsync(
             left.Id,
@@ -299,16 +305,20 @@ public sealed class OrganizationCrudTests
     {
         var id = Guid.CreateVersion7();
         var path = parentId is null ? null : $"{(orgId ?? parentId).Value}/{id}";
-        var organization = new Organization(id, code, code, parentId, path)
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var organization = new Organization(id, code, code, parentId, path) { Version = Guid.CreateVersion7() };
         organization.OrgId = orgId ?? organization.Id;
         return organization;
     }
 
     private static SqlSugarClient CreateDatabase(string path) =>
-        new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
+        new(
+            new ConnectionConfig
+            {
+                DbType = DbType.Sqlite,
+                ConnectionString = $"Data Source={path};Pooling=False",
+                IsAutoCloseConnection = true,
+            }
+        );
 
     private static OrganizationRecord CreateRecord(
         Guid id,
@@ -375,8 +385,12 @@ public sealed class OrganizationCrudTests
         public Task<IReadOnlyList<Organization>> GetListAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Organization>>(Items);
 
-        public Task<bool> CodeExistsAsync(Guid orgId, string code, Guid? excludedId, CancellationToken cancellationToken) =>
-            Task.FromResult(Items.Any(item => item.OrgId == orgId && item.Code == code && item.Id != excludedId));
+        public Task<bool> CodeExistsAsync(
+            Guid orgId,
+            string code,
+            Guid? excludedId,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(Items.Any(item => item.OrgId == orgId && item.Code == code && item.Id != excludedId));
 
         public Task AddAsync(Organization organization, CancellationToken cancellationToken)
         {

@@ -70,7 +70,15 @@ public sealed class DataDictionaryTests
         dictionary.AddItem(Guid.CreateVersion7(), "A", "甲", 0, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
 
         var exception = Assert.Throws<DataDictionaryDomainException>(() =>
-            dictionary.AddItem(Guid.CreateVersion7(), "A", "乙", 1, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow)
+            dictionary.AddItem(
+                Guid.CreateVersion7(),
+                "A",
+                "乙",
+                1,
+                dictionary.Version,
+                Guid.Empty,
+                DateTimeOffset.UtcNow
+            )
         );
 
         Assert.Equal(MessageKeys.DataDictionaries.ItemValueExists, exception.Message);
@@ -94,7 +102,15 @@ public sealed class DataDictionaryTests
         var dictionary = CreateDictionary();
 
         var exception = Assert.Throws<DataDictionaryDomainException>(() =>
-            dictionary.AddItem(Guid.CreateVersion7(), "A", "甲", -1, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow)
+            dictionary.AddItem(
+                Guid.CreateVersion7(),
+                "A",
+                "甲",
+                -1,
+                dictionary.Version,
+                Guid.Empty,
+                DateTimeOffset.UtcNow
+            )
         );
 
         Assert.Equal(MessageKeys.DataDictionaries.ItemSortMustNotBeNegative, exception.Message);

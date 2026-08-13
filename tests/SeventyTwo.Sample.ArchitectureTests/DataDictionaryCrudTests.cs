@@ -39,7 +39,9 @@ public sealed class DataDictionaryCrudTests
     [Fact]
     public void LookupEndpoint_ShouldRelyOnAuthenticatedFallbackOnly()
     {
-        var method = typeof(DataDictionariesController).GetMethod(nameof(DataDictionariesController.GetOptionsByCodeAsync))!;
+        var method = typeof(DataDictionariesController).GetMethod(
+            nameof(DataDictionariesController.GetOptionsByCodeAsync)
+        )!;
 
         Assert.Null(method.GetCustomAttribute<PermissionAttribute>());
         Assert.Equal("by-code/{code}/items", method.GetCustomAttribute<HttpMethodAttribute>()!.Template);
@@ -66,7 +68,15 @@ public sealed class DataDictionaryCrudTests
     public async Task ApplicationGetOptions_ShouldReuseCache()
     {
         var dictionary = CreateDictionary("STATUS", true);
-        dictionary.AddItem(Guid.CreateVersion7(), "1", "启用", 0, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
+        dictionary.AddItem(
+            Guid.CreateVersion7(),
+            "1",
+            "启用",
+            0,
+            dictionary.Version,
+            Guid.Empty,
+            DateTimeOffset.UtcNow
+        );
         var repository = new FakeRepository([dictionary]);
         var application = CreateApplication(repository);
 
@@ -105,17 +115,54 @@ public sealed class DataDictionaryCrudTests
             db.CodeFirst.InitTables<DataDictionaryRecord, DataDictionaryItemRecord>();
             var id = Guid.CreateVersion7();
             var version = Guid.CreateVersion7();
-            await db.Insertable(new DataDictionaryRecord { Id = id, Code = "STATUS", Name = "状态", OrgId = Guid.Empty, Version = version }).ExecuteCommandAsync();
-            await db.Insertable(new[]
-            {
-                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = id, Value = "B", Label = "乙", SortOrder = 2 },
-                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = id, Value = "A", Label = "甲", SortOrder = 1 },
-            }).ExecuteCommandAsync();
+            await db.Insertable(
+                    new DataDictionaryRecord
+                    {
+                        Id = id,
+                        Code = "STATUS",
+                        Name = "状态",
+                        OrgId = Guid.Empty,
+                        Version = version,
+                    }
+                )
+                .ExecuteCommandAsync();
+            await db.Insertable(
+                    new[]
+                    {
+                        new DataDictionaryItemRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            DictionaryId = id,
+                            Value = "B",
+                            Label = "乙",
+                            SortOrder = 2,
+                        },
+                        new DataDictionaryItemRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            DictionaryId = id,
+                            Value = "A",
+                            Label = "甲",
+                            SortOrder = 1,
+                        },
+                    }
+                )
+                .ExecuteCommandAsync();
             var repository = new DataDictionaryRepository(db);
-            var dictionary = Assert.IsType<DataDictionary>(await repository.FindEnabledByCodeAsync("STATUS", CancellationToken.None));
+            var dictionary = Assert.IsType<DataDictionary>(
+                await repository.FindEnabledByCodeAsync("STATUS", CancellationToken.None)
+            );
 
             Assert.Equal(["A", "B"], dictionary.Items.Select(item => item.Value));
-            dictionary.UpdateItem(dictionary.Items[0].Id, "A1", "甲一", 1, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
+            dictionary.UpdateItem(
+                dictionary.Items[0].Id,
+                "A1",
+                "甲一",
+                1,
+                dictionary.Version,
+                Guid.Empty,
+                DateTimeOffset.UtcNow
+            );
             await repository.SaveItemsAsync(dictionary, CancellationToken.None);
             Assert.NotEqual(version, dictionary.Version);
 
@@ -140,27 +187,74 @@ public sealed class DataDictionaryCrudTests
             db.CodeFirst.InitTables<DataDictionaryRecord, DataDictionaryItemRecord>();
             var firstId = Guid.CreateVersion7();
             var secondId = Guid.CreateVersion7();
-            await db.Insertable(new[]
-            {
-                new DataDictionaryRecord { Id = firstId, Code = "STATUS", Name = "Status", Enable = true, OrgId = Guid.Empty },
-                new DataDictionaryRecord { Id = secondId, Code = "OTHER", Name = "Other", Enable = false, OrgId = Guid.Empty },
-            }).ExecuteCommandAsync();
-            await db.Insertable(new[]
-            {
-                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = firstId, Value = "1", Label = "One" },
-                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = firstId, Value = "2", Label = "Two" },
-                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = secondId, Value = "3", Label = "Three" },
-            }).ExecuteCommandAsync();
+            await db.Insertable(
+                    new[]
+                    {
+                        new DataDictionaryRecord
+                        {
+                            Id = firstId,
+                            Code = "STATUS",
+                            Name = "Status",
+                            Enable = true,
+                            OrgId = Guid.Empty,
+                        },
+                        new DataDictionaryRecord
+                        {
+                            Id = secondId,
+                            Code = "OTHER",
+                            Name = "Other",
+                            Enable = false,
+                            OrgId = Guid.Empty,
+                        },
+                    }
+                )
+                .ExecuteCommandAsync();
+            await db.Insertable(
+                    new[]
+                    {
+                        new DataDictionaryItemRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            DictionaryId = firstId,
+                            Value = "1",
+                            Label = "One",
+                        },
+                        new DataDictionaryItemRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            DictionaryId = firstId,
+                            Value = "2",
+                            Label = "Two",
+                        },
+                        new DataDictionaryItemRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            DictionaryId = secondId,
+                            Value = "3",
+                            Label = "Three",
+                        },
+                    }
+                )
+                .ExecuteCommandAsync();
 
             var page = await new DataDictionaryRepository(db).GetPageAsync(
-                new DataDictionaryPageRequest { Index = 1, Limit = 1, Keyword = " status ", Enable = true },
+                new DataDictionaryPageRequest
+                {
+                    Index = 1,
+                    Limit = 1,
+                    Keyword = " status ",
+                    Enable = true,
+                },
                 CancellationToken.None
             );
 
             Assert.Equal(1, page.Total);
             Assert.Equal(2, Assert.Single(page.Items).Items.Count);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Theory]
@@ -191,7 +285,11 @@ public sealed class DataDictionaryCrudTests
         Assert.False(DataDictionaryRepository.IsCodeConflict(new TestDbException("40001")));
     }
 
-    private static DataDictionary CreateDictionary(string code, bool enable, IEnumerable<DataDictionaryItem>? items = null)
+    private static DataDictionary CreateDictionary(
+        string code,
+        bool enable,
+        IEnumerable<DataDictionaryItem>? items = null
+    )
     {
         var dictionary = new DataDictionary(Guid.CreateVersion7(), code, code, null, items)
         {
@@ -220,7 +318,14 @@ public sealed class DataDictionaryCrudTests
     }
 
     private static SqlSugarClient CreateDatabase(string path) =>
-        new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
+        new(
+            new ConnectionConfig
+            {
+                DbType = DbType.Sqlite,
+                ConnectionString = $"Data Source={path};Pooling=False",
+                IsAutoCloseConnection = true,
+            }
+        );
 
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
@@ -247,17 +352,46 @@ public sealed class DataDictionaryCrudTests
     {
         private readonly List<DataDictionary> items = [.. dictionaries];
         public int FindEnabledByCodeCount { get; private set; }
-        public Task<DataDictionary?> FindAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(items.SingleOrDefault(item => item.Id == id));
+
+        public Task<DataDictionary?> FindAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(items.SingleOrDefault(item => item.Id == id));
+
         public Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken)
         {
             FindEnabledByCodeCount++;
             return Task.FromResult(items.SingleOrDefault(item => item.Enable && item.Code == code));
         }
-        public Task<DataDictionaryPage> GetPageAsync(DataDictionaryPageRequest request, CancellationToken cancellationToken) => Task.FromResult(new DataDictionaryPage(items, items.Count));
-        public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken) => Task.FromResult(items.Any(item => item.Code == code && item.Id != excludedId));
-        public Task AddAsync(DataDictionary dictionary, CancellationToken cancellationToken) { items.Add(dictionary); return Task.CompletedTask; }
-        public Task SaveAsync(DataDictionary dictionary, CancellationToken cancellationToken) { dictionary.Version = Guid.CreateVersion7(); return Task.CompletedTask; }
-        public Task SaveItemsAsync(DataDictionary dictionary, CancellationToken cancellationToken) { dictionary.Version = Guid.CreateVersion7(); return Task.CompletedTask; }
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken) { items.RemoveAll(item => item.Id == id); return Task.CompletedTask; }
+
+        public Task<DataDictionaryPage> GetPageAsync(
+            DataDictionaryPageRequest request,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(new DataDictionaryPage(items, items.Count));
+
+        public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken) =>
+            Task.FromResult(items.Any(item => item.Code == code && item.Id != excludedId));
+
+        public Task AddAsync(DataDictionary dictionary, CancellationToken cancellationToken)
+        {
+            items.Add(dictionary);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveAsync(DataDictionary dictionary, CancellationToken cancellationToken)
+        {
+            dictionary.Version = Guid.CreateVersion7();
+            return Task.CompletedTask;
+        }
+
+        public Task SaveItemsAsync(DataDictionary dictionary, CancellationToken cancellationToken)
+        {
+            dictionary.Version = Guid.CreateVersion7();
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+        {
+            items.RemoveAll(item => item.Id == id);
+            return Task.CompletedTask;
+        }
     }
 }

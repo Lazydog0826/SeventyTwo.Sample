@@ -154,11 +154,7 @@ public sealed class PermissionCrudTests
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
         var cacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
         redisDatabase.SetString(cacheKey, "invalid json");
-        var service = new UserInfoCacheService(
-            userRepository,
-            redisCacheService,
-            cacheConfiguration
-        );
+        var service = new UserInfoCacheService(userRepository, redisCacheService, cacheConfiguration);
 
         var output = await service.FindAsync(userId, CancellationToken.None);
 
@@ -187,25 +183,14 @@ public sealed class PermissionCrudTests
         inMemoryDatabase.SetString(otherUserCacheKey, "cached-other-user");
         var userInfoCacheService = new UserInfoCacheService(
             new FakeUserRepository(
-                new User(
-                    userId,
-                    "user",
-                    "hash",
-                    "测试用户",
-                    "13800000000",
-                    "user@example.com",
-                    DataPermissionType.Self
-                )
+                new User(userId, "user", "hash", "测试用户", "13800000000", "user@example.com", DataPermissionType.Self)
             ),
             new FakeRedisCacheService(database),
             cacheConfiguration
         );
         var consumer = new UserInfoCacheInvalidationConsumer(userInfoCacheService);
 
-        await consumer.ConsumeAsync(
-            new UserInfoCacheInvalidationMessage(userId),
-            CancellationToken.None
-        );
+        await consumer.ConsumeAsync(new UserInfoCacheInvalidationMessage(userId), CancellationToken.None);
 
         Assert.False(inMemoryDatabase.StringExists(userCacheKey));
         Assert.True(inMemoryDatabase.StringExists(otherUserCacheKey));
@@ -215,12 +200,10 @@ public sealed class PermissionCrudTests
     public async Task SuperAdmin_ShouldReceiveAllEnabledPermissionsWithoutAssignments()
     {
         var userId = Guid.CreateVersion7();
-        var repository = new FakePermissionRepository(
-            [
-                CreatePermission("Enabled", PermissionType.Page),
-                CreatePermission("Disabled", PermissionType.Page, enable: false),
-            ]
-        );
+        var repository = new FakePermissionRepository([
+            CreatePermission("Enabled", PermissionType.Page),
+            CreatePermission("Disabled", PermissionType.Page, enable: false),
+        ]);
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
@@ -300,11 +283,7 @@ public sealed class PermissionCrudTests
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
         var service = new UserPermissionCacheService(
             repository,
-            new UserInfoCacheService(
-                new FakeUserRepository(user),
-                redisCacheService,
-                cacheConfiguration
-            ),
+            new UserInfoCacheService(new FakeUserRepository(user), redisCacheService, cacheConfiguration),
             redisCacheService,
             cacheConfiguration
         );
@@ -312,10 +291,7 @@ public sealed class PermissionCrudTests
 
         await service.GetCodesAsync(user.Id, CancellationToken.None);
         var oldVersion = inMemoryDatabase.GetString(versionKey).ToString();
-        var oldCacheKey = cacheConfiguration.Value.Data(
-            "permissions",
-            $"user-codes:{oldVersion}:{user.Id}"
-        );
+        var oldCacheKey = cacheConfiguration.Value.Data("permissions", $"user-codes:{oldVersion}:{user.Id}");
 
         await service.DeleteSuperAdminAsync(CancellationToken.None);
         var newVersion = inMemoryDatabase.GetString(versionKey).ToString();
@@ -325,10 +301,7 @@ public sealed class PermissionCrudTests
         Assert.NotEqual(oldVersion, newVersion);
 
         await service.GetCodesAsync(user.Id, CancellationToken.None);
-        var newCacheKey = cacheConfiguration.Value.Data(
-            "permissions",
-            $"user-codes:{newVersion}:{user.Id}"
-        );
+        var newCacheKey = cacheConfiguration.Value.Data("permissions", $"user-codes:{newVersion}:{user.Id}");
         Assert.True(inMemoryDatabase.StringExists(newCacheKey));
         Assert.Equal(2, repository.GetCodesByUserIdCount);
     }
@@ -338,11 +311,7 @@ public sealed class PermissionCrudTests
     [InlineData(nameof(PermissionsController.CreateAsync), "create", "permissionsCreate")]
     [InlineData(nameof(PermissionsController.UpdateAsync), "update", "permissionsUpdate")]
     [InlineData(nameof(PermissionsController.DeleteAsync), "delete", "permissionsDelete")]
-    public async Task ManagementEndpoints_ShouldRequireDedicatedPermission(
-        string methodName,
-        string route,
-        string code
-    )
+    public async Task ManagementEndpoints_ShouldRequireDedicatedPermission(string methodName, string route, string code)
     {
         var action = typeof(PermissionsController).GetMethod(methodName);
 
@@ -411,10 +380,7 @@ public sealed class PermissionCrudTests
     {
         var parent = CreatePermission("Parent", PermissionType.Directory);
         var child = CreatePermission("Child", PermissionType.Directory, parent.Id);
-        var repository = new FakePermissionRepository([parent, child])
-        {
-            RequireCatalogMutationLock = true,
-        };
+        var repository = new FakePermissionRepository([parent, child]) { RequireCatalogMutationLock = true };
         var (cacheService, _, _, _) = CreateCacheService();
         var unitOfWork = new FakeUnitOfWork();
         var application = new PermissionApplication(
@@ -528,10 +494,7 @@ public sealed class PermissionCrudTests
     public async Task ApplicationMutation_ShouldPublishCacheInvalidationMessage()
     {
         var permission = CreatePermission("Editable", PermissionType.Page);
-        var repository = new FakePermissionRepository([permission])
-        {
-            RequireCatalogMutationLock = true,
-        };
+        var repository = new FakePermissionRepository([permission]) { RequireCatalogMutationLock = true };
         var (cacheService, database, configuration, _) = CreateCacheService();
         var versionKey = PermissionCacheKeys.GetAllPermissionsVersionKey(configuration);
         database.SetString(versionKey, "old-version");
@@ -597,9 +560,13 @@ public sealed class PermissionCrudTests
         );
         var (cacheService, _, _, _) = CreateCacheService();
         var application = new PermissionApplication(
-            repository, cacheService, new FakeUserPermissionCacheService(),
-            new FakePermissionCacheInvalidationPublisher(), publisher,
-            new FakeUnitOfWork(), userRepository
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            publisher,
+            new FakeUnitOfWork(),
+            userRepository
         );
 
         var output = await application.GetAuthorizationAsync(user.Id, CancellationToken.None);
@@ -634,15 +601,23 @@ public sealed class PermissionCrudTests
         var repository = new FakePermissionRepository([root, page, disabled]);
         var (cacheService, _, _, _) = CreateCacheService();
         var application = new PermissionApplication(
-            repository, cacheService, new FakeUserPermissionCacheService(),
-            new FakePermissionCacheInvalidationPublisher(), new FakeUserPermissionCacheInvalidationPublisher(),
-            new FakeUnitOfWork(), new FakeUserRepository(user)
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            new FakeUserRepository(user)
         );
 
-        await Assert.ThrowsAsync<PermissionDomainException>(() => application.AuthorizeAsync(user.Id, [root.Id, root.Id], CancellationToken.None));
+        await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.AuthorizeAsync(user.Id, [root.Id, root.Id], CancellationToken.None)
+        );
         await application.AuthorizeAsync(user.Id, [root.Id, page.Id, disabled.Id], CancellationToken.None);
         Assert.Equal([root.Id, page.Id, disabled.Id], repository.AssociatedPermissionIds);
-        await Assert.ThrowsAsync<PermissionDomainException>(() => application.AuthorizeAsync(user.Id, [page.Id], CancellationToken.None));
+        await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.AuthorizeAsync(user.Id, [page.Id], CancellationToken.None)
+        );
     }
 
     [Fact]
@@ -668,10 +643,7 @@ public sealed class PermissionCrudTests
         var cacheService = new FakeUserPermissionCacheService();
         var consumer = new UserPermissionCacheInvalidationConsumer(cacheService);
 
-        await consumer.ConsumeAsync(
-            new UserPermissionCacheInvalidationMessage(userId, false),
-            CancellationToken.None
-        );
+        await consumer.ConsumeAsync(new UserPermissionCacheInvalidationMessage(userId, false), CancellationToken.None);
         await consumer.ConsumeAsync(
             new UserPermissionCacheInvalidationMessage(Guid.Empty, true),
             CancellationToken.None
@@ -708,9 +680,7 @@ public sealed class PermissionCrudTests
         await loadTask;
         await invalidationTask;
 
-        Assert.False(
-            database.StringExists(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration))
-        );
+        Assert.False(database.StringExists(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration)));
     }
 
     [Fact]
@@ -941,11 +911,7 @@ public sealed class PermissionCrudTests
             var parentId = Guid.CreateVersion7();
             var permissionId = Guid.CreateVersion7();
             await db.Insertable(
-                    new[]
-                    {
-                        CreateRecord(parentId, "Parent", null),
-                        CreateRecord(permissionId, "Editable", parentId),
-                    }
+                    new[] { CreateRecord(parentId, "Parent", null), CreateRecord(permissionId, "Editable", parentId) }
                 )
                 .ExecuteCommandAsync();
             var repository = new PermissionRepository(db);
@@ -972,9 +938,7 @@ public sealed class PermissionCrudTests
             );
             await repository.SaveAsync(permission, CancellationToken.None);
 
-            var record = await db.Queryable<PermissionRecord>()
-                .Where(item => item.Id == permissionId)
-                .SingleAsync();
+            var record = await db.Queryable<PermissionRecord>().Where(item => item.Id == permissionId).SingleAsync();
             Assert.Equal(parentId, record.ParentId);
             Assert.Equal("修改后", record.Title);
             Assert.NotEqual(originalVersion, record.Version);
@@ -1249,6 +1213,7 @@ public sealed class PermissionCrudTests
     private sealed class FakeUserRepository(User user, Action? onAcquireSecurityLock = null) : IUserRepository
     {
         public int GetCount { get; private set; }
+
         /// <summary>
         /// 测试期间被安全锁锁定的用户 ID。
         /// </summary>
@@ -1271,9 +1236,7 @@ public sealed class PermissionCrudTests
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(
-                string.Equals(account, user.Username, StringComparison.Ordinal) ? user : null
-            );
+            return Task.FromResult(string.Equals(account, user.Username, StringComparison.Ordinal) ? user : null);
         }
 
         public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
@@ -1283,13 +1246,15 @@ public sealed class PermissionCrudTests
             Task.FromResult(username == user.Username);
 
         public Task AddAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task SaveAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task SavePasswordAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class FakePermissionCacheInvalidationPublisher
-        : IPermissionCacheInvalidationPublisher
+    private sealed class FakePermissionCacheInvalidationPublisher : IPermissionCacheInvalidationPublisher
     {
         public int PublishCount { get; private set; }
 
@@ -1300,8 +1265,7 @@ public sealed class PermissionCrudTests
         }
     }
 
-    private sealed class FakeUserPermissionCacheInvalidationPublisher
-        : IUserPermissionCacheInvalidationPublisher
+    private sealed class FakeUserPermissionCacheInvalidationPublisher : IUserPermissionCacheInvalidationPublisher
     {
         public IReadOnlyList<UserPermissionCacheInvalidationMessage> Messages { get; private set; } = [];
 
@@ -1419,9 +1383,7 @@ public sealed class PermissionCrudTests
         public Task<IReadOnlyList<Permission>> GetAllAsync(CancellationToken cancellationToken)
         {
             GetAllCount++;
-            return Task.FromResult<IReadOnlyList<Permission>>(
-                items.Where(permission => permission.Enable).ToList()
-            );
+            return Task.FromResult<IReadOnlyList<Permission>>(items.Where(permission => permission.Enable).ToList());
         }
 
         public Task<IReadOnlyList<string>> GetCodesByUserIdAsync(Guid userId, CancellationToken cancellationToken)
@@ -1433,7 +1395,11 @@ public sealed class PermissionCrudTests
         public Task<IReadOnlyList<Guid>> GetIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult(AssociatedPermissionIds);
 
-        public Task ReplaceUserPermissionsAsync(Guid userId, IReadOnlyCollection<Guid> permissionIds, CancellationToken cancellationToken)
+        public Task ReplaceUserPermissionsAsync(
+            Guid userId,
+            IReadOnlyCollection<Guid> permissionIds,
+            CancellationToken cancellationToken
+        )
         {
             AssociatedPermissionIds = [.. permissionIds];
             return Task.CompletedTask;
@@ -1447,5 +1413,4 @@ public sealed class PermissionCrudTests
             }
         }
     }
-
 }

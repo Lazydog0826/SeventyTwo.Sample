@@ -29,9 +29,7 @@ public sealed class ProductTests
     [InlineData(" ")]
     public void Create_WithEmptyName_ShouldThrowDomainException(string name)
     {
-        var exception = Assert.Throws<ProductDomainException>(() =>
-            new Product(Guid.CreateVersion7(), name, 1m)
-        );
+        var exception = Assert.Throws<ProductDomainException>(() => new Product(Guid.CreateVersion7(), name, 1m));
 
         Assert.Equal(MessageKeys.Products.NameRequired, exception.Message);
     }
@@ -49,9 +47,7 @@ public sealed class ProductTests
     [Fact]
     public void Create_WithNonPositivePrice_ShouldThrowDomainException()
     {
-        var exception = Assert.Throws<ProductDomainException>(() =>
-            new Product(Guid.CreateVersion7(), "测试商品", 0m)
-        );
+        var exception = Assert.Throws<ProductDomainException>(() => new Product(Guid.CreateVersion7(), "测试商品", 0m));
 
         Assert.Equal(MessageKeys.Products.PriceMustBePositive, exception.Message);
     }
@@ -79,10 +75,7 @@ public sealed class ProductTests
     [Fact]
     public void Update_ShouldChangeInfoAndAuditFields()
     {
-        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m)
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m) { Version = Guid.CreateVersion7() };
         var updatedAt = new DateTimeOffset(2026, 7, 26, 10, 0, 0, TimeSpan.Zero);
 
         product.Update("  新商品  ", 2.5m, product.Version, SystemIds.System, updatedAt);
@@ -96,10 +89,7 @@ public sealed class ProductTests
     [Fact]
     public void Update_WithInvalidInfo_ShouldNotChangeProduct()
     {
-        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m)
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m) { Version = Guid.CreateVersion7() };
 
         _ = Assert.Throws<ProductDomainException>(() =>
             product.Update(
@@ -119,10 +109,7 @@ public sealed class ProductTests
     [Fact]
     public void Update_WithExpiredVersion_ShouldNotChangeProduct()
     {
-        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m)
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m) { Version = Guid.CreateVersion7() };
 
         var exception = Assert.Throws<ProductDomainException>(() =>
             product.Update(
@@ -143,10 +130,7 @@ public sealed class ProductTests
     [Fact]
     public void Update_WithMissingUpdatedAt_ShouldNotChangeProduct()
     {
-        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m)
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var product = new Product(Guid.CreateVersion7(), "旧商品", 1m) { Version = Guid.CreateVersion7() };
 
         var exception = Assert.Throws<ProductDomainException>(() =>
             product.Update("新商品", 2m, product.Version, SystemIds.System, default)

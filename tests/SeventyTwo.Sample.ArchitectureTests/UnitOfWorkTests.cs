@@ -54,7 +54,8 @@ public sealed class UnitOfWorkTests
                         await fixture.UnitOfWork.ExecuteAsync(
                             async () =>
                             {
-                                await fixture.Database.Insertable(new TransactionRecord { Id = 2 })
+                                await fixture
+                                    .Database.Insertable(new TransactionRecord { Id = 2 })
                                     .ExecuteCommandAsync();
                                 throw new TestTransactionException();
                             },
@@ -156,11 +157,13 @@ public sealed class UnitOfWorkTests
         var username = $"integration-delete-{userId:N}";
         const string password = "integration-password";
         var passwordHash = new PasswordHasher<string>().HashPassword(username, password);
-        var organizationId = await setup.Queryable<OrganizationIdRecord>()
+        var organizationId = await setup
+            .Queryable<OrganizationIdRecord>()
             .Where(x => x.DeleteAt == null)
             .Select(x => x.Id)
             .FirstAsync();
-        await setup.Insertable(
+        await setup
+            .Insertable(
                 new UserAccountRecord
                 {
                     Id = userId,
@@ -193,9 +196,7 @@ public sealed class UnitOfWorkTests
                 new NoOpUserInfoCacheInvalidationPublisher(),
                 null!
             );
-            var loginRepository = new LockRequestSignalingUserRepository(
-                new UserRepository(loginFixture.Database)
-            );
+            var loginRepository = new LockRequestSignalingUserRepository(new UserRepository(loginFixture.Database));
             var loginApplication = new UserApplication(
                 loginRepository,
                 null!,
@@ -209,10 +210,7 @@ public sealed class UnitOfWorkTests
 
             deleteTask = deleteApplication.DeleteAsync(userId, version, cancellationTokenSource.Token);
             await deletionGate.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            loginTask = loginApplication.LoginAsync(
-                new(username, password),
-                cancellationTokenSource.Token
-            );
+            loginTask = loginApplication.LoginAsync(new(username, password), cancellationTokenSource.Token);
             await loginRepository.LockRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.False(loginTask.IsCompleted);
 
@@ -254,7 +252,8 @@ public sealed class UnitOfWorkTests
             new ConnectionConfig
             {
                 DbType = DbType.Sqlite,
-                ConnectionString = $"Data Source={Path.Combine(Path.GetTempPath(), $"unit-of-work-{Guid.NewGuid():N}.db")};Pooling=False",
+                ConnectionString =
+                    $"Data Source={Path.Combine(Path.GetTempPath(), $"unit-of-work-{Guid.NewGuid():N}.db")};Pooling=False",
                 IsAutoCloseConnection = false,
             }
         );
@@ -341,8 +340,7 @@ public sealed class UnitOfWorkTests
 
     private sealed class LockRequestSignalingUserRepository(IUserRepository inner) : IUserRepository
     {
-        public TaskCompletionSource LockRequested { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource LockRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public async Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
         {
@@ -352,16 +350,24 @@ public sealed class UnitOfWorkTests
 
         public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
             inner.GetAsync(id, cancellationToken);
+
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             inner.GetByAccountAsync(account, cancellationToken);
+
         public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
             inner.GetPageAsync(request, cancellationToken);
+
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             inner.UsernameExistsAsync(username, cancellationToken);
+
         public Task AddAsync(User user, CancellationToken cancellationToken) => inner.AddAsync(user, cancellationToken);
-        public Task SaveAsync(User user, CancellationToken cancellationToken) => inner.SaveAsync(user, cancellationToken);
+
+        public Task SaveAsync(User user, CancellationToken cancellationToken) =>
+            inner.SaveAsync(user, cancellationToken);
+
         public Task SavePasswordAsync(User user, CancellationToken cancellationToken) =>
             inner.SavePasswordAsync(user, cancellationToken);
+
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             inner.DeleteAsync(id, version, cancellationToken);
     }
@@ -369,8 +375,7 @@ public sealed class UnitOfWorkTests
     private sealed class BlockingTokenCacheService : SuccessfulTokenCacheService
     {
         private readonly TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public TaskCompletionSource Entered { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public override async Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken)
         {
@@ -386,19 +391,41 @@ public sealed class UnitOfWorkTests
     {
         public virtual Task<bool> SetInvalidBeforeAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult(true);
-        public Task<bool> SaveAsync(Guid userId, Guid sessionId, TokenPair tokens, CancellationToken cancellationToken) =>
-            Task.FromResult(true);
-        public Task<bool> RefreshAsync(Guid userId, Guid sessionId, long issuedAtUnixTimeSeconds, string refreshToken, TokenPair tokens, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-        public Task<bool> DeleteAsync(Guid userId, Guid sessionId, string refreshToken, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(Guid userId, long issuedAtUnixTimeSeconds, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+
+        public Task<bool> SaveAsync(
+            Guid userId,
+            Guid sessionId,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(true);
+
+        public Task<bool> RefreshAsync(
+            Guid userId,
+            Guid sessionId,
+            long issuedAtUnixTimeSeconds,
+            string refreshToken,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> DeleteAsync(
+            Guid userId,
+            Guid sessionId,
+            string refreshToken,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(
+            Guid userId,
+            long issuedAtUnixTimeSeconds,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
     }
 
     private sealed class FixedTokenService : ITokenService
     {
         public TokenPair Generate(User user, Guid sessionId) => new("access", "refresh", DateTime.UtcNow.AddDays(1));
+
         public bool TryValidate(string token, out TokenPayload? payload)
         {
             payload = null;
@@ -444,10 +471,12 @@ public sealed class UnitOfWorkTests
         ServiceProvider serviceProvider
     ) : IDisposable
     {
-        private readonly string? databasePath = database.CurrentConnectionConfig.DbType == DbType.Sqlite
-            ? database.CurrentConnectionConfig.ConnectionString
-                .Split(';', StringSplitOptions.RemoveEmptyEntries)[0]["Data Source=".Length..]
-            : null;
+        private readonly string? databasePath =
+            database.CurrentConnectionConfig.DbType == DbType.Sqlite
+                ? database.CurrentConnectionConfig.ConnectionString.Split(';', StringSplitOptions.RemoveEmptyEntries)[
+                    0
+                ]["Data Source=".Length..]
+                : null;
 
         public SqlSugarClient Database { get; } = database;
 

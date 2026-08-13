@@ -3,8 +3,8 @@ using SeventyTwo.Sample.Application.Orders;
 using SeventyTwo.Sample.Application.Products;
 using SeventyTwo.Sample.Domain.Orders;
 using SeventyTwo.Sample.Domain.Products;
-using SeventyTwo.Sample.WebApi.Controllers;
 using SeventyTwo.Sample.WebApi.Contracts.Products;
+using SeventyTwo.Sample.WebApi.Controllers;
 
 namespace SeventyTwo.Sample.ArchitectureTests;
 

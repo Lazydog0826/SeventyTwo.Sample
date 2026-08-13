@@ -7,8 +7,8 @@ using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
-using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Domain.Organizations;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -196,11 +196,7 @@ public sealed class UserManagementTests
             null!
         );
 
-        await application.SetEnableAsync(
-            user.Id,
-            new(enable, user.Version),
-            CancellationToken.None
-        );
+        await application.SetEnableAsync(user.Id, new(enable, user.Version), CancellationToken.None);
 
         Assert.Equal([user.Id], userRepository.LockedUserIds);
         Assert.Equal(expectedTokenInvalidations, tokenCacheService.InvalidatedUserIds.Count);
@@ -481,16 +477,7 @@ public sealed class UserManagementTests
         };
         var userRepository = new CapturingUserRepository(user);
         var unitOfWork = new CapturingUnitOfWork();
-        var application = new UserApplication(
-            userRepository,
-            null!,
-            null!,
-            unitOfWork,
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = new UserApplication(userRepository, null!, null!, unitOfWork, null!, null!, null!, null!);
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.LoginAsync(new(username, "invalid-password"), CancellationToken.None)
@@ -635,7 +622,12 @@ public sealed class UserManagementTests
     [Theory]
     [InlineData(nameof(UsersController.GetListAsync), "list", "usersList")]
     [InlineData(nameof(UsersController.GetDetailAsync), "detail", "usersUpdate")]
-    [InlineData(nameof(UsersController.GetDefaultPageOptionsAsync), "default-page-options", "usersCreate", "usersUpdate")]
+    [InlineData(
+        nameof(UsersController.GetDefaultPageOptionsAsync),
+        "default-page-options",
+        "usersCreate",
+        "usersUpdate"
+    )]
     [InlineData(nameof(UsersController.CreateAsync), "create", "usersCreate")]
     [InlineData(nameof(UsersController.UpdateAsync), "update", "usersUpdate")]
     [InlineData(nameof(UsersController.SetEnableAsync), "set-enable", "usersUpdate")]
@@ -643,11 +635,7 @@ public sealed class UserManagementTests
     [InlineData(nameof(UsersController.DeleteAsync), "delete", "usersDelete")]
     [InlineData(nameof(UsersController.GetAuthorizationAsync), "authorization", "usersAuthorize")]
     [InlineData(nameof(UsersController.AuthorizeAsync), "authorize", "usersAuthorize")]
-    public async Task Endpoints_ShouldUseDedicatedPermission(
-        string methodName,
-        string route,
-        params string[] codes
-    )
+    public async Task Endpoints_ShouldUseDedicatedPermission(string methodName, string route, params string[] codes)
     {
         var method = typeof(UsersController).GetMethod(methodName)!;
         Assert.Equal(route, method.GetCustomAttributes().OfType<HttpMethodAttribute>().Single().Template);
@@ -664,14 +652,28 @@ public sealed class UserManagementTests
         const string oldPassword = "old-password";
         var username = $"user-{Guid.NewGuid():N}";
         var user = new User(
-            Guid.CreateVersion7(), username,
+            Guid.CreateVersion7(),
+            username,
             new PasswordHasher<string>().HashPassword(username, oldPassword),
-            "测试用户", "13800000000", "user@example.com", DataPermissionType.Self
-        ) { Version = Guid.CreateVersion7() };
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            DataPermissionType.Self
+        )
+        {
+            Version = Guid.CreateVersion7(),
+        };
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
         var application = new UserApplication(
-            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+            repository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCache,
+            null!,
+            null!
         );
 
         var output = await application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None);
@@ -683,10 +685,14 @@ public sealed class UserManagementTests
         Assert.Contains(output.Password, character => !char.IsLetterOrDigit(character));
         Assert.Same(user, repository.PasswordSavedUser);
         var hasher = new PasswordHasher<string>();
-        Assert.NotEqual(PasswordVerificationResult.Failed,
-            hasher.VerifyHashedPassword(username, user.PasswordHash, output.Password));
-        Assert.Equal(PasswordVerificationResult.Failed,
-            hasher.VerifyHashedPassword(username, user.PasswordHash, oldPassword));
+        Assert.NotEqual(
+            PasswordVerificationResult.Failed,
+            hasher.VerifyHashedPassword(username, user.PasswordHash, output.Password)
+        );
+        Assert.Equal(
+            PasswordVerificationResult.Failed,
+            hasher.VerifyHashedPassword(username, user.PasswordHash, oldPassword)
+        );
         Assert.Equal([user.Id], repository.LockedUserIds);
         Assert.Equal([user.Id], tokenCache.InvalidatedUserIds);
     }
@@ -698,11 +704,19 @@ public sealed class UserManagementTests
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
         var application = new UserApplication(
-            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+            repository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCache,
+            null!,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
-            application.ResetPasswordAsync(user.Id, Guid.CreateVersion7(), CancellationToken.None));
+            application.ResetPasswordAsync(user.Id, Guid.CreateVersion7(), CancellationToken.None)
+        );
 
         Assert.Equal(MessageKeys.Users.DataChanged, exception.Message);
         Assert.Null(repository.PasswordSavedUser);
@@ -713,12 +727,19 @@ public sealed class UserManagementTests
     public async Task ResetPassword_WithMissingUser_ShouldReject()
     {
         var application = new UserApplication(
-            new CapturingUserRepository(), null!, null!, new FakeUnitOfWork(), null!,
-            new CapturingUserTokenCacheService(), null!, null!
+            new CapturingUserRepository(),
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            new CapturingUserTokenCacheService(),
+            null!,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
-            application.ResetPasswordAsync(Guid.CreateVersion7(), Guid.CreateVersion7(), CancellationToken.None));
+            application.ResetPasswordAsync(Guid.CreateVersion7(), Guid.CreateVersion7(), CancellationToken.None)
+        );
 
         Assert.Equal(MessageKeys.Users.NotFound, exception.Message);
         Assert.Equal(DomainErrorType.NotFound, exception.ErrorType);
@@ -728,18 +749,31 @@ public sealed class UserManagementTests
     public async Task ResetPassword_ForSuperAdmin_ShouldReject()
     {
         var user = User.Restore(
-            Guid.CreateVersion7(), SystemUsernames.SuperAdmin, "hash", "超级管理员",
-            "13800000000", "superadmin@example.com", DataPermissionType.All
+            Guid.CreateVersion7(),
+            SystemUsernames.SuperAdmin,
+            "hash",
+            "超级管理员",
+            "13800000000",
+            "superadmin@example.com",
+            DataPermissionType.All
         );
         user.Version = Guid.CreateVersion7();
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
         var application = new UserApplication(
-            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+            repository,
+            null!,
+            null!,
+            new FakeUnitOfWork(),
+            null!,
+            tokenCache,
+            null!,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
-            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None));
+            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None)
+        );
 
         Assert.Equal(MessageKeys.Users.SuperAdminProtected, exception.Message);
         Assert.Null(repository.PasswordSavedUser);
@@ -751,12 +785,19 @@ public sealed class UserManagementTests
     {
         var user = CreateUser(enable: true);
         var application = new UserApplication(
-            new CapturingUserRepository(user), null!, null!, new CapturingUnitOfWork(), null!,
-            new CapturingUserTokenCacheService { SetInvalidBeforeResult = false }, null!, null!
+            new CapturingUserRepository(user),
+            null!,
+            null!,
+            new CapturingUnitOfWork(),
+            null!,
+            new CapturingUserTokenCacheService { SetInvalidBeforeResult = false },
+            null!,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None));
+            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None)
+        );
 
         Assert.Equal("设置用户令牌失效时间失败", exception.Message);
     }
@@ -799,7 +840,10 @@ public sealed class UserManagementTests
             Assert.Equal(DataPermissionType.OrganizationAndDescendants, saved.DataPermissionType);
             Assert.NotEqual(version, saved.Version);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -826,7 +870,10 @@ public sealed class UserManagementTests
             Assert.NotEqual(version, saved.Version);
             Assert.Equal(saved.Version, user.Version);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -849,7 +896,10 @@ public sealed class UserManagementTests
             var user = Assert.Single(users.Items);
             Assert.Equal(regularUser.Id, user.Id);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -890,14 +940,23 @@ public sealed class UserManagementTests
             await db.Insertable(new[] { first, second, ignored }).ExecuteCommandAsync();
 
             var page = await new UserRepository(db).GetPageAsync(
-                new UserPageRequest { Index = 1, Limit = 1, Keyword = " alpha ", Enable = true },
+                new UserPageRequest
+                {
+                    Index = 1,
+                    Limit = 1,
+                    Keyword = " alpha ",
+                    Enable = true,
+                },
                 CancellationToken.None
             );
 
             Assert.Equal(1, page.Total);
             Assert.Equal(first.Id, Assert.Single(page.Items).Id);
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Theory]
@@ -908,7 +967,14 @@ public sealed class UserManagementTests
     public async Task ApplicationGetPage_ShouldValidatePaging(int index, int limit, string message)
     {
         var application = new UserApplication(
-            new CapturingUserRepository(), null!, null!, null!, null!, null!, null!, null!
+            new CapturingUserRepository(),
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
@@ -928,7 +994,8 @@ public sealed class UserManagementTests
             db.CodeFirst.InitTables<UserAccountRecord, UserPermissionRecord>();
             var record = CreateRecord();
             await db.Insertable(record).ExecuteCommandAsync();
-            await db.Insertable(new UserPermissionRecord { UserId = record.Id, PermissionId = Guid.CreateVersion7() }).ExecuteCommandAsync();
+            await db.Insertable(new UserPermissionRecord { UserId = record.Id, PermissionId = Guid.CreateVersion7() })
+                .ExecuteCommandAsync();
 
             var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
                 new UserRepository(db).DeleteAsync(record.Id, record.Version, CancellationToken.None)
@@ -936,7 +1003,10 @@ public sealed class UserManagementTests
             Assert.Equal(MessageKeys.Users.HasPermissions, exception.Message);
             Assert.Equal(1, await db.Queryable<UserAccountRecord>().CountAsync());
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]
@@ -954,19 +1024,35 @@ public sealed class UserManagementTests
 
             Assert.Equal(0, await db.Queryable<UserAccountRecord>().CountAsync());
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private static SqlSugarClient CreateDatabase(string path) =>
-        new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
+        new(
+            new ConnectionConfig
+            {
+                DbType = DbType.Sqlite,
+                ConnectionString = $"Data Source={path};Pooling=False",
+                IsAutoCloseConnection = true,
+            }
+        );
 
-    private static UserAccountRecord CreateRecord(string? username = null, Guid? defaultPageId = null) => new()
-    {
-        Id = Guid.CreateVersion7(), Username = username ?? $"user-{Guid.NewGuid():N}", PasswordHash = "hash",
-        DisplayName = "测试用户", Phone = "13800000000", Email = "user@example.com", Version = Guid.CreateVersion7(),
-        DataPermissionType = DataPermissionType.Self,
-        DefaultPageId = defaultPageId,
-    };
+    private static UserAccountRecord CreateRecord(string? username = null, Guid? defaultPageId = null) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            Username = username ?? $"user-{Guid.NewGuid():N}",
+            PasswordHash = "hash",
+            DisplayName = "测试用户",
+            Phone = "13800000000",
+            Email = "user@example.com",
+            Version = Guid.CreateVersion7(),
+            DataPermissionType = DataPermissionType.Self,
+            DefaultPageId = defaultPageId,
+        };
 
     private static Organization CreateOrganization(bool enable = true)
     {
@@ -992,7 +1078,8 @@ public sealed class UserManagementTests
         };
     }
 
-    private sealed class CapturingUserRepository(User? existingUser = null, List<string>? calls = null) : IUserRepository
+    private sealed class CapturingUserRepository(User? existingUser = null, List<string>? calls = null)
+        : IUserRepository
     {
         public User? AddedUser { get; private set; }
         public User? SavedUser { get; private set; }
@@ -1057,8 +1144,7 @@ public sealed class UserManagementTests
     {
         private readonly TaskCompletionSource releaseLockWait = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public TaskCompletionSource LockWaitStarted { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource LockWaitStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int LockedGetCount { get; private set; }
 
@@ -1082,11 +1168,17 @@ public sealed class UserManagementTests
 
         public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
         public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
     }
@@ -1121,12 +1213,21 @@ public sealed class UserManagementTests
             MutationLockAcquireCount == 0
                 ? throw new InvalidOperationException("验证机构前必须先获取机构变更锁")
                 : Task.FromResult(id == organization.Id ? organization : null);
+
         public Task<IReadOnlyList<Organization>> GetListAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Organization>>([organization]);
-        public Task<bool> CodeExistsAsync(Guid orgId, string code, Guid? excludedId, CancellationToken cancellationToken) =>
-            Task.FromResult(false);
+
+        public Task<bool> CodeExistsAsync(
+            Guid orgId,
+            string code,
+            Guid? excludedId,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(false);
+
         public Task AddAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task SaveAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
+
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
@@ -1199,14 +1300,34 @@ public sealed class UserManagementTests
             return Task.FromResult(SetInvalidBeforeResult);
         }
 
-        public Task<bool> SaveAsync(Guid userId, Guid sessionId, TokenPair tokens, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-        public Task<bool> RefreshAsync(Guid userId, Guid sessionId, long issuedAtUnixTimeSeconds, string refreshToken, TokenPair tokens, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-        public Task<bool> DeleteAsync(Guid userId, Guid sessionId, string refreshToken, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(Guid userId, long issuedAtUnixTimeSeconds, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+        public Task<bool> SaveAsync(
+            Guid userId,
+            Guid sessionId,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> RefreshAsync(
+            Guid userId,
+            Guid sessionId,
+            long issuedAtUnixTimeSeconds,
+            string refreshToken,
+            TokenPair tokens,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> DeleteAsync(
+            Guid userId,
+            Guid sessionId,
+            string refreshToken,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
+
+        public Task<bool> IsTokenIssuedAfterInvalidBeforeAsync(
+            Guid userId,
+            long issuedAtUnixTimeSeconds,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
     }
 
     private sealed class FakeUserInfoCacheInvalidationPublisher(List<string>? calls = null)
@@ -1242,7 +1363,9 @@ public sealed class UserManagementTests
         public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
 
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

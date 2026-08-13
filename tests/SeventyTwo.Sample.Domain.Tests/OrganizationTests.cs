@@ -56,10 +56,7 @@ public sealed class OrganizationTests
     [Fact]
     public void Update_ShouldChangeValuesAndAuditFields()
     {
-        var organization = new Organization(Guid.CreateVersion7(), "old", "旧名称")
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var organization = new Organization(Guid.CreateVersion7(), "old", "旧名称") { Version = Guid.CreateVersion7() };
         var updatedAt = DateTimeOffset.UtcNow;
 
         organization.Update(" new ", " 新名称 ", false, null, organization.Version, SystemIds.System, updatedAt, 2);
@@ -74,13 +71,18 @@ public sealed class OrganizationTests
     [Fact]
     public void Update_WithStaleVersion_ShouldFail()
     {
-        var organization = new Organization(Guid.CreateVersion7(), "code", "名称")
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var organization = new Organization(Guid.CreateVersion7(), "code", "名称") { Version = Guid.CreateVersion7() };
 
         var exception = Assert.Throws<OrganizationDomainException>(() =>
-            organization.Update("code", "名称", true, null, Guid.CreateVersion7(), SystemIds.System, DateTimeOffset.UtcNow)
+            organization.Update(
+                "code",
+                "名称",
+                true,
+                null,
+                Guid.CreateVersion7(),
+                SystemIds.System,
+                DateTimeOffset.UtcNow
+            )
         );
 
         Assert.Equal(MessageKeys.Organizations.DataChanged, exception.Message);
@@ -89,10 +91,7 @@ public sealed class OrganizationTests
     [Fact]
     public void Update_WithMissingUpdatedAt_ShouldNotChangeOrganization()
     {
-        var organization = new Organization(Guid.CreateVersion7(), "old", "旧名称")
-        {
-            Version = Guid.CreateVersion7(),
-        };
+        var organization = new Organization(Guid.CreateVersion7(), "old", "旧名称") { Version = Guid.CreateVersion7() };
 
         var exception = Assert.Throws<OrganizationDomainException>(() =>
             organization.Update("new", "新名称", false, null, organization.Version, SystemIds.System, default)

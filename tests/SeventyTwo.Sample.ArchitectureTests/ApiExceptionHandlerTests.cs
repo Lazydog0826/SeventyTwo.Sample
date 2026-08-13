@@ -40,10 +40,7 @@ public sealed class ApiExceptionHandlerTests
         );
     }
 
-    private static Task AssertDomainResponseAsync(
-        DomainErrorType errorType,
-        HttpStatusCode expectedStatusCode
-    ) =>
+    private static Task AssertDomainResponseAsync(DomainErrorType errorType, HttpStatusCode expectedStatusCode) =>
         AssertResponseAsync(
             new DomainException(MessageKeys.Products.NameRequired, errorType),
             MessageKeys.Products.NameRequired,
