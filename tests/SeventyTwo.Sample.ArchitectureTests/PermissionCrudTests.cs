@@ -96,6 +96,40 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task UserGet_ShouldReturnEmptyDefaultPagePathWhenPermissionIsDisabled()
+    {
+        var permission = CreatePermission("Default", PermissionType.Page, enable: false);
+        var user = new User(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            permission.Id
+        );
+        var (_, _, _, redisCacheService) = CreateCacheService();
+        var application = new UserApplication(
+            new FakeUserRepository(user),
+            null!,
+            new UserInfoCacheService(
+                new FakeUserRepository(user),
+                redisCacheService,
+                Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info-disabled" })
+            ),
+            new FakeUnitOfWork(),
+            null!,
+            null!,
+            null!,
+            new FakePermissionRepository([permission])
+        );
+
+        var output = await application.GetAsync(user.Id, CancellationToken.None);
+
+        Assert.Equal("", output.DefaultPagePath);
+    }
+
+    [Fact]
     public async Task UserInfoCache_ShouldReloadWhenCachedValueIsInvalidJson()
     {
         var userId = Guid.CreateVersion7();

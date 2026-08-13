@@ -39,6 +39,7 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             null!,
+            null!,
             null!
         );
 
@@ -59,6 +60,7 @@ public sealed class UserManagementTests
             null!,
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!,
             null!
@@ -83,6 +85,7 @@ public sealed class UserManagementTests
             organizationRepository,
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!,
             null!
@@ -133,7 +136,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             null!,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         await application.UpdateAsync(
@@ -166,7 +170,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             tokenCacheService,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         await application.SetEnableAsync(
@@ -194,7 +199,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             tokenCacheService,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -220,7 +226,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             tokenCacheService,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -246,7 +253,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             tokenCacheService,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         await application.DeleteAsync(user.Id, user.Version, CancellationToken.None);
@@ -272,7 +280,8 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             tokenCacheService,
-            cacheInvalidationPublisher
+            cacheInvalidationPublisher,
+            null!
         );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -291,6 +300,7 @@ public sealed class UserManagementTests
             new FakeOrganizationRepository(organization),
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!,
             null!
@@ -318,6 +328,7 @@ public sealed class UserManagementTests
             unitOfWork,
             null!,
             null!,
+            null!,
             null!
         );
 
@@ -342,6 +353,7 @@ public sealed class UserManagementTests
             new FakeOrganizationRepository(organization),
             null!,
             unitOfWork,
+            null!,
             null!,
             null!,
             null!
@@ -384,6 +396,7 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             null!,
+            null!,
             null!
         );
 
@@ -419,6 +432,7 @@ public sealed class UserManagementTests
             null!,
             null!,
             unitOfWork,
+            null!,
             null!,
             null!,
             null!
@@ -467,6 +481,7 @@ public sealed class UserManagementTests
             null!,
             null!,
             new FakeUnitOfWork(),
+            null!,
             null!,
             null!,
             null!
@@ -518,6 +533,7 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             null!,
             null!,
+            null!,
             null!
         );
 
@@ -546,6 +562,7 @@ public sealed class UserManagementTests
             new FakeUnitOfWork(),
             tokenService,
             tokenCacheService,
+            null!,
             null!
         );
 

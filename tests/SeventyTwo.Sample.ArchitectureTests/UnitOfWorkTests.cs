@@ -189,7 +189,8 @@ public sealed class UnitOfWorkTests
                 deleteFixture.UnitOfWork,
                 null!,
                 deletionGate,
-                new NoOpUserInfoCacheInvalidationPublisher()
+                new NoOpUserInfoCacheInvalidationPublisher(),
+                null!
             );
             var loginRepository = new LockRequestSignalingUserRepository(
                 new UserRepository(loginFixture.Database)
@@ -201,6 +202,7 @@ public sealed class UnitOfWorkTests
                 loginFixture.UnitOfWork,
                 new FixedTokenService(),
                 new SuccessfulTokenCacheService(),
+                null!,
                 null!
             );
 
