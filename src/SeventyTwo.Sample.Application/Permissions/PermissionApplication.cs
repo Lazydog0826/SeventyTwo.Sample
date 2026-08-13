@@ -1,3 +1,4 @@
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
@@ -22,7 +23,7 @@ public sealed class PermissionApplication(
 {
     /// <inheritdoc />
     public async Task<PermissionListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
-        ToListOutput(await GetRequiredAsync(id, cancellationToken));
+        (await GetRequiredAsync(id, cancellationToken)).Adapt<PermissionListOutput>();
 
     /// <inheritdoc />
     public async Task<PermissionListOutput> CreateAsync(
@@ -58,7 +59,7 @@ public sealed class PermissionApplication(
             },
             cancellationToken
         );
-        return ToListOutput(permission);
+        return permission.Adapt<PermissionListOutput>();
     }
 
     /// <inheritdoc />
@@ -120,7 +121,7 @@ public sealed class PermissionApplication(
     public async Task<IReadOnlyList<PermissionListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var permissions = await permissionRepository.GetListAsync(cancellationToken);
-        return [.. permissions.Select(ToListOutput)];
+        return permissions.Adapt<List<PermissionListOutput>>();
     }
 
     /// <inheritdoc />
@@ -133,11 +134,7 @@ public sealed class PermissionApplication(
         [
             .. permissions
                 .Where(permission => permission.Type == PermissionType.Page)
-                .Select(permission => new DefaultPageOptionOutput(
-                    permission.Id,
-                    permission.Title,
-                    permission.SortOrder
-                )),
+                .Select(permission => permission.Adapt<DefaultPageOptionOutput>()),
         ];
     }
 
@@ -150,20 +147,7 @@ public sealed class PermissionApplication(
         var permissions = allPermissions.Where(x => permissionCodeSet.Contains(x.Code)).ToList();
         var menus = permissions
             .Where(x => x.Type is PermissionType.Directory or PermissionType.Page)
-            .Select(x => new PermissionMenuOutput
-            {
-                Id = x.Id,
-                Code = x.Code,
-                Title = x.Title,
-                Type = x.Type,
-                SortOrder = x.SortOrder,
-                Icon = x.Icon,
-                VueComponentPath = x.VueComponentPath,
-                RoutePath = x.RoutePath,
-                RouteName = x.RouteName,
-                MetaData = x.MetaData,
-                ParentId = x.ParentId,
-            })
+            .Select(x => x.Adapt<PermissionMenuOutput>())
             .ToList();
 
         var buttonCodes = permissions
@@ -181,7 +165,7 @@ public sealed class PermissionApplication(
         var permissions = await permissionRepository.GetListAsync(cancellationToken);
         var associatedIds = await permissionRepository.GetIdsByUserIdAsync(userId, cancellationToken);
         return new UserAuthorizationOutput(
-            permissions.Select(ToListOutput).ToList(),
+            permissions.Adapt<List<PermissionListOutput>>(),
             associatedIds.Distinct().ToList()
         );
     }
@@ -326,28 +310,4 @@ public sealed class PermissionApplication(
         }
     }
 
-    /// <summary>
-    /// 将权限聚合转换为权限管理列表项。
-    /// </summary>
-    /// <param name="permission">权限聚合。</param>
-    /// <returns>权限管理列表项。</returns>
-    private static PermissionListOutput ToListOutput(Permission permission)
-    {
-        return new PermissionListOutput
-        {
-            Id = permission.Id,
-            Code = permission.Code,
-            Title = permission.Title,
-            Type = permission.Type,
-            Enable = permission.Enable,
-            SortOrder = permission.SortOrder,
-            Icon = permission.Icon,
-            VueComponentPath = permission.VueComponentPath,
-            RoutePath = permission.RoutePath,
-            RouteName = permission.RouteName,
-            MetaData = permission.MetaData,
-            ParentId = permission.ParentId,
-            Version = permission.Version,
-        };
-    }
 }

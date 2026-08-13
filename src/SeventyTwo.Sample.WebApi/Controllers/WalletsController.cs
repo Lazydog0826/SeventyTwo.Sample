@@ -1,3 +1,4 @@
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application.Wallets;
 using SeventyTwo.Sample.Application.Wallets.BalanceChange;
@@ -21,11 +22,6 @@ public sealed class WalletsController(IWalletApplication walletApplication) : Co
     [HttpPost("changes")]
     public Task BalanceChange(BalanceChangeRequest request, CancellationToken cancellationToken)
     {
-        var details = request
-            .Details.Select(x => new BalanceChangeDetailInput(x.Currency, x.ChangeType, x.Amount))
-            .ToList();
-        var input = new BalanceChangeInput(request.CustomerId, request.RequestNo, details);
-
-        return walletApplication.BalanceChangeAsync(input, cancellationToken);
+        return walletApplication.BalanceChangeAsync(request.Adapt<BalanceChangeInput>(), cancellationToken);
     }
 }

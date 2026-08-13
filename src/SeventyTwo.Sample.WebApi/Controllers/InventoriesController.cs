@@ -1,3 +1,4 @@
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application.Inventories;
 using SeventyTwo.Sample.Application.Inventories.ChangeInventory;
@@ -21,28 +22,6 @@ public sealed class InventoriesController(IInventoryApplication inventoryApplica
     [HttpPost("changes")]
     public async Task Change(ChangeInventoryRequest request, CancellationToken cancellationToken)
     {
-        var input = new ChangeInventoryInput(
-            request.RequestNo,
-            [
-                .. request.Increases.Select(x => new InventoryIncreaseInput(
-                    x.ProductId,
-                    x.WarehouseId,
-                    x.LocationId,
-                    x.Quantity,
-                    x.InboundBatchNo,
-                    x.ChangedAt
-                )),
-            ],
-            [
-                .. request.Decreases.Select(x => new InventoryDecreaseInput(
-                    x.ProductId,
-                    x.WarehouseId,
-                    x.LocationId,
-                    x.Quantity
-                )),
-            ]
-        );
-
-        await inventoryApplication.ChangeAsync(input, cancellationToken);
+        await inventoryApplication.ChangeAsync(request.Adapt<ChangeInventoryInput>(), cancellationToken);
     }
 }

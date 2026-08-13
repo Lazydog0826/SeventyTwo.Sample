@@ -1,3 +1,4 @@
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Domain;
@@ -10,7 +11,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
     : IOrganizationApplication
 {
     public async Task<OrganizationListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
-        ToListOutput(await GetRequiredAsync(id, cancellationToken));
+        (await GetRequiredAsync(id, cancellationToken)).Adapt<OrganizationListOutput>();
 
     public async Task<OrganizationListOutput> CreateAsync(
         CreateOrganizationInput input,
@@ -45,7 +46,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             },
             cancellationToken
         );
-        return ToListOutput(organization!);
+        return organization!.Adapt<OrganizationListOutput>();
     }
 
     public async Task UpdateAsync(Guid id, UpdateOrganizationInput input, CancellationToken cancellationToken)
@@ -102,7 +103,7 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
     public async Task<IReadOnlyList<OrganizationListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var organizations = await organizationRepository.GetListAsync(cancellationToken);
-        return organizations.Select(ToListOutput).ToList();
+        return organizations.Adapt<List<OrganizationListOutput>>();
     }
 
     private async Task<Organization> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
@@ -186,16 +187,4 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
             throw new OrganizationDomainException(MessageKeys.Organizations.SelfCannotBeParent);
         }
     }
-
-    private static OrganizationListOutput ToListOutput(Organization organization) =>
-        new()
-        {
-            Id = organization.Id,
-            Code = organization.Code,
-            Name = organization.Name,
-            Enable = organization.Enable,
-            ParentId = organization.ParentId,
-            SortOrder = organization.SortOrder,
-            Version = organization.Version,
-        };
 }

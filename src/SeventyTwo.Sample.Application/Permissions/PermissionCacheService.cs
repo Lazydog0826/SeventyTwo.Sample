@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
@@ -45,6 +46,7 @@ public sealed class PermissionCacheService(
     IOptions<CacheConfiguration> cacheConfiguration
 )
 {
+    private static readonly TypeAdapterConfig CacheMappingConfig = CreateCacheMappingConfig();
     private const int BucketSize = 10;
     private static readonly TimeSpan VersionCacheExpiration = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan MetaCacheExpiration = TimeSpan.FromMinutes(31);
@@ -282,56 +284,37 @@ public sealed class PermissionCacheService(
     {
         public static PermissionCacheItem FromPermission(Permission permission)
         {
-            return new PermissionCacheItem(
-                permission.Id,
-                permission.Code,
-                permission.Title,
-                permission.Type,
-                permission.SortOrder,
-                permission.Icon,
-                permission.VueComponentPath,
-                permission.RoutePath,
-                permission.RouteName,
-                permission.ParentId,
-                permission.MetaData,
-                permission.Enable,
-                permission.DeleteBy,
-                permission.DeleteAt,
-                permission.CreatedBy,
-                permission.CreatedAt,
-                permission.UpdatedBy,
-                permission.UpdatedAt,
-                permission.OrgId,
-                permission.Version
-            );
+            return permission.Adapt<PermissionCacheItem>(CacheMappingConfig);
         }
 
         public Permission ToPermission()
         {
-            return new Permission(
-                Id,
-                Code,
-                Title,
-                Type,
-                SortOrder,
-                Icon,
-                VueComponentPath,
-                RoutePath,
-                RouteName,
-                ParentId,
-                MetaData
-            )
-            {
-                Enable = Enable,
-                DeleteBy = DeleteBy,
-                DeleteAt = DeleteAt,
-                CreatedBy = CreatedBy,
-                CreatedAt = CreatedAt,
-                UpdatedBy = UpdatedBy,
-                UpdatedAt = UpdatedAt,
-                OrgId = OrgId,
-                Version = Version,
-            };
+            return this.Adapt<Permission>(CacheMappingConfig);
         }
+    }
+
+    /// <summary>
+    /// 创建缓存传输对象与权限聚合之间的隔离映射配置，避免污染应用全局配置。
+    /// </summary>
+    private static TypeAdapterConfig CreateCacheMappingConfig()
+    {
+        var config = new TypeAdapterConfig();
+        config.NewConfig<Permission, PermissionCacheItem>();
+        config
+            .NewConfig<PermissionCacheItem, Permission>()
+            .ConstructUsing(source => new Permission(
+                source.Id,
+                source.Code,
+                source.Title,
+                source.Type,
+                source.SortOrder,
+                source.Icon,
+                source.VueComponentPath,
+                source.RoutePath,
+                source.RouteName,
+                source.ParentId,
+                source.MetaData
+            ));
+        return config;
     }
 }

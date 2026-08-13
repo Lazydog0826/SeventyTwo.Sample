@@ -1,3 +1,4 @@
+using Mapster;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
@@ -25,9 +26,7 @@ public sealed class BalanceChangeService(
     public async Task BalanceChangeAsync(BalanceChangeCommand command, CancellationToken cancellationToken)
     {
         var walletTypes = command.Details.Select(x => x.WalletType).Distinct().ToList();
-        var requests = command
-            .Details.Select(x => new WalletBalanceChangeRequest(x.WalletType, x.ChangeType, x.Amount))
-            .ToList();
+        var requests = command.Details.Adapt<List<WalletBalanceChangeRequest>>();
 
         var allKeys = new List<string> { command.CustomerId.ToString() };
         var keys = await CheckWalletKeysExistAsync(allKeys);

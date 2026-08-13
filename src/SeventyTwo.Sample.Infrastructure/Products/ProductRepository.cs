@@ -1,5 +1,5 @@
 using SeventyTwo.InfraKit.Autofac;
-using SeventyTwo.InfraKit.Extension;
+using Mapster;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
@@ -18,7 +18,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
         var record = await db.Queryable<ProductRecord>()
             .Where(x => x.Id == id && x.DeleteAt == null)
             .FirstAsync(cancellationToken);
-        return record is null ? null : ToDomain(record);
+        return record?.Adapt<Product>();
     }
 
     /// <inheritdoc />
@@ -30,23 +30,13 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             .Skip((request.Index - 1) * request.Limit)
             .Take(request.Limit)
             .ToListAsync(cancellationToken);
-        return new ProductPage([.. records.Select(ToDomain)], total);
+        return new ProductPage(records.Adapt<List<Product>>(), total);
     }
 
     /// <inheritdoc />
     public async Task AddAsync(Product product, CancellationToken cancellationToken)
     {
-        var record = new ProductRecord
-        {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Enable = true,
-            CreatedBy = SystemIds.System,
-            CreatedAt = DateTimeExtension.Now(),
-            OrgId = Guid.Empty,
-            Version = Guid.CreateVersion7(),
-        };
+        var record = product.Adapt<ProductRecord>();
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);
         record.AggregateRootToEntity(product);
     }
@@ -96,17 +86,5 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
         }
 
         product.Version = nextVersion;
-    }
-
-    /// <summary>
-    /// 将商品持久化模型转换为领域聚合。
-    /// </summary>
-    /// <param name="record">商品持久化模型。</param>
-    /// <returns>商品聚合。</returns>
-    private Product ToDomain(ProductRecord record)
-    {
-        var product = new Product(record.Id, record.Name, record.Price);
-        record.AggregateRootToEntity(product);
-        return product;
     }
 }

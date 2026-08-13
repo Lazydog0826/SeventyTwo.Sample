@@ -34,13 +34,13 @@ public sealed class UserApplication(
         {
             throw new UserDomainException(MessageKeys.Users.SuperAdminProtected, DomainErrorType.Conflict);
         }
-        return ToListOutput(user);
+        return user.Adapt<UserListOutput>();
     }
 
     public async Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken)
     {
         var users = await userRepository.GetListAsync(cancellationToken);
-        return [.. users.Select(ToListOutput)];
+        return users.Adapt<List<UserListOutput>>();
     }
 
     public async Task<UserListOutput> CreateAsync(CreateUserInput input, CancellationToken cancellationToken)
@@ -79,7 +79,7 @@ public sealed class UserApplication(
             },
             cancellationToken
         );
-        return ToListOutput(user!);
+        return user!.Adapt<UserListOutput>();
     }
 
     public async Task UpdateAsync(Guid id, UpdateUserInput input, CancellationToken cancellationToken)
@@ -312,16 +312,4 @@ public sealed class UserApplication(
             throw new UserDomainException(MessageKeys.Users.DefaultPageInvalid);
     }
 
-    private static UserListOutput ToListOutput(User user) =>
-        new(
-            user.Id,
-            user.Username,
-            user.DisplayName,
-            user.Phone,
-            user.Email,
-            user.Enable,
-            user.OrgId,
-            user.Version,
-            user.DefaultPageId
-        );
 }

@@ -1,3 +1,4 @@
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Application.Inventories.ChangeInventory;
 using SeventyTwo.Sample.Application.Inventories.StorageFeeCalc;
@@ -10,21 +11,7 @@ public sealed class InventoryApplication(IChangeInventoryService changeInventory
 {
     public async Task ChangeAsync(ChangeInventoryInput input, CancellationToken cancellationToken)
     {
-        var increases = input
-            .Increases.Select(x => new InventoryIncreaseDraft(
-                x.ProductId,
-                x.WarehouseId,
-                x.LocationId,
-                x.Quantity,
-                x.InboundBatchNo,
-                x.ChangedAt
-            ))
-            .ToList();
-        var decreases = input
-            .Decreases.Select(x => new InventoryDecreaseDraft(x.ProductId, x.WarehouseId, x.LocationId, x.Quantity))
-            .ToList();
-
-        var draft = new InventoryChangeDraft(input.RequestNo, increases, decreases);
+        var draft = input.Adapt<InventoryChangeDraft>();
         await changeInventoryService.ChangeAsync(draft, cancellationToken);
     }
 

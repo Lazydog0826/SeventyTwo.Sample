@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Common.MessageKeys;
@@ -22,7 +23,7 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
         }
 
         record.Items.AddRange(await GetItemRecordsAsync([id], cancellationToken));
-        return ToDomain(record);
+        return record.Adapt<DataDictionary>();
     }
 
     public async Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken)
@@ -41,7 +42,7 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
         }
 
         record.Items.AddRange(await GetItemRecordsAsync([record.Id], cancellationToken));
-        return ToDomain(record);
+        return record.Adapt<DataDictionary>();
     }
 
     public async Task<IReadOnlyList<DataDictionary>> GetListAsync(CancellationToken cancellationToken)
@@ -61,7 +62,7 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
             }
         }
 
-        return records.Select(ToDomain).ToList();
+        return records.Adapt<List<DataDictionary>>();
     }
 
     public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken)
@@ -112,7 +113,7 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
             .ExecuteCommandAsync(cancellationToken);
         if (dictionary.Items.Count > 0)
         {
-            var records = dictionary.Items.Select(ToRecord).ToList();
+            var records = dictionary.Items.Adapt<List<DataDictionaryItemRecord>>();
             await db.Insertable(records).ExecuteCommandAsync(cancellationToken);
         }
 
@@ -219,27 +220,4 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
             .ToListAsync(cancellationToken);
     }
 
-    private static DataDictionary ToDomain(DataDictionaryRecord record)
-    {
-        var items = record.Items.Select(item => new DataDictionaryItem(
-            item.Id,
-            item.DictionaryId,
-            item.Value,
-            item.Label,
-            item.SortOrder
-        ));
-        var dictionary = new DataDictionary(record.Id, record.Code, record.Name, record.Description, items);
-        record.AggregateRootToEntity(dictionary);
-        return dictionary;
-    }
-
-    private static DataDictionaryItemRecord ToRecord(DataDictionaryItem item) =>
-        new()
-        {
-            Id = item.Id,
-            DictionaryId = item.DictionaryId,
-            Value = item.Value,
-            Label = item.Label,
-            SortOrder = item.SortOrder,
-        };
 }
