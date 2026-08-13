@@ -1,6 +1,8 @@
 using System.Data.Common;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.Options;
+using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.DataDictionaries;
 using SeventyTwo.Sample.Common.MessageKeys;
@@ -50,7 +52,7 @@ public sealed class DataDictionaryCrudTests
         enabled.AddItem(Guid.CreateVersion7(), "B", "乙", 2, enabled.Version, Guid.Empty, DateTimeOffset.UtcNow);
         enabled.AddItem(Guid.CreateVersion7(), "A", "甲", 1, enabled.Version, Guid.Empty, DateTimeOffset.UtcNow);
         var repository = new FakeRepository([enabled]);
-        var application = new DataDictionaryApplication(repository, new FakeUnitOfWork());
+        var application = CreateApplication(repository);
 
         await Assert.ThrowsAsync<DataDictionaryDomainException>(() =>
             application.CreateAsync(new("ENABLED", "重复", null, true), CancellationToken.None)
@@ -58,6 +60,39 @@ public sealed class DataDictionaryCrudTests
         var options = await application.GetOptionsByCodeAsync("ENABLED", CancellationToken.None);
 
         Assert.Equal(["A", "B"], options.Select(option => option.Value));
+    }
+
+    [Fact]
+    public async Task ApplicationGetOptions_ShouldReuseCache()
+    {
+        var dictionary = CreateDictionary("STATUS", true);
+        dictionary.AddItem(Guid.CreateVersion7(), "1", "启用", 0, dictionary.Version, Guid.Empty, DateTimeOffset.UtcNow);
+        var repository = new FakeRepository([dictionary]);
+        var application = CreateApplication(repository);
+
+        var first = await application.GetOptionsByCodeAsync("STATUS", CancellationToken.None);
+        var second = await application.GetOptionsByCodeAsync("STATUS", CancellationToken.None);
+
+        Assert.Equal("1", Assert.Single(first).Value);
+        Assert.Equal("1", Assert.Single(second).Value);
+        Assert.Equal(1, repository.FindEnabledByCodeCount);
+    }
+
+    [Fact]
+    public async Task ApplicationUpdate_ShouldPublishOldAndNewCodesForInvalidation()
+    {
+        var dictionary = CreateDictionary("OLD", true);
+        var repository = new FakeRepository([dictionary]);
+        var publisher = new FakeCacheInvalidationPublisher();
+        var application = CreateApplication(repository, publisher);
+
+        await application.UpdateAsync(
+            dictionary.Id,
+            new("NEW", "新名称", null, true, dictionary.Version),
+            CancellationToken.None
+        );
+
+        Assert.Equal(["OLD", "NEW"], Assert.Single(publisher.PublishedCodes));
     }
 
     [Fact]
@@ -135,7 +170,7 @@ public sealed class DataDictionaryCrudTests
     [InlineData(int.MaxValue, 100, MessageKeys.Paging.PageOffsetOutOfRange)]
     public async Task ApplicationGetPage_ShouldValidatePaging(int index, int limit, string message)
     {
-        var application = new DataDictionaryApplication(new FakeRepository([]), new FakeUnitOfWork());
+        var application = CreateApplication(new FakeRepository([]));
 
         var exception = await Assert.ThrowsAsync<DataDictionaryDomainException>(() =>
             application.GetPageAsync(
@@ -166,12 +201,41 @@ public sealed class DataDictionaryCrudTests
         return dictionary;
     }
 
+    private static DataDictionaryApplication CreateApplication(
+        FakeRepository repository,
+        FakeCacheInvalidationPublisher? publisher = null
+    )
+    {
+        var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
+        var cacheService = new DataDictionaryCacheService(
+            new FakeRedisCacheService(database),
+            Options.Create(new CacheConfiguration { KeyNamespace = "tests-data-dictionaries" })
+        );
+        return new DataDictionaryApplication(
+            repository,
+            cacheService,
+            publisher ?? new FakeCacheInvalidationPublisher(),
+            new FakeUnitOfWork()
+        );
+    }
+
     private static SqlSugarClient CreateDatabase(string path) =>
         new(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={path};Pooling=False", IsAutoCloseConnection = true });
 
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken) => action();
+    }
+
+    private sealed class FakeCacheInvalidationPublisher : IDataDictionaryCacheInvalidationPublisher
+    {
+        public List<string[]> PublishedCodes { get; } = [];
+
+        public Task PublishAsync(IReadOnlyCollection<string> codes, CancellationToken cancellationToken)
+        {
+            PublishedCodes.Add([.. codes]);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestDbException(string sqlState) : DbException
@@ -182,8 +246,13 @@ public sealed class DataDictionaryCrudTests
     private sealed class FakeRepository(IEnumerable<DataDictionary> dictionaries) : IDataDictionaryRepository
     {
         private readonly List<DataDictionary> items = [.. dictionaries];
+        public int FindEnabledByCodeCount { get; private set; }
         public Task<DataDictionary?> FindAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(items.SingleOrDefault(item => item.Id == id));
-        public Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken) => Task.FromResult(items.SingleOrDefault(item => item.Enable && item.Code == code));
+        public Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken)
+        {
+            FindEnabledByCodeCount++;
+            return Task.FromResult(items.SingleOrDefault(item => item.Enable && item.Code == code));
+        }
         public Task<DataDictionaryPage> GetPageAsync(DataDictionaryPageRequest request, CancellationToken cancellationToken) => Task.FromResult(new DataDictionaryPage(items, items.Count));
         public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken) => Task.FromResult(items.Any(item => item.Code == code && item.Id != excludedId));
         public Task AddAsync(DataDictionary dictionary, CancellationToken cancellationToken) { items.Add(dictionary); return Task.CompletedTask; }
