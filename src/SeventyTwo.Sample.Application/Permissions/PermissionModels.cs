@@ -1,5 +1,6 @@
 using SeventyTwo.Sample.Domain.Permissions;
 
+// ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable NotAccessedPositionalProperty.Global
 
@@ -20,6 +21,7 @@ public sealed record PermissionListOutput
     public string RouteName { get; init; } = string.Empty;
     public PermissionMetaData MetaData { get; init; }
     public Guid? ParentId { get; init; }
+    public string Path { get; init; } = string.Empty;
     public Guid Version { get; init; }
 }
 
@@ -80,4 +82,5 @@ public sealed record PermissionMenuOutput
     public string RouteName { get; init; } = string.Empty;
     public PermissionMetaData MetaData { get; init; }
     public Guid? ParentId { get; init; }
+    public string Path { get; init; } = string.Empty;
 }

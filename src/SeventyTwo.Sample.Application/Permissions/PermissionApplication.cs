@@ -31,35 +31,38 @@ public sealed class PermissionApplication(
         CancellationToken cancellationToken
     )
     {
-        var permission = new Permission(
-            Guid.CreateVersion7(),
-            input.Code,
-            input.Title,
-            input.Type,
-            input.SortOrder,
-            input.Icon,
-            input.VueComponentPath,
-            input.RoutePath,
-            input.RouteName,
-            input.ParentId,
-            input.MetaData
-        )
-        {
-            Enable = input.Enable,
-        };
+        var id = Guid.CreateVersion7();
+        Permission? permission = null;
         await unitOfWork.ExecuteAsync(
             async () =>
             {
                 await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
+                var parent = await ValidateParentAsync(id, input.ParentId, cancellationToken);
+                permission = new Permission(
+                    id,
+                    input.Code,
+                    input.Title,
+                    input.Type,
+                    input.SortOrder,
+                    input.Icon,
+                    input.VueComponentPath,
+                    input.RoutePath,
+                    input.RouteName,
+                    input.ParentId,
+                    input.MetaData,
+                    parent is null ? null : $"{parent.Path}/{id}"
+                )
+                {
+                    Enable = input.Enable,
+                };
                 await ValidateCodeAsync(permission.Code, null, cancellationToken);
-                await ValidateParentAsync(permission.Id, permission.ParentId, cancellationToken);
                 await permissionRepository.AddAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
             },
             cancellationToken
         );
-        return permission.Adapt<PermissionListOutput>();
+        return permission!.Adapt<PermissionListOutput>();
     }
 
     /// <inheritdoc />
@@ -76,7 +79,7 @@ public sealed class PermissionApplication(
                 await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
                 var permission = await GetRequiredAsync(id, cancellationToken);
                 await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
-                await ValidateParentAsync(id, input.ParentId, cancellationToken);
+                var parent = await ValidateParentAsync(id, input.ParentId, cancellationToken);
                 permission.Update(
                     input.Code,
                     input.Title,
@@ -93,6 +96,7 @@ public sealed class PermissionApplication(
                     SystemIds.System,
                     DateTimeExtension.Now()
                 );
+                permission.ChangePath(parent?.Path);
                 await permissionRepository.SaveAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
@@ -276,16 +280,21 @@ public sealed class PermissionApplication(
     /// <param name="id">当前权限 ID。</param>
     /// <param name="parentId">候选上级权限 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    private async Task ValidateParentAsync(Guid id, Guid? parentId, CancellationToken cancellationToken)
+    private async Task<Permission?> ValidateParentAsync(Guid id, Guid? parentId, CancellationToken cancellationToken)
     {
+        if (parentId == Guid.Empty)
+        {
+            throw new PermissionDomainException(MessageKeys.Permissions.ParentIdRequired);
+        }
+
         if (parentId is null)
         {
-            return;
+            return null;
         }
 
         var permissions = await permissionRepository.GetListAsync(cancellationToken);
         var byId = permissions.ToDictionary(permission => permission.Id);
-        if (!byId.ContainsKey(parentId.Value))
+        if (!byId.TryGetValue(parentId.Value, out var parent))
         {
             throw new PermissionDomainException(MessageKeys.Permissions.ParentNotFound, DomainErrorType.NotFound);
         }
@@ -308,5 +317,6 @@ public sealed class PermissionApplication(
 
             currentId = byId.TryGetValue(currentId.Value, out var current) ? current.ParentId : null;
         }
+        return parent;
     }
 }

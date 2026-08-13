@@ -85,6 +85,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
             RoutePath = permission.RoutePath,
             RouteName = permission.RouteName,
             ParentId = permission.ParentId,
+            Path = permission.Path,
             MetaData = permission.MetaData,
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
@@ -98,6 +99,15 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
     /// <inheritdoc />
     public async Task SaveAsync(Permission permission, CancellationToken cancellationToken)
     {
+        var persisted = await db.Queryable<PermissionRecord>()
+            .Where(entity => entity.Id == permission.Id && entity.DeleteAt == null)
+            .FirstAsync(cancellationToken);
+        if (persisted is null)
+        {
+            throw new PermissionDomainException(MessageKeys.Permissions.NotFound, DomainErrorType.NotFound);
+        }
+
+        var oldPath = persisted.Path;
         var nextVersion = Guid.CreateVersion7();
         var record = new PermissionRecord
         {
@@ -112,6 +122,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
             RoutePath = permission.RoutePath,
             RouteName = permission.RouteName,
             ParentId = permission.ParentId,
+            Path = permission.Path,
             MetaData = permission.MetaData,
             UpdatedBy = permission.UpdatedBy,
             UpdatedAt = permission.UpdatedAt,
@@ -130,6 +141,7 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
                 permissionRecord.RoutePath,
                 permissionRecord.RouteName,
                 permissionRecord.ParentId,
+                permissionRecord.Path,
                 permissionRecord.MetaData,
                 permissionRecord.UpdatedBy,
                 permissionRecord.UpdatedAt,
@@ -153,6 +165,36 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
         }
 
         permission.Version = nextVersion;
+
+        if (oldPath != permission.Path)
+        {
+            var descendantPrefix = $"{oldPath}/";
+            var descendants = await db.Queryable<PermissionRecord>()
+                .Where(entity => entity.Path.StartsWith(descendantPrefix) && entity.DeleteAt == null)
+                .ToListAsync(cancellationToken);
+            var descendantUpdates = descendants
+                .Select(descendant => new PermissionRecord
+                {
+                    Id = descendant.Id,
+                    Path = $"{permission.Path}{descendant.Path[oldPath.Length..]}",
+                    Version = Guid.CreateVersion7(),
+                    UpdatedBy = permission.UpdatedBy,
+                    UpdatedAt = permission.UpdatedAt,
+                })
+                .ToList();
+            if (descendantUpdates.Count > 0)
+            {
+                await db.Updateable(descendantUpdates)
+                    .UpdateColumns(entity => new
+                    {
+                        entity.Path,
+                        entity.Version,
+                        entity.UpdatedBy,
+                        entity.UpdatedAt,
+                    })
+                    .ExecuteCommandAsync(cancellationToken);
+            }
+        }
     }
 
     /// <inheritdoc />

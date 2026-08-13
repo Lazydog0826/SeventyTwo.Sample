@@ -67,6 +67,12 @@ internal sealed class PermissionRecord : BaseEntity
     public Guid? ParentId { get; init; }
 
     /// <summary>
+    /// 由权限 ID 组成的完整层级路径。
+    /// </summary>
+    [SugarColumn(ColumnName = "path", ColumnDataType = "text")]
+    public string Path { get; init; } = string.Empty;
+
+    /// <summary>
     /// 路由元数据。
     /// </summary>
     [SugarColumn(ColumnName = "meta_data", ColumnDataType = "jsonb", IsJson = true)]

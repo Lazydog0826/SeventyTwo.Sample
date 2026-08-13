@@ -18,7 +18,8 @@ public sealed class Permission : AggregateRoot
         string? routePath,
         string? routeName,
         Guid? parentId,
-        PermissionMetaData? metaData = null
+        PermissionMetaData? metaData = null,
+        string? path = null
     )
     {
         if (id == Guid.Empty)
@@ -28,6 +29,7 @@ public sealed class Permission : AggregateRoot
 
         Id = id;
         SetInfo(code, title, type, sortOrder, icon, vueComponentPath, routePath, routeName, parentId, metaData);
+        Path = parentId is null ? id.ToString() : RequirePath(path);
     }
 
     /// <summary>
@@ -200,9 +202,22 @@ public sealed class Permission : AggregateRoot
     public Guid? ParentId { get; private set; }
 
     /// <summary>
+    /// 由权限 ID 组成的完整层级路径。
+    /// </summary>
+    public string Path { get; private set; } = string.Empty;
+
+    /// <summary>
     /// 路由元数据。
     /// </summary>
     public PermissionMetaData MetaData { get; private set; }
+
+    /// <summary>
+    /// 根据新的上级权限更新层级路径；上级为空时重置为根路径。
+    /// </summary>
+    public void ChangePath(string? parentPath)
+    {
+        Path = parentPath is null ? Id.ToString() : $"{RequirePath(parentPath)}/{Id}";
+    }
 
     private static string RequireText(string? value, string message)
     {
@@ -212,5 +227,12 @@ public sealed class Permission : AggregateRoot
     private static string NormalizeOptionalText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    private static string RequirePath(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path)
+            ? throw new ArgumentException("上级权限 Path 不能为空。", nameof(path))
+            : path;
     }
 }
