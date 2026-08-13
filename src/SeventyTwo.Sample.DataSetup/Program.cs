@@ -76,6 +76,7 @@ try
                 DisplayName = displayName,
                 Phone = phone,
                 Email = email,
+                DefaultPageId = homePermissionId,
                 OrgId = Guid.Empty,
             }
         )
