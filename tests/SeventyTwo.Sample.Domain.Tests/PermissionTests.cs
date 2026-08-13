@@ -17,7 +17,7 @@ public sealed class PermissionTests
             "子权限",
             PermissionType.Page,
             0,
-            null,
+            string.Empty,
             "/src/views/child.vue",
             "/child",
             "Child",
@@ -55,14 +55,14 @@ public sealed class PermissionTests
     }
 
     [Theory]
-    [InlineData(null, MessageKeys.Permissions.VueComponentPathRequired)]
+    [InlineData("", MessageKeys.Permissions.VueComponentPathRequired)]
     [InlineData("route", MessageKeys.Permissions.RoutePathRequired)]
     [InlineData("name", MessageKeys.Permissions.RouteNameRequired)]
-    public void CreatePage_WithMissingRouteInformation_ShouldFail(string? missingField, string expectedMessage)
+    public void CreatePage_WithMissingRouteInformation_ShouldFail(string missingField, string expectedMessage)
     {
-        var vueComponentPath = missingField == null ? null : "Page.vue";
-        var routePath = missingField == "route" ? null : "/page";
-        var routeName = missingField == "name" ? null : "Page";
+        var vueComponentPath = missingField.Length == 0 ? string.Empty : "Page.vue";
+        var routePath = missingField == "route" ? string.Empty : "/page";
+        var routeName = missingField == "name" ? string.Empty : "Page";
 
         var exception = Assert.Throws<PermissionDomainException>(() =>
             new Permission(
@@ -71,7 +71,7 @@ public sealed class PermissionTests
                 "页面",
                 PermissionType.Page,
                 0,
-                null,
+                string.Empty,
                 vueComponentPath,
                 routePath,
                 routeName,
@@ -87,7 +87,18 @@ public sealed class PermissionTests
     public void CreateButton_WithoutParent_ShouldFail()
     {
         var exception = Assert.Throws<PermissionDomainException>(() =>
-            new Permission(Guid.CreateVersion7(), "button", "按钮", PermissionType.Button, 0, null, null, null, null, null)
+            new Permission(
+                Guid.CreateVersion7(),
+                "button",
+                "按钮",
+                PermissionType.Button,
+                0,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                null
+            )
         );
 
         Assert.Equal(MessageKeys.Permissions.ButtonParentRequired, exception.Message);
@@ -105,7 +116,7 @@ public sealed class PermissionTests
                 PermissionType.Page,
                 false,
                 -1,
-                null,
+                string.Empty,
                 "Changed.vue",
                 "/changed",
                 "Changed",
@@ -131,7 +142,7 @@ public sealed class PermissionTests
             " 页面 ",
             PermissionType.Page,
             0,
-            null,
+            string.Empty,
             " Page.vue ",
             " /page ",
             " Page ",

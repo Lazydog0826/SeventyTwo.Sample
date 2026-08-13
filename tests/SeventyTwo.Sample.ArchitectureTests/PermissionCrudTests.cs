@@ -148,7 +148,7 @@ public sealed class PermissionCrudTests
         var redisDatabase = (InMemoryRedisDatabase)(object)database;
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var cacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{userId}");
+        var cacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
         redisDatabase.SetString(cacheKey, "invalid json");
         var service = new UserInfoCacheService(
             userRepository,
@@ -177,8 +177,8 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var inMemoryDatabase = (InMemoryRedisDatabase)(object)database;
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var userCacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{userId}");
-        var otherUserCacheKey = cacheConfiguration.Value.Data("users", $"info:v2:{otherUserId}");
+        var userCacheKey = cacheConfiguration.Value.Data("users", $"info:{userId}");
+        var otherUserCacheKey = cacheConfiguration.Value.Data("users", $"info:{otherUserId}");
         inMemoryDatabase.SetString(userCacheKey, "cached-user");
         inMemoryDatabase.SetString(otherUserCacheKey, "cached-other-user");
         var userInfoCacheService = new UserInfoCacheService(
@@ -356,9 +356,9 @@ public sealed class PermissionCrudTests
             false,
             9,
             "Folder",
-            null,
-            null,
-            null,
+            string.Empty,
+            string.Empty,
+            string.Empty,
             null,
             new PermissionMetaData(false),
             version,
@@ -378,9 +378,9 @@ public sealed class PermissionCrudTests
                 true,
                 0,
                 "Folder",
-                null,
-                null,
-                null,
+                string.Empty,
+                string.Empty,
+                string.Empty,
                 null,
                 new PermissionMetaData(true),
                 Guid.CreateVersion7(),
@@ -433,7 +433,7 @@ public sealed class PermissionCrudTests
             "Page",
             PermissionType.Page,
             0,
-            null,
+            string.Empty,
             "/src/views/Page.vue",
             "/Page",
             "Page",
@@ -684,7 +684,8 @@ public sealed class PermissionCrudTests
     [Fact]
     public async Task RedisCache_ShouldReturnCompleteCachedPermissionWithoutReloading()
     {
-        var permission = CreatePermission("Cached", PermissionType.Page);
+        var parentId = Guid.CreateVersion7();
+        var permission = CreatePermission("Cached", PermissionType.Page, parentId);
         permission.CreatedAt = DateTimeOffset.Parse("2026-08-09T01:02:03+00:00");
         permission.UpdatedBy = Guid.CreateVersion7();
         permission.UpdatedAt = DateTimeOffset.Parse("2026-08-09T02:03:04+00:00");
@@ -714,12 +715,46 @@ public sealed class PermissionCrudTests
         Assert.Equal(1, loadCount);
         Assert.Equal(permission.Id, cachedPermission.Id);
         Assert.Equal(permission.Code, cachedPermission.Code);
+        Assert.Equal(permission.Path, cachedPermission.Path);
         Assert.Equal(permission.MetaData, cachedPermission.MetaData);
         Assert.Equal(permission.CreatedAt, cachedPermission.CreatedAt);
         Assert.Equal(permission.UpdatedBy, cachedPermission.UpdatedBy);
         Assert.Equal(permission.UpdatedAt, cachedPermission.UpdatedAt);
         Assert.Equal(permission.OrgId, cachedPermission.OrgId);
         Assert.Equal(permission.Version, cachedPermission.Version);
+    }
+
+    [Fact]
+    public async Task RedisCache_ShouldReloadWhenLegacyChildPermissionHasNoPath()
+    {
+        var parentId = Guid.CreateVersion7();
+        var permission = CreatePermission("LegacyCached", PermissionType.Page, parentId);
+        var (cacheService, database, configuration, _) = CreateCacheService();
+        var loadCount = 0;
+
+        Task<IReadOnlyList<Permission>> LoadAsync(CancellationToken _)
+        {
+            loadCount++;
+            return Task.FromResult<IReadOnlyList<Permission>>([permission]);
+        }
+
+        await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None);
+        var version = database.GetString(PermissionCacheKeys.GetAllPermissionsVersionKey(configuration));
+        var metaValue = database.GetString(
+            PermissionCacheKeys.GetAllPermissionsMetaKey(configuration, version.ToString())
+        );
+        var bucketKey = Assert.Single(
+            JsonSerializer.Deserialize<PermissionCacheMeta>(metaValue.ToString())!.BucketKeys
+        );
+        var bucketValue = database.GetString(bucketKey).ToString();
+        var legacyBucketValue = bucketValue.Replace($",\"Path\":\"{permission.Path}\"", string.Empty);
+        Assert.NotEqual(bucketValue, legacyBucketValue);
+        database.SetString(bucketKey, legacyBucketValue);
+
+        var cachedPermissions = await cacheService.GetOrLoadAsync(LoadAsync, CancellationToken.None);
+
+        Assert.Equal(2, loadCount);
+        Assert.Equal(permission.Path, Assert.Single(cachedPermissions).Path);
     }
 
     [Fact]
@@ -893,10 +928,10 @@ public sealed class PermissionCrudTests
                 PermissionType.Button,
                 true,
                 9,
-                null,
-                null,
-                null,
-                null,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
                 parentId,
                 default,
                 originalVersion,
@@ -1047,12 +1082,12 @@ public sealed class PermissionCrudTests
             type,
             0,
             type == PermissionType.Directory ? "Folder" : string.Empty,
-            type == PermissionType.Page ? $"/src/views/{code}.vue" : null,
-            type == PermissionType.Page ? $"/{code}" : null,
-            type == PermissionType.Page ? code : null,
+            type == PermissionType.Page ? $"/src/views/{code}.vue" : string.Empty,
+            type == PermissionType.Page ? $"/{code}" : string.Empty,
+            type == PermissionType.Page ? code : string.Empty,
             parentId,
             new PermissionMetaData(true),
-            parentId is null ? null : $"{parentId}/{id}"
+            parentId is null ? string.Empty : $"{parentId}/{id}"
         )
         {
             Enable = enable,
@@ -1087,7 +1122,7 @@ public sealed class PermissionCrudTests
             PermissionType.Page,
             true,
             0,
-            null,
+            string.Empty,
             $"/src/views/{code}.vue",
             $"/{code}",
             code,
