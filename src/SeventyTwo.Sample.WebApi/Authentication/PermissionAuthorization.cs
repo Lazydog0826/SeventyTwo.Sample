@@ -45,6 +45,8 @@ public sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> opti
     /// </summary>
     public override Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
+        // 规范：权限策略名只能由 PermissionAttribute 生成，不得手写 JSON 策略名；
+        // 可反序列化的空 PermissionCodes 在 All 模式下会按空集匹配成功。
         PermissionAttributeData? permissionAttributeData;
         try
         {
