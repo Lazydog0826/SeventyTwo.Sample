@@ -8,7 +8,15 @@ public sealed class UserTests
     [Fact]
     public void Create_ShouldNormalizeRequiredProfileFields()
     {
-        var user = new User(Guid.CreateVersion7(), " user ", "hash", " 张三 ", " 13800000000 ", " a@example.com ");
+        var user = new User(
+            Guid.CreateVersion7(),
+            " user ",
+            "hash",
+            " 张三 ",
+            " 13800000000 ",
+            " a@example.com ",
+            DataPermissionType.Self
+        );
 
         Assert.Equal("user", user.Username);
         Assert.Equal("张三", user.DisplayName);
@@ -23,7 +31,7 @@ public sealed class UserTests
     public void Create_WithMissingProfileField_ShouldFail(string name, string phone, string email, string message)
     {
         var exception = Assert.Throws<UserDomainException>(() =>
-            new User(Guid.CreateVersion7(), "user", "hash", name, phone, email)
+            new User(Guid.CreateVersion7(), "user", "hash", name, phone, email, DataPermissionType.Self)
         );
         Assert.Equal(message, exception.Message);
     }
@@ -36,6 +44,40 @@ public sealed class UserTests
         );
 
         Assert.Equal(MessageKeys.Users.UsernameReserved, exception.Message);
+    }
+
+    [Fact]
+    public void Create_WithDataPermissionType_ShouldSetDataPermissionType()
+    {
+        var user = new User(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            DataPermissionType.OrganizationAndDescendants
+        );
+
+        Assert.Equal(DataPermissionType.OrganizationAndDescendants, user.DataPermissionType);
+    }
+
+    [Fact]
+    public void Create_WithInvalidDataPermissionType_ShouldFail()
+    {
+        var exception = Assert.Throws<UserDomainException>(() =>
+            new User(
+                Guid.CreateVersion7(),
+                "user",
+                "hash",
+                "测试用户",
+                "13800000000",
+                "user@example.com",
+                (DataPermissionType)short.MaxValue
+            )
+        );
+
+        Assert.Equal(MessageKeys.Users.DataPermissionTypeInvalid, exception.Message);
     }
 
     [Fact]
@@ -89,7 +131,8 @@ public sealed class UserTests
             "hash",
             "测试用户",
             "13800000000",
-            "user@example.com"
+            "user@example.com",
+            DataPermissionType.All
         );
         user.Version = Guid.CreateVersion7();
 
@@ -104,7 +147,15 @@ public sealed class UserTests
     }
 
     private static User CreateUser(string username) =>
-        new(Guid.CreateVersion7(), username, "hash", "测试用户", "13800000000", "user@example.com")
+        new(
+            Guid.CreateVersion7(),
+            username,
+            "hash",
+            "测试用户",
+            "13800000000",
+            "user@example.com",
+            DataPermissionType.Self
+        )
         {
             Version = Guid.CreateVersion7(),
         };

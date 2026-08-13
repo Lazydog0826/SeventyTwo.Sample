@@ -38,6 +38,7 @@ public sealed class PermissionCrudTests
             "测试用户",
             "13800000000",
             "user@example.com",
+            DataPermissionType.Self,
             permission.Id
         );
         var (cacheService, _, _, redisCacheService) = CreateCacheService();
@@ -72,6 +73,7 @@ public sealed class PermissionCrudTests
             "测试用户",
             "13800000000",
             "user@example.com",
+            DataPermissionType.Self,
             Guid.CreateVersion7()
         );
         var (_, _, _, redisCacheService) = CreateCacheService();
@@ -106,6 +108,7 @@ public sealed class PermissionCrudTests
             "测试用户",
             "13800000000",
             "user@example.com",
+            DataPermissionType.Self,
             permission.Id
         );
         var (_, _, _, redisCacheService) = CreateCacheService();
@@ -141,6 +144,7 @@ public sealed class PermissionCrudTests
             "测试用户",
             "13800000000",
             "user@example.com",
+            DataPermissionType.Self,
             defaultPage.Id
         );
         var userRepository = new FakeUserRepository(user);
@@ -189,7 +193,8 @@ public sealed class PermissionCrudTests
                     "hash",
                     "测试用户",
                     "13800000000",
-                    "user@example.com"
+                    "user@example.com",
+                    DataPermissionType.Self
                 )
             ),
             new FakeRedisCacheService(database),
@@ -219,7 +224,17 @@ public sealed class PermissionCrudTests
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
         var redisCacheService = new FakeRedisCacheService(database);
         var cacheConfiguration = Options.Create(new CacheConfiguration { KeyNamespace = "tests" });
-        var userRepository = new FakeUserRepository(User.Restore(userId, SystemUsernames.SuperAdmin, "hash", "超级管理员", "13800000000", "admin@example.com"));
+        var userRepository = new FakeUserRepository(
+            User.Restore(
+                userId,
+                SystemUsernames.SuperAdmin,
+                "hash",
+                "超级管理员",
+                "13800000000",
+                "admin@example.com",
+                DataPermissionType.All
+            )
+        );
         var userPermissionCacheService = new UserPermissionCacheService(
             repository,
             new UserInfoCacheService(userRepository, redisCacheService, cacheConfiguration),
@@ -275,7 +290,8 @@ public sealed class PermissionCrudTests
             "hash",
             "用户",
             "13800000000",
-            "user@example.com"
+            "user@example.com",
+            DataPermissionType.Self
         );
         var repository = new FakePermissionRepository([]);
         var database = DispatchProxy.Create<StackExchange.Redis.IDatabase, InMemoryRedisDatabase>();
@@ -561,7 +577,15 @@ public sealed class PermissionCrudTests
         var root = CreatePermission("Root", PermissionType.Directory);
         var page = CreatePermission("Page", PermissionType.Page, root.Id);
         var disabled = CreatePermission("Disabled", PermissionType.Button, page.Id, false);
-        var user = User.Restore(Guid.CreateVersion7(), "user", "hash", "用户", "13800000000", "user@example.com");
+        var user = User.Restore(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "用户",
+            "13800000000",
+            "user@example.com",
+            DataPermissionType.Self
+        );
         var repository = new FakePermissionRepository([root, page, disabled])
         {
             AssociatedPermissionIds = [root.Id, page.Id, disabled.Id],
@@ -598,7 +622,15 @@ public sealed class PermissionCrudTests
         var root = CreatePermission("Root", PermissionType.Directory);
         var page = CreatePermission("Page", PermissionType.Page, root.Id);
         var disabled = CreatePermission("Disabled", PermissionType.Button, page.Id, false);
-        var user = User.Restore(Guid.CreateVersion7(), "user", "hash", "用户", "13800000000", "user@example.com");
+        var user = User.Restore(
+            Guid.CreateVersion7(),
+            "user",
+            "hash",
+            "用户",
+            "13800000000",
+            "user@example.com",
+            DataPermissionType.Self
+        );
         var repository = new FakePermissionRepository([root, page, disabled]);
         var (cacheService, _, _, _) = CreateCacheService();
         var application = new PermissionApplication(

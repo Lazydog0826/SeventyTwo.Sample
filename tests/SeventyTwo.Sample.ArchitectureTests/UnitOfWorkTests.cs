@@ -169,6 +169,7 @@ public sealed class UnitOfWorkTests
                     DisplayName = "并发删除集成测试用户",
                     Phone = "13800000000",
                     Email = $"{userId:N}@example.com",
+                    DataPermissionType = DataPermissionType.Self,
                     OrgId = organizationId,
                     Version = version,
                 }

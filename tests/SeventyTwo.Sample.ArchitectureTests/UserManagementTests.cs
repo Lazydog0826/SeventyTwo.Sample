@@ -30,7 +30,8 @@ public sealed class UserManagementTests
             "hash",
             "超级管理员",
             "13800000000",
-            "superadmin@example.com"
+            "superadmin@example.com",
+            DataPermissionType.All
         );
         var application = new UserApplication(
             new CapturingUserRepository(user),
@@ -92,13 +93,24 @@ public sealed class UserManagementTests
         );
 
         await application.CreateAsync(
-            new("user", password, "测试用户", "13800000000", "user@example.com", true, organization.Id),
+            new(
+                "user",
+                password,
+                "测试用户",
+                "13800000000",
+                "user@example.com",
+                true,
+                organization.Id,
+                null,
+                DataPermissionType.Self
+            ),
             CancellationToken.None
         );
 
         var user = Assert.IsType<User>(repository.AddedUser);
         Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
         Assert.Equal(organization.Id, user.OrgId);
+        Assert.Equal(DataPermissionType.Self, user.DataPermissionType);
         var hasher = new PasswordHasher<string>();
         Assert.NotEqual(
             PasswordVerificationResult.Failed,
@@ -120,7 +132,8 @@ public sealed class UserManagementTests
             "hash",
             "测试用户",
             "13800000000",
-            "user@example.com"
+            "user@example.com",
+            DataPermissionType.Self
         )
         {
             Version = Guid.CreateVersion7(),
@@ -142,12 +155,21 @@ public sealed class UserManagementTests
 
         await application.UpdateAsync(
             user.Id,
-            new("新姓名", "13900000000", "new@example.com", organization.Id, user.Version),
+            new(
+                "新姓名",
+                "13900000000",
+                "new@example.com",
+                organization.Id,
+                user.Version,
+                null,
+                DataPermissionType: DataPermissionType.Organization
+            ),
             CancellationToken.None
         );
 
         Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
         Assert.Same(user, userRepository.SavedUser);
+        Assert.Equal(DataPermissionType.Organization, user.DataPermissionType);
         Assert.Equal([user.Id], cacheInvalidationPublisher.UserIds);
     }
 
@@ -308,7 +330,17 @@ public sealed class UserManagementTests
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.CreateAsync(
-                new("user", "password", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                new(
+                    "user",
+                    "password",
+                    "测试用户",
+                    "13800000000",
+                    "user@example.com",
+                    true,
+                    organization.Id,
+                    null,
+                    DataPermissionType.Self
+                ),
                 CancellationToken.None
             )
         );
@@ -334,7 +366,17 @@ public sealed class UserManagementTests
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.CreateAsync(
-                new("user", " ", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                new(
+                    "user",
+                    " ",
+                    "测试用户",
+                    "13800000000",
+                    "user@example.com",
+                    true,
+                    organization.Id,
+                    null,
+                    DataPermissionType.Self
+                ),
                 CancellationToken.None
             )
         );
@@ -363,7 +405,17 @@ public sealed class UserManagementTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             application.CreateAsync(
-                new("user", "password", "测试用户", "13800000000", "user@example.com", true, organization.Id),
+                new(
+                    "user",
+                    "password",
+                    "测试用户",
+                    "13800000000",
+                    "user@example.com",
+                    true,
+                    organization.Id,
+                    null,
+                    DataPermissionType.Self
+                ),
                 cancellationTokenSource.Token
             )
         );
@@ -383,7 +435,8 @@ public sealed class UserManagementTests
             passwordHash,
             "禁用用户",
             "13800000000",
-            "disabled@example.com"
+            "disabled@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = false,
@@ -420,7 +473,8 @@ public sealed class UserManagementTests
             passwordHash,
             "禁用用户",
             "13800000000",
-            "disabled@example.com"
+            "disabled@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = false,
@@ -459,7 +513,8 @@ public sealed class UserManagementTests
             new PasswordHasher<string>().HashPassword(username, password),
             "密码变更用户",
             "13800000000",
-            "password-changed@example.com"
+            "password-changed@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = true,
@@ -470,7 +525,8 @@ public sealed class UserManagementTests
             new PasswordHasher<string>().HashPassword(username, "new-password"),
             "密码变更用户",
             "13800000000",
-            "password-changed@example.com"
+            "password-changed@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = true,
@@ -509,7 +565,8 @@ public sealed class UserManagementTests
             passwordHash,
             "并发用户",
             "13800000000",
-            "concurrent@example.com"
+            "concurrent@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = true,
@@ -520,7 +577,8 @@ public sealed class UserManagementTests
             passwordHash,
             "并发用户",
             "13800000000",
-            "concurrent@example.com"
+            "concurrent@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = false,
@@ -608,7 +666,7 @@ public sealed class UserManagementTests
         var user = new User(
             Guid.CreateVersion7(), username,
             new PasswordHasher<string>().HashPassword(username, oldPassword),
-            "测试用户", "13800000000", "user@example.com"
+            "测试用户", "13800000000", "user@example.com", DataPermissionType.Self
         ) { Version = Guid.CreateVersion7() };
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
@@ -671,7 +729,7 @@ public sealed class UserManagementTests
     {
         var user = User.Restore(
             Guid.CreateVersion7(), SystemUsernames.SuperAdmin, "hash", "超级管理员",
-            "13800000000", "superadmin@example.com"
+            "13800000000", "superadmin@example.com", DataPermissionType.All
         );
         user.Version = Guid.CreateVersion7();
         var repository = new CapturingUserRepository(user);
@@ -723,6 +781,7 @@ public sealed class UserManagementTests
                 "新姓名",
                 "13900000000",
                 "new@example.com",
+                DataPermissionType.OrganizationAndDescendants,
                 defaultPageId,
                 version,
                 Guid.Empty,
@@ -737,6 +796,7 @@ public sealed class UserManagementTests
             Assert.Equal("新姓名", saved.DisplayName);
             Assert.Equal(organizationId, saved.OrgId);
             Assert.Equal(defaultPageId, saved.DefaultPageId);
+            Assert.Equal(DataPermissionType.OrganizationAndDescendants, saved.DataPermissionType);
             Assert.NotEqual(version, saved.Version);
         }
         finally { File.Delete(path); }
@@ -809,6 +869,7 @@ public sealed class UserManagementTests
                 DisplayName = "ALPHA USER",
                 Phone = "13900000000",
                 Email = "beta@example.com",
+                DataPermissionType = DataPermissionType.Self,
                 Enable = false,
                 Version = Guid.CreateVersion7(),
                 CreatedAt = first.CreatedAt.AddSeconds(1),
@@ -822,6 +883,7 @@ public sealed class UserManagementTests
                 DisplayName = ignored.DisplayName,
                 Phone = ignored.Phone,
                 Email = ignored.Email,
+                DataPermissionType = ignored.DataPermissionType,
                 DeleteAt = DateTimeOffset.UtcNow,
                 Version = ignored.Version,
             };
@@ -902,6 +964,7 @@ public sealed class UserManagementTests
     {
         Id = Guid.CreateVersion7(), Username = username ?? $"user-{Guid.NewGuid():N}", PasswordHash = "hash",
         DisplayName = "测试用户", Phone = "13800000000", Email = "user@example.com", Version = Guid.CreateVersion7(),
+        DataPermissionType = DataPermissionType.Self,
         DefaultPageId = defaultPageId,
     };
 
@@ -920,7 +983,8 @@ public sealed class UserManagementTests
             "hash",
             "测试用户",
             "13800000000",
-            "user@example.com"
+            "user@example.com",
+            DataPermissionType.Self
         )
         {
             Enable = enable,
