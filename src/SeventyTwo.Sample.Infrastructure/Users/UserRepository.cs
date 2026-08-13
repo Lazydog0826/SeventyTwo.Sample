@@ -133,7 +133,13 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
             Version = nextVersion,
         };
         var affectedRows = await db.Updateable(record)
-            .UpdateColumns(x => new { x.PasswordHash, x.UpdatedBy, x.UpdatedAt, x.Version })
+            .UpdateColumns(x => new
+            {
+                x.PasswordHash,
+                x.UpdatedBy,
+                x.UpdatedAt,
+                x.Version,
+            })
             .Where(x => x.Id == user.Id && x.Version == user.Version && x.DeleteAt == null)
             .ExecuteCommandAsync(cancellationToken);
         if (affectedRows == 0)

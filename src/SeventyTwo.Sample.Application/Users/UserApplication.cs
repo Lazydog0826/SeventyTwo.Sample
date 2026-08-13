@@ -1,6 +1,6 @@
+using System.Security.Cryptography;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
-using System.Security.Cryptography;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
