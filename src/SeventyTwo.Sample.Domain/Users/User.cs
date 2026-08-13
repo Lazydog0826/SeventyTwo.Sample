@@ -14,9 +14,10 @@ public sealed class User : AggregateRoot
         string displayName,
         string phone,
         string email,
+        DataPermissionType dataPermissionType,
         Guid? defaultPageId = null
     )
-        : this(id, username, passwordHash, displayName, phone, email, defaultPageId, false) { }
+        : this(id, username, passwordHash, displayName, phone, email, dataPermissionType, defaultPageId, false) { }
 
     private User(
         Guid id,
@@ -25,6 +26,7 @@ public sealed class User : AggregateRoot
         string displayName,
         string phone,
         string email,
+        DataPermissionType dataPermissionType,
         Guid? defaultPageId,
         bool restore
     )
@@ -44,6 +46,7 @@ public sealed class User : AggregateRoot
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
         Email = RequireText(email, MessageKeys.Users.EmailRequired);
+        DataPermissionType = RequireDataPermissionType(dataPermissionType);
         DefaultPageId = NormalizeOptionalId(defaultPageId);
     }
 
@@ -54,8 +57,9 @@ public sealed class User : AggregateRoot
         string displayName,
         string phone,
         string email,
+        DataPermissionType dataPermissionType,
         Guid? defaultPageId = null
-    ) => new(id, username, passwordHash, displayName, phone, email, defaultPageId, true);
+    ) => new(id, username, passwordHash, displayName, phone, email, dataPermissionType, defaultPageId, true);
 
     /// <summary>
     /// 用户名。
@@ -83,6 +87,11 @@ public sealed class User : AggregateRoot
     public string Email { get; private set; } = string.Empty;
 
     /// <summary>
+    /// 数据权限类型。
+    /// </summary>
+    public DataPermissionType DataPermissionType { get; private set; }
+
+    /// <summary>
     /// 登录后默认跳转的页面权限 ID。
     /// </summary>
     public Guid? DefaultPageId { get; private set; }
@@ -94,12 +103,23 @@ public sealed class User : AggregateRoot
         Guid version,
         Guid updatedBy,
         DateTimeOffset updatedAt
-    ) => UpdateProfile(displayName, phone, email, DefaultPageId, version, updatedBy, updatedAt);
+    ) => UpdateProfile(displayName, phone, email, DataPermissionType, DefaultPageId, version, updatedBy, updatedAt);
 
     public void UpdateProfile(
         string displayName,
         string phone,
         string email,
+        Guid? defaultPageId,
+        Guid version,
+        Guid updatedBy,
+        DateTimeOffset updatedAt
+    ) => UpdateProfile(displayName, phone, email, DataPermissionType, defaultPageId, version, updatedBy, updatedAt);
+
+    public void UpdateProfile(
+        string displayName,
+        string phone,
+        string email,
+        DataPermissionType dataPermissionType,
         Guid? defaultPageId,
         Guid version,
         Guid updatedBy,
@@ -110,6 +130,7 @@ public sealed class User : AggregateRoot
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
         Email = RequireText(email, MessageKeys.Users.EmailRequired);
+        DataPermissionType = RequireDataPermissionType(dataPermissionType);
         DefaultPageId = NormalizeOptionalId(defaultPageId);
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;
@@ -170,4 +191,7 @@ public sealed class User : AggregateRoot
     }
 
     private static Guid? NormalizeOptionalId(Guid? value) => value == Guid.Empty ? null : value;
+
+    private static DataPermissionType RequireDataPermissionType(DataPermissionType value) =>
+        Enum.IsDefined(value) ? value : throw new UserDomainException(MessageKeys.Users.DataPermissionTypeInvalid);
 }

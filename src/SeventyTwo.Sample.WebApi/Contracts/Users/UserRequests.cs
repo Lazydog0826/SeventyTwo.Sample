@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SeventyTwo.Sample.Domain.Users;
 
 // ReSharper disable NotAccessedPositionalProperty.Global
 namespace SeventyTwo.Sample.WebApi.Contracts.Users;
@@ -34,6 +35,7 @@ public sealed record LoginRequest(
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="OrgId">所属机构 ID。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 /// <param name="DefaultPageId">登录后默认页面权限 ID。</param>
 public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Validation.AccountRequired)]
@@ -47,6 +49,7 @@ public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
     bool Enable,
     Guid OrgId,
+    DataPermissionType DataPermissionType,
     Guid? DefaultPageId
 );
 
@@ -58,6 +61,7 @@ public sealed record CreateUserRequest(
 /// <param name="Phone">手机号。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="OrgId">所属机构 ID。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
 /// <param name="DefaultPageId">登录后默认页面权限 ID。</param>
 public sealed record UpdateUserRequest(
@@ -66,6 +70,7 @@ public sealed record UpdateUserRequest(
     [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
     Guid OrgId,
+    DataPermissionType DataPermissionType,
     Guid Version,
     Guid? DefaultPageId
 );

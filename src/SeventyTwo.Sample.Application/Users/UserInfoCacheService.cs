@@ -98,6 +98,7 @@ public sealed class UserInfoCacheService(
                     user.DisplayName,
                     user.Phone,
                     user.Email,
+                    user.DataPermissionType,
                     user.DefaultPageId
                 );
                 await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), CacheDuration);
@@ -190,5 +191,6 @@ public sealed record UserInfoCacheOutput(
     string DisplayName,
     string Phone,
     string Email,
+    DataPermissionType DataPermissionType,
     Guid? DefaultPageId
 );

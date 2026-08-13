@@ -92,6 +92,7 @@ public sealed class UserApplication(
                     input.DisplayName,
                     input.Phone,
                     input.Email,
+                    input.DataPermissionType,
                     input.DefaultPageId
                 )
                 {
@@ -120,6 +121,7 @@ public sealed class UserApplication(
                     input.DisplayName,
                     input.Phone,
                     input.Email,
+                    input.DataPermissionType,
                     input.DefaultPageId,
                     input.Version,
                     SystemIds.System,
@@ -217,7 +219,15 @@ public sealed class UserApplication(
                 defaultPagePath = permission.RoutePath;
         }
 
-        return new UserOutput(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, defaultPagePath);
+        return new UserOutput(
+            user.Id,
+            user.Username,
+            user.DisplayName,
+            user.Phone,
+            user.Email,
+            defaultPagePath,
+            user.DataPermissionType
+        );
     }
 
     /// <inheritdoc />

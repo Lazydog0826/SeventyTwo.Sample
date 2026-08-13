@@ -50,6 +50,11 @@ public static partial class MessageKeys
         public const string EmailRequired = "user.emailRequired";
 
         /// <summary>
+        /// 用户数据权限类型无效。
+        /// </summary>
+        public const string DataPermissionTypeInvalid = "user.dataPermissionTypeInvalid";
+
+        /// <summary>
         /// 用户所属机构不能为空。
         /// </summary>
         public const string OrgIdRequired = "user.orgIdRequired";

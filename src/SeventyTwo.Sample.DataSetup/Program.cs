@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure;
+using SeventyTwo.Sample.Infrastructure.DataDictionaries;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
@@ -43,6 +44,7 @@ try
     Console.WriteLine($"已根据 {entityTypes.Length} 个数据库实体完成建表。");
 
     var userId = Guid.CreateVersion7();
+    var dataPermissionTypeDictionaryId = Guid.CreateVersion7();
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
     var permissionsListPermissionId = Guid.CreateVersion7();
@@ -77,8 +79,59 @@ try
                 DisplayName = displayName,
                 Phone = phone,
                 Email = email,
+                DataPermissionType = DataPermissionType.All,
                 DefaultPageId = homePermissionId,
                 OrgId = Guid.Empty,
+            }
+        )
+        .ExecuteCommand();
+    db.Insertable(
+            new DataDictionaryRecord
+            {
+                Id = dataPermissionTypeDictionaryId,
+                Code = "DATA_PERMISSION_TYPE",
+                Name = "数据权限类型",
+                Description = "用户可访问的数据范围类型",
+                Enable = true,
+                OrgId = Guid.Empty,
+            }
+        )
+        .ExecuteCommand();
+    db.Insertable(
+            new[]
+            {
+                new DataDictionaryItemRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    DictionaryId = dataPermissionTypeDictionaryId,
+                    Value = ((short)DataPermissionType.All).ToString(),
+                    Label = "全部数据",
+                    SortOrder = 1,
+                },
+                new DataDictionaryItemRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    DictionaryId = dataPermissionTypeDictionaryId,
+                    Value = ((short)DataPermissionType.Organization).ToString(),
+                    Label = "本机构数据",
+                    SortOrder = 2,
+                },
+                new DataDictionaryItemRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    DictionaryId = dataPermissionTypeDictionaryId,
+                    Value = ((short)DataPermissionType.OrganizationAndDescendants).ToString(),
+                    Label = "本机构与下级机构数据",
+                    SortOrder = 3,
+                },
+                new DataDictionaryItemRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    DictionaryId = dataPermissionTypeDictionaryId,
+                    Value = ((short)DataPermissionType.Self).ToString(),
+                    Label = "自己的数据",
+                    SortOrder = 4,
+                },
             }
         )
         .ExecuteCommand();

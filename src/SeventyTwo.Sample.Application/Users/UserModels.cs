@@ -1,5 +1,7 @@
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable NotAccessedPositionalProperty.Global
+using SeventyTwo.Sample.Domain.Users;
+
 namespace SeventyTwo.Sample.Application.Users;
 
 /// <summary>
@@ -26,13 +28,15 @@ public sealed record LoginOutput(string AccessToken, string RefreshToken, DateTi
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="DefaultPagePath">登录后默认页面路由；配置无效时为空字符串。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 public sealed record UserOutput(
     Guid Id,
     string Username,
     string DisplayName,
     string Phone,
     string Email,
-    string DefaultPagePath = ""
+    string DefaultPagePath = "",
+    DataPermissionType DataPermissionType = DataPermissionType.Self
 );
 
 /// <summary>
@@ -46,6 +50,7 @@ public sealed record UserOutput(
 /// <param name="Enable">是否启用。</param>
 /// <param name="OrgId">所属机构 ID。</param>
 /// <param name="Version">并发版本。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 public sealed record UserListOutput(
     Guid Id,
     string Username,
@@ -54,6 +59,7 @@ public sealed record UserListOutput(
     string Email,
     bool Enable,
     Guid OrgId,
+    DataPermissionType DataPermissionType,
     Guid Version,
     Guid? DefaultPageId = null
 );
@@ -68,6 +74,7 @@ public sealed record UserListOutput(
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="OrgId">所属机构 ID。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 public sealed record CreateUserInput(
     string Username,
     string Password,
@@ -76,7 +83,8 @@ public sealed record CreateUserInput(
     string Email,
     bool Enable,
     Guid OrgId,
-    Guid? DefaultPageId = null
+    Guid? DefaultPageId,
+    DataPermissionType DataPermissionType
 );
 
 /// <summary>
@@ -86,13 +94,15 @@ public sealed record CreateUserInput(
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
+/// <param name="DataPermissionType">数据权限类型。</param>
 public sealed record UpdateUserInput(
     string DisplayName,
     string Phone,
     string Email,
     Guid OrgId,
     Guid Version,
-    Guid? DefaultPageId = null
+    Guid? DefaultPageId,
+    DataPermissionType DataPermissionType
 );
 
 /// <summary>

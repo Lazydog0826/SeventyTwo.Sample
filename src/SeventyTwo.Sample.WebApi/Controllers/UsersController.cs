@@ -96,7 +96,8 @@ public sealed class UsersController(
                 request.Email,
                 request.Enable,
                 request.OrgId,
-                request.DefaultPageId
+                request.DefaultPageId,
+                request.DataPermissionType
             ),
             cancellationToken
         );
@@ -121,7 +122,8 @@ public sealed class UsersController(
                 request.Email,
                 request.OrgId,
                 request.Version,
-                request.DefaultPageId
+                request.DefaultPageId,
+                request.DataPermissionType
             ),
             cancellationToken
         );

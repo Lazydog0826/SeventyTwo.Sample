@@ -1,3 +1,4 @@
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
@@ -45,6 +46,12 @@ internal sealed class UserAccountRecord : BaseEntity
     /// </summary>
     [SugarColumn(ColumnName = "email")]
     public string Email { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 数据权限类型。
+    /// </summary>
+    [SugarColumn(ColumnName = "data_permission_type")]
+    public DataPermissionType DataPermissionType { get; init; }
 
     /// <summary>
     /// 登录后默认跳转的页面权限 ID。
