@@ -781,12 +781,79 @@ public sealed class UserManagementTests
             var regularUser = CreateRecord();
             await db.Insertable(new[] { superAdmin, regularUser }).ExecuteCommandAsync();
 
-            var users = await new UserRepository(db).GetListAsync(CancellationToken.None);
+            var users = await new UserRepository(db).GetPageAsync(
+                new UserPageRequest { Index = 1, Limit = 20 },
+                CancellationToken.None
+            );
 
-            var user = Assert.Single(users);
+            var user = Assert.Single(users.Items);
             Assert.Equal(regularUser.Id, user.Id);
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RepositoryGetPage_ShouldFilterCountAndPageUsers()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"user-page-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(path);
+            db.CodeFirst.InitTables<UserAccountRecord>();
+            var first = CreateRecord("alpha");
+            var second = new UserAccountRecord
+            {
+                Id = Guid.CreateVersion7(),
+                Username = "beta",
+                PasswordHash = "hash",
+                DisplayName = "ALPHA USER",
+                Phone = "13900000000",
+                Email = "beta@example.com",
+                Enable = false,
+                Version = Guid.CreateVersion7(),
+                CreatedAt = first.CreatedAt.AddSeconds(1),
+            };
+            var ignored = CreateRecord("ignored");
+            ignored = new UserAccountRecord
+            {
+                Id = ignored.Id,
+                Username = ignored.Username,
+                PasswordHash = ignored.PasswordHash,
+                DisplayName = ignored.DisplayName,
+                Phone = ignored.Phone,
+                Email = ignored.Email,
+                DeleteAt = DateTimeOffset.UtcNow,
+                Version = ignored.Version,
+            };
+            await db.Insertable(new[] { first, second, ignored }).ExecuteCommandAsync();
+
+            var page = await new UserRepository(db).GetPageAsync(
+                new UserPageRequest { Index = 1, Limit = 1, Keyword = " alpha ", Enable = true },
+                CancellationToken.None
+            );
+
+            Assert.Equal(1, page.Total);
+            Assert.Equal(first.Id, Assert.Single(page.Items).Id);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(0, 20, MessageKeys.Paging.PageNumberMustBePositive)]
+    [InlineData(1, 0, MessageKeys.Paging.PageSizeOutOfRange100)]
+    [InlineData(1, 101, MessageKeys.Paging.PageSizeOutOfRange100)]
+    [InlineData(int.MaxValue, 100, MessageKeys.Paging.PageOffsetOutOfRange)]
+    public async Task ApplicationGetPage_ShouldValidatePaging(int index, int limit, string message)
+    {
+        var application = new UserApplication(
+            new CapturingUserRepository(), null!, null!, null!, null!, null!, null!, null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.GetPageAsync(new UserPageRequest { Index = index, Limit = limit }, CancellationToken.None)
+        );
+
+        Assert.Equal(message, exception.Message);
     }
 
     [Fact]
@@ -890,8 +957,8 @@ public sealed class UserManagementTests
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             Task.FromResult(existingUser?.Username == account ? existingUser : null);
 
-        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<User>>([]);
+        public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new UserPage([], 0));
 
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             Task.FromResult(false);
@@ -949,7 +1016,7 @@ public sealed class UserManagementTests
             return Task.FromResult<User?>(id == lockedUser.Id ? lockedUser : null);
         }
 
-        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+        public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
@@ -1102,7 +1169,7 @@ public sealed class UserManagementTests
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
-        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
+        public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>

@@ -3,6 +3,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc.Routing;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.DataDictionaries;
+using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain.DataDictionaries;
 using SeventyTwo.Sample.Infrastructure.DataDictionaries;
 using SeventyTwo.Sample.WebApi.Authentication;
@@ -95,6 +96,58 @@ public sealed class DataDictionaryCrudTests
     }
 
     [Fact]
+    public async Task RepositoryGetPage_ShouldFilterCountAndLoadCurrentPageItemCounts()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"data-dictionary-page-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(path);
+            db.CodeFirst.InitTables<DataDictionaryRecord, DataDictionaryItemRecord>();
+            var firstId = Guid.CreateVersion7();
+            var secondId = Guid.CreateVersion7();
+            await db.Insertable(new[]
+            {
+                new DataDictionaryRecord { Id = firstId, Code = "STATUS", Name = "Status", Enable = true, OrgId = Guid.Empty },
+                new DataDictionaryRecord { Id = secondId, Code = "OTHER", Name = "Other", Enable = false, OrgId = Guid.Empty },
+            }).ExecuteCommandAsync();
+            await db.Insertable(new[]
+            {
+                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = firstId, Value = "1", Label = "One" },
+                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = firstId, Value = "2", Label = "Two" },
+                new DataDictionaryItemRecord { Id = Guid.CreateVersion7(), DictionaryId = secondId, Value = "3", Label = "Three" },
+            }).ExecuteCommandAsync();
+
+            var page = await new DataDictionaryRepository(db).GetPageAsync(
+                new DataDictionaryPageRequest { Index = 1, Limit = 1, Keyword = " status ", Enable = true },
+                CancellationToken.None
+            );
+
+            Assert.Equal(1, page.Total);
+            Assert.Equal(2, Assert.Single(page.Items).Items.Count);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Theory]
+    [InlineData(0, 20, MessageKeys.Paging.PageNumberMustBePositive)]
+    [InlineData(1, 0, MessageKeys.Paging.PageSizeOutOfRange100)]
+    [InlineData(1, 101, MessageKeys.Paging.PageSizeOutOfRange100)]
+    [InlineData(int.MaxValue, 100, MessageKeys.Paging.PageOffsetOutOfRange)]
+    public async Task ApplicationGetPage_ShouldValidatePaging(int index, int limit, string message)
+    {
+        var application = new DataDictionaryApplication(new FakeRepository([]), new FakeUnitOfWork());
+
+        var exception = await Assert.ThrowsAsync<DataDictionaryDomainException>(() =>
+            application.GetPageAsync(
+                new DataDictionaryPageRequest { Index = index, Limit = limit },
+                CancellationToken.None
+            )
+        );
+
+        Assert.Equal(message, exception.Message);
+    }
+
+    [Fact]
     public void Repository_ShouldRecognizeWrappedPostgreSqlUniqueViolation()
     {
         var exception = new InvalidOperationException("wrapper", new TestDbException("23505"));
@@ -131,7 +184,7 @@ public sealed class DataDictionaryCrudTests
         private readonly List<DataDictionary> items = [.. dictionaries];
         public Task<DataDictionary?> FindAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(items.SingleOrDefault(item => item.Id == id));
         public Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken) => Task.FromResult(items.SingleOrDefault(item => item.Enable && item.Code == code));
-        public Task<IReadOnlyList<DataDictionary>> GetListAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DataDictionary>>(items);
+        public Task<DataDictionaryPage> GetPageAsync(DataDictionaryPageRequest request, CancellationToken cancellationToken) => Task.FromResult(new DataDictionaryPage(items, items.Count));
         public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken) => Task.FromResult(items.Any(item => item.Code == code && item.Id != excludedId));
         public Task AddAsync(DataDictionary dictionary, CancellationToken cancellationToken) { items.Add(dictionary); return Task.CompletedTask; }
         public Task SaveAsync(DataDictionary dictionary, CancellationToken cancellationToken) { dictionary.Version = Guid.CreateVersion7(); return Task.CompletedTask; }

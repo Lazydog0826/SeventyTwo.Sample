@@ -353,8 +353,8 @@ public sealed class UnitOfWorkTests
             inner.GetAsync(id, cancellationToken);
         public Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken) =>
             inner.GetByAccountAsync(account, cancellationToken);
-        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
-            inner.GetListAsync(cancellationToken);
+        public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
+            inner.GetPageAsync(request, cancellationToken);
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             inner.UsernameExistsAsync(username, cancellationToken);
         public Task AddAsync(User user, CancellationToken cancellationToken) => inner.AddAsync(user, cancellationToken);

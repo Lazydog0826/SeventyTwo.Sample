@@ -1242,8 +1242,8 @@ public sealed class PermissionCrudTests
             );
         }
 
-        public Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<User>>([user]);
+        public Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new UserPage([user], 1));
 
         public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
             Task.FromResult(username == user.Username);
