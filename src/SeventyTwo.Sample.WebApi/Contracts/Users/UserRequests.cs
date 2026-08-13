@@ -3,7 +3,9 @@ using System.ComponentModel.DataAnnotations;
 // ReSharper disable NotAccessedPositionalProperty.Global
 namespace SeventyTwo.Sample.WebApi.Contracts.Users;
 
-/// <summary>用户授权保存请求。</summary>
+/// <summary>
+/// 用户授权保存请求。
+/// </summary>
 /// <param name="UserId">目标用户 ID。</param>
 /// <param name="PermissionIds">完整权限 ID 集合；空值按空集合处理。</param>
 public sealed record AuthorizeUserRequest(Guid UserId, IReadOnlyList<Guid>? PermissionIds);

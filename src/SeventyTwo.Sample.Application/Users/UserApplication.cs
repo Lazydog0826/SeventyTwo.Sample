@@ -53,7 +53,9 @@ public sealed class UserApplication(
         return new PageResponse<UserListOutput> { List = page.Items.Adapt<List<UserListOutput>>(), Total = page.Total };
     }
 
-    /// <summary>校验用户管理列表的分页参数。</summary>
+    /// <summary>
+    /// 校验用户管理列表的分页参数。
+    /// </summary>
     private static void ValidatePageRequest(PageRequest request)
     {
         if (request.Index <= 0)

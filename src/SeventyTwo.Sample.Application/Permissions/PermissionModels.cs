@@ -6,7 +6,9 @@ using SeventyTwo.Sample.Domain.Permissions;
 
 namespace SeventyTwo.Sample.Application.Permissions;
 
-/// <summary>权限管理列表项。</summary>
+/// <summary>
+/// 权限管理列表项。
+/// </summary>
 public sealed record PermissionListOutput
 {
     public Guid Id { get; init; }
@@ -25,7 +27,9 @@ public sealed record PermissionListOutput
     public Guid Version { get; init; }
 }
 
-/// <summary>创建权限输入。</summary>
+/// <summary>
+/// 创建权限输入。
+/// </summary>
 public sealed record CreatePermissionInput(
     string Code,
     string Title,
@@ -40,7 +44,9 @@ public sealed record CreatePermissionInput(
     PermissionMetaData? MetaData
 );
 
-/// <summary>修改权限输入；<paramref name="Version"/> 用于乐观并发控制。</summary>
+/// <summary>
+/// 修改权限输入；<paramref name="Version"/> 用于乐观并发控制。
+/// </summary>
 public sealed record UpdatePermissionInput(
     string Code,
     string Title,
@@ -56,19 +62,27 @@ public sealed record UpdatePermissionInput(
     Guid Version
 );
 
-/// <summary>用户权限输出。</summary>
+/// <summary>
+/// 用户权限输出。
+/// </summary>
 public sealed record PermissionOutput(IReadOnlyList<PermissionMenuOutput> Menus, IReadOnlyList<string> ButtonCodes);
 
-/// <summary>用户授权编辑数据。</summary>
+/// <summary>
+/// 用户授权编辑数据。
+/// </summary>
 public sealed record UserAuthorizationOutput(
     IReadOnlyList<PermissionListOutput> Permissions,
     IReadOnlyList<Guid> PermissionIds
 );
 
-/// <summary>用户默认页面候选项。</summary>
+/// <summary>
+/// 用户默认页面候选项。
+/// </summary>
 public sealed record DefaultPageOptionOutput(Guid Id, string Title, int SortOrder);
 
-/// <summary>目录或页面权限。</summary>
+/// <summary>
+/// 目录或页面权限。
+/// </summary>
 public sealed record PermissionMenuOutput
 {
     public Guid Id { get; init; }

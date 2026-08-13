@@ -170,7 +170,9 @@ public sealed class UsersController(
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
-    /// <summary>获取指定用户的授权编辑数据。</summary>
+    /// <summary>
+    /// 获取指定用户的授权编辑数据。
+    /// </summary>
     /// <param name="userId">目标用户 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>授权编辑数据。</returns>
@@ -182,7 +184,9 @@ public sealed class UsersController(
         return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
     }
 
-    /// <summary>整体保存指定用户的权限。</summary>
+    /// <summary>
+    /// 整体保存指定用户的权限。
+    /// </summary>
     /// <param name="request">用户授权保存请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>操作结果。</returns>

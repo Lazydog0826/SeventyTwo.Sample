@@ -22,40 +22,56 @@ public sealed class UserPermissionCacheService(
     IOptions<CacheConfiguration> cacheConfiguration
 ) : IUserPermissionCacheService
 {
-    /// <summary>单个用户权限编码缓存有效期。</summary>
+    /// <summary>
+    /// 单个用户权限编码缓存有效期。
+    /// </summary>
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
 
-    /// <summary>缓存锁获取超时时间。</summary>
+    /// <summary>
+    /// 缓存锁获取超时时间。
+    /// </summary>
     private static readonly TimeSpan LockAcquireTimeout = TimeSpan.FromSeconds(30);
 
-    /// <summary>缓存锁租约及执行超时时间。</summary>
+    /// <summary>
+    /// 缓存锁租约及执行超时时间。
+    /// </summary>
     private static readonly TimeSpan LockExpiration = TimeSpan.FromSeconds(30);
 
-    /// <summary>缓存锁续租间隔。</summary>
+    /// <summary>
+    /// 缓存锁续租间隔。
+    /// </summary>
     private static readonly TimeSpan LockRenewalInterval = TimeSpan.FromSeconds(10);
 
-    /// <summary>获取超级管理员共享权限缓存键。</summary>
+    /// <summary>
+    /// 获取超级管理员共享权限缓存键。
+    /// </summary>
     /// <returns>超级管理员共享权限缓存键。</returns>
     private string GetSuperAdminCacheKey()
     {
         return cacheConfiguration.Value.Data("permissions", "user-codes:super-admin");
     }
 
-    /// <summary>获取超级管理员共享权限缓存锁键。</summary>
+    /// <summary>
+    /// 获取超级管理员共享权限缓存锁键。
+    /// </summary>
     /// <returns>超级管理员共享权限缓存锁键。</returns>
     private string GetSuperAdminLockKey()
     {
         return cacheConfiguration.Value.Lock("permissions", "user-codes:super-admin");
     }
 
-    /// <summary>获取普通用户权限缓存全局版本键。</summary>
+    /// <summary>
+    /// 获取普通用户权限缓存全局版本键。
+    /// </summary>
     /// <returns>普通用户权限缓存全局版本键。</returns>
     private string GetVersionKey()
     {
         return cacheConfiguration.Value.Data("permissions", "user-codes:version");
     }
 
-    /// <summary>获取普通用户权限缓存全局版本锁键。</summary>
+    /// <summary>
+    /// 获取普通用户权限缓存全局版本锁键。
+    /// </summary>
     /// <returns>普通用户权限缓存全局版本锁键。</returns>
     private string GetVersionLockKey()
     {

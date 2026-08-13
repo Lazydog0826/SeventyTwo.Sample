@@ -5,6 +5,8 @@ namespace SeventyTwo.Sample.Domain.Users;
 /// </summary>
 public static class SystemUsernames
 {
-    /// <summary>超级管理员用户名。</summary>
+    /// <summary>
+    /// 超级管理员用户名。
+    /// </summary>
     public const string SuperAdmin = "superadmin";
 }
