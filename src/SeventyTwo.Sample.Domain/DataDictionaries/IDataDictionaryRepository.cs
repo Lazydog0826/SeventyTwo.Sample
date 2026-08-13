@@ -67,7 +67,9 @@ public interface IDataDictionaryRepository
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }
 
-/// <summary>数据字典分页请求。</summary>
+/// <summary>
+/// 数据字典分页请求。
+/// </summary>
 public sealed class DataDictionaryPageRequest : PageRequest
 {
     public string? Keyword { get; init; }
@@ -75,5 +77,7 @@ public sealed class DataDictionaryPageRequest : PageRequest
     public bool? Enable { get; init; }
 }
 
-/// <summary>数据字典分页数据。</summary>
+/// <summary>
+/// 数据字典分页数据。
+/// </summary>
 public sealed record DataDictionaryPage(IReadOnlyCollection<DataDictionary> Items, int Total);

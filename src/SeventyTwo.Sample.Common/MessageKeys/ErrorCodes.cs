@@ -5,15 +5,23 @@ namespace SeventyTwo.Sample.Common.MessageKeys;
 /// </summary>
 public static class ErrorCodes
 {
-    /// <summary>认证失败。</summary>
+    /// <summary>
+    /// 认证失败。
+    /// </summary>
     public const string Authentication = "error.authentication";
 
-    /// <summary>请求参数校验失败。</summary>
+    /// <summary>
+    /// 请求参数校验失败。
+    /// </summary>
     public const string Validation = "error.validation";
 
-    /// <summary>领域业务规则校验失败。</summary>
+    /// <summary>
+    /// 领域业务规则校验失败。
+    /// </summary>
     public const string Domain = "error.domain";
 
-    /// <summary>系统内部错误。</summary>
+    /// <summary>
+    /// 系统内部错误。
+    /// </summary>
     public const string Internal = "error.internal";
 }

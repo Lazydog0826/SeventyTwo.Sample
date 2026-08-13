@@ -72,7 +72,9 @@ public interface IUserRepository
     Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken);
 }
 
-/// <summary>用户分页请求。</summary>
+/// <summary>
+/// 用户分页请求。
+/// </summary>
 public sealed class UserPageRequest : PageRequest
 {
     public string? Keyword { get; init; }
@@ -80,5 +82,7 @@ public sealed class UserPageRequest : PageRequest
     public bool? Enable { get; init; }
 }
 
-/// <summary>用户分页数据。</summary>
+/// <summary>
+/// 用户分页数据。
+/// </summary>
 public sealed record UserPage(IReadOnlyCollection<User> Items, int Total);
