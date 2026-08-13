@@ -1217,7 +1217,9 @@ public sealed class PermissionCrudTests
     private sealed class FakeUserRepository(User user, Action? onAcquireSecurityLock = null) : IUserRepository
     {
         public int GetCount { get; private set; }
-        /// <summary>测试期间被安全锁锁定的用户 ID。</summary>
+        /// <summary>
+        /// 测试期间被安全锁锁定的用户 ID。
+        /// </summary>
         public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
 
         public Task AcquireSecurityLockAsync(Guid id, CancellationToken cancellationToken)
@@ -1297,22 +1299,34 @@ public sealed class PermissionCrudTests
     {
         private readonly List<Permission> items = [.. permissions];
 
-        /// <summary>测试仓储保存的用户权限关联 ID。</summary>
+        /// <summary>
+        /// 测试仓储保存的用户权限关联 ID。
+        /// </summary>
         public IReadOnlyList<Guid> AssociatedPermissionIds { get; set; } = [];
 
-        /// <summary>有效权限列表查询次数。</summary>
+        /// <summary>
+        /// 有效权限列表查询次数。
+        /// </summary>
         public int GetAllCount { get; private set; }
 
-        /// <summary>用户有效权限编码查询次数。</summary>
+        /// <summary>
+        /// 用户有效权限编码查询次数。
+        /// </summary>
         public int GetCodesByUserIdCount { get; private set; }
 
-        /// <summary>权限目录共享锁获取次数。</summary>
+        /// <summary>
+        /// 权限目录共享锁获取次数。
+        /// </summary>
         public int CatalogSharedLockAcquireCount { get; private set; }
 
-        /// <summary>权限目录变更锁获取次数。</summary>
+        /// <summary>
+        /// 权限目录变更锁获取次数。
+        /// </summary>
         public int CatalogMutationLockAcquireCount { get; private set; }
 
-        /// <summary>测试期间要求权限目录查询和写入必须已持有变更锁。</summary>
+        /// <summary>
+        /// 测试期间要求权限目录查询和写入必须已持有变更锁。
+        /// </summary>
         public bool RequireCatalogMutationLock { get; set; }
 
         public Task AcquireCatalogSharedLockAsync(CancellationToken cancellationToken)
