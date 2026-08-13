@@ -581,6 +581,7 @@ public sealed class UserManagementTests
     [InlineData(nameof(UsersController.CreateAsync), "create", "usersCreate")]
     [InlineData(nameof(UsersController.UpdateAsync), "update", "usersUpdate")]
     [InlineData(nameof(UsersController.SetEnableAsync), "set-enable", "usersUpdate")]
+    [InlineData(nameof(UsersController.ResetPasswordAsync), "reset-password", "usersResetPassword")]
     [InlineData(nameof(UsersController.DeleteAsync), "delete", "usersDelete")]
     [InlineData(nameof(UsersController.GetAuthorizationAsync), "authorization", "usersAuthorize")]
     [InlineData(nameof(UsersController.AuthorizeAsync), "authorize", "usersAuthorize")]
@@ -597,6 +598,109 @@ public sealed class UserManagementTests
             Microsoft.Extensions.Options.Options.Create(new Microsoft.AspNetCore.Authorization.AuthorizationOptions())
         ).GetPolicyAsync(permission.Policy!);
         Assert.Equal(codes, Assert.Single(policy!.Requirements.OfType<PermissionRequirement>()).PermissionCodes);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ShouldGenerateComplexPasswordPersistHashAndInvalidateTokens()
+    {
+        const string oldPassword = "old-password";
+        var username = $"user-{Guid.NewGuid():N}";
+        var user = new User(
+            Guid.CreateVersion7(), username,
+            new PasswordHasher<string>().HashPassword(username, oldPassword),
+            "测试用户", "13800000000", "user@example.com"
+        ) { Version = Guid.CreateVersion7() };
+        var repository = new CapturingUserRepository(user);
+        var tokenCache = new CapturingUserTokenCacheService();
+        var application = new UserApplication(
+            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+        );
+
+        var output = await application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None);
+
+        Assert.Equal(16, output.Password.Length);
+        Assert.Contains(output.Password, char.IsUpper);
+        Assert.Contains(output.Password, char.IsLower);
+        Assert.Contains(output.Password, char.IsDigit);
+        Assert.Contains(output.Password, character => !char.IsLetterOrDigit(character));
+        Assert.Same(user, repository.PasswordSavedUser);
+        var hasher = new PasswordHasher<string>();
+        Assert.NotEqual(PasswordVerificationResult.Failed,
+            hasher.VerifyHashedPassword(username, user.PasswordHash, output.Password));
+        Assert.Equal(PasswordVerificationResult.Failed,
+            hasher.VerifyHashedPassword(username, user.PasswordHash, oldPassword));
+        Assert.Equal([user.Id], repository.LockedUserIds);
+        Assert.Equal([user.Id], tokenCache.InvalidatedUserIds);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithStaleVersion_ShouldRejectBeforeSavingOrInvalidatingTokens()
+    {
+        var user = CreateUser(enable: true);
+        var repository = new CapturingUserRepository(user);
+        var tokenCache = new CapturingUserTokenCacheService();
+        var application = new UserApplication(
+            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.ResetPasswordAsync(user.Id, Guid.CreateVersion7(), CancellationToken.None));
+
+        Assert.Equal(MessageKeys.Users.DataChanged, exception.Message);
+        Assert.Null(repository.PasswordSavedUser);
+        Assert.Empty(tokenCache.InvalidatedUserIds);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithMissingUser_ShouldReject()
+    {
+        var application = new UserApplication(
+            new CapturingUserRepository(), null!, null!, new FakeUnitOfWork(), null!,
+            new CapturingUserTokenCacheService(), null!, null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.ResetPasswordAsync(Guid.CreateVersion7(), Guid.CreateVersion7(), CancellationToken.None));
+
+        Assert.Equal(MessageKeys.Users.NotFound, exception.Message);
+        Assert.Equal(DomainErrorType.NotFound, exception.ErrorType);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ForSuperAdmin_ShouldReject()
+    {
+        var user = User.Restore(
+            Guid.CreateVersion7(), SystemUsernames.SuperAdmin, "hash", "超级管理员",
+            "13800000000", "superadmin@example.com"
+        );
+        user.Version = Guid.CreateVersion7();
+        var repository = new CapturingUserRepository(user);
+        var tokenCache = new CapturingUserTokenCacheService();
+        var application = new UserApplication(
+            repository, null!, null!, new FakeUnitOfWork(), null!, tokenCache, null!, null!
+        );
+
+        var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
+            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None));
+
+        Assert.Equal(MessageKeys.Users.SuperAdminProtected, exception.Message);
+        Assert.Null(repository.PasswordSavedUser);
+        Assert.Empty(tokenCache.InvalidatedUserIds);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WhenTokenInvalidationFails_ShouldFail()
+    {
+        var user = CreateUser(enable: true);
+        var application = new UserApplication(
+            new CapturingUserRepository(user), null!, null!, new CapturingUnitOfWork(), null!,
+            new CapturingUserTokenCacheService { SetInvalidBeforeResult = false }, null!, null!
+        );
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None));
+
+        Assert.Equal("设置用户令牌失效时间失败", exception.Message);
     }
 
     [Fact]
@@ -634,6 +738,33 @@ public sealed class UserManagementTests
             Assert.Equal(organizationId, saved.OrgId);
             Assert.Equal(defaultPageId, saved.DefaultPageId);
             Assert.NotEqual(version, saved.Version);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task RepositorySavePassword_ShouldUpdateOnlyCredentialsAndAdvanceVersion()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"user-password-{Guid.NewGuid():N}.db");
+        try
+        {
+            using var db = CreateDatabase(path);
+            db.CodeFirst.InitTables<UserAccountRecord>();
+            var record = CreateRecord();
+            await db.Insertable(record).ExecuteCommandAsync();
+            var repository = new UserRepository(db);
+            var user = Assert.IsType<User>(await repository.GetAsync(record.Id, CancellationToken.None));
+            var version = user.Version;
+            user.ResetPassword("new-hash", version, SystemIds.System, DateTimeOffset.UtcNow);
+
+            await repository.SavePasswordAsync(user, CancellationToken.None);
+
+            var saved = await db.Queryable<UserAccountRecord>().SingleAsync(x => x.Id == record.Id);
+            Assert.Equal("new-hash", saved.PasswordHash);
+            Assert.Equal(record.DisplayName, saved.DisplayName);
+            Assert.Equal(record.Email, saved.Email);
+            Assert.NotEqual(version, saved.Version);
+            Assert.Equal(saved.Version, user.Version);
         }
         finally { File.Delete(path); }
     }
@@ -734,6 +865,7 @@ public sealed class UserManagementTests
     {
         public User? AddedUser { get; private set; }
         public User? SavedUser { get; private set; }
+        public User? PasswordSavedUser { get; private set; }
         public IReadOnlyList<Guid> DeletedUserIds { get; private set; } = [];
         public IReadOnlyList<Guid> LockedUserIds { get; private set; } = [];
         public int GetAfterSecurityLockCount { get; private set; }
@@ -773,6 +905,12 @@ public sealed class UserManagementTests
         public Task SaveAsync(User user, CancellationToken cancellationToken)
         {
             SavedUser = user;
+            return Task.CompletedTask;
+        }
+
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken)
+        {
+            PasswordSavedUser = user;
             return Task.CompletedTask;
         }
 
@@ -817,6 +955,7 @@ public sealed class UserManagementTests
             throw new NotSupportedException();
         public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
     }
@@ -972,6 +1111,7 @@ public sealed class UserManagementTests
         public Task AddAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task SaveAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

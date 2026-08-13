@@ -359,6 +359,8 @@ public sealed class UnitOfWorkTests
             inner.UsernameExistsAsync(username, cancellationToken);
         public Task AddAsync(User user, CancellationToken cancellationToken) => inner.AddAsync(user, cancellationToken);
         public Task SaveAsync(User user, CancellationToken cancellationToken) => inner.SaveAsync(user, cancellationToken);
+        public Task SavePasswordAsync(User user, CancellationToken cancellationToken) =>
+            inner.SavePasswordAsync(user, cancellationToken);
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) =>
             inner.DeleteAsync(id, version, cancellationToken);
     }

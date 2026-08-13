@@ -1250,6 +1250,7 @@ public sealed class PermissionCrudTests
 
         public Task AddAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task SaveAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SavePasswordAsync(User value, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
