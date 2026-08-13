@@ -2,7 +2,7 @@ using Mapster;
 using SeventyTwo.Sample.Application.Inventories.ChangeInventory;
 using SeventyTwo.Sample.WebApi.Contracts.Inventories;
 
-namespace SeventyTwo.Sample.WebApi.Controllers;
+namespace SeventyTwo.Sample.WebApi.Mappings;
 
 /// <summary>
 /// 配置库存接口请求到应用层输入模型的映射。

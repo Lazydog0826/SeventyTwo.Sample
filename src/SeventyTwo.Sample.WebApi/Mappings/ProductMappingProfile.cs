@@ -2,7 +2,7 @@ using Mapster;
 using SeventyTwo.Sample.Application.Products;
 using SeventyTwo.Sample.WebApi.Contracts.Products;
 
-namespace SeventyTwo.Sample.WebApi.Controllers;
+namespace SeventyTwo.Sample.WebApi.Mappings;
 
 /// <summary>
 /// 对象映射配置

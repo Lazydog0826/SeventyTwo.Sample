@@ -2,7 +2,7 @@ using Mapster;
 using SeventyTwo.Sample.Application.DataDictionaries;
 using SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 
-namespace SeventyTwo.Sample.WebApi.Controllers;
+namespace SeventyTwo.Sample.WebApi.Mappings;
 
 /// <summary>
 /// 数据字典接口对象映射配置。
