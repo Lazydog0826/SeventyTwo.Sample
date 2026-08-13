@@ -57,5 +57,8 @@ public static partial class MessageKeys
 
         /// <summary>超级管理员不允许执行该操作。</summary>
         public const string SuperAdminProtected = "user.superAdminProtected";
+
+        /// <summary>用户默认页面无效。</summary>
+        public const string DefaultPageInvalid = "user.defaultPageInvalid";
     }
 }

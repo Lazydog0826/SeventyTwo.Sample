@@ -124,6 +124,24 @@ public sealed class PermissionApplication(
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<DefaultPageOptionOutput>> GetDefaultPageOptionsAsync(
+        CancellationToken cancellationToken
+    )
+    {
+        var permissions = await permissionRepository.GetAllAsync(cancellationToken);
+        return
+        [
+            .. permissions
+                .Where(permission => permission.Type == PermissionType.Page)
+                .Select(permission => new DefaultPageOptionOutput(
+                    permission.Id,
+                    permission.Title,
+                    permission.SortOrder
+                )),
+        ];
+    }
+
+    /// <inheritdoc />
     public async Task<PermissionOutput> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var allPermissions = await GetAllPermissionsAsync(cancellationToken);

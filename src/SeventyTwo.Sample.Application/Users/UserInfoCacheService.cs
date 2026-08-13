@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Mapster;
 using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Cache;
@@ -32,7 +31,7 @@ public sealed class UserInfoCacheService(
     /// <returns>用户信息缓存键。</returns>
     private string GetCacheKey(Guid id)
     {
-        return cacheConfiguration.Value.Data("users", $"info:{id}");
+        return cacheConfiguration.Value.Data("users", $"info:v2:{id}");
     }
 
     /// <summary>
@@ -51,7 +50,7 @@ public sealed class UserInfoCacheService(
     /// <param name="id">用户 ID。</param>
     /// <param name="cancellationToken">用于取消锁等待和缓存加载的令牌。</param>
     /// <returns>用户信息；用户不存在时返回 <see langword="null"/>。</returns>
-    public async Task<UserOutput?> FindAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<UserInfoCacheOutput?> FindAsync(Guid id, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var cacheKey = GetCacheKey(id);
@@ -63,7 +62,7 @@ public sealed class UserInfoCacheService(
             return cachedResult.Output;
         }
 
-        UserOutput? output = null;
+        UserInfoCacheOutput? output = null;
 
         await redisCacheService.LockAsync(
             GetLockKey(id),
@@ -93,7 +92,14 @@ public sealed class UserInfoCacheService(
                     return;
                 }
 
-                output = user.Adapt<UserOutput>();
+                output = new UserInfoCacheOutput(
+                    user.Id,
+                    user.Username,
+                    user.DisplayName,
+                    user.Phone,
+                    user.Email,
+                    user.DefaultPageId
+                );
                 await database.StringSetAsync(cacheKey, JsonSerializer.Serialize(output), CacheDuration);
                 operationCancellationToken.ThrowIfCancellationRequested();
             },
@@ -106,7 +112,7 @@ public sealed class UserInfoCacheService(
 
         return output;
 
-        async Task<(bool Found, UserOutput? Output)> GetCacheAsync()
+        async Task<(bool Found, UserInfoCacheOutput? Output)> GetCacheAsync()
         {
             var cachedValue = await database.StringGetAsync(cacheKey);
             if (!cachedValue.HasValue)
@@ -122,7 +128,7 @@ public sealed class UserInfoCacheService(
 
             try
             {
-                return (true, JsonSerializer.Deserialize<UserOutput>(serializedValue));
+                return (true, JsonSerializer.Deserialize<UserInfoCacheOutput>(serializedValue));
             }
             catch (JsonException)
             {
@@ -174,3 +180,15 @@ public sealed class UserInfoCacheService(
         return SystemUsernames.SuperAdmin == userInfo?.Username;
     }
 }
+
+/// <summary>
+/// 用户信息缓存内部模型，不作为当前用户接口输出。
+/// </summary>
+public sealed record UserInfoCacheOutput(
+    Guid Id,
+    string Username,
+    string DisplayName,
+    string Phone,
+    string Email,
+    Guid? DefaultPageId
+);

@@ -63,6 +63,17 @@ public sealed class UsersController(
     }
 
     /// <summary>
+    /// 获取用户新增、编辑时可选择的有效默认页面。
+    /// </summary>
+    [HttpGet("default-page-options")]
+    [Permission(PermissionMatchMode.Any, "usersCreate", "usersUpdate")]
+    public async Task<IActionResult> GetDefaultPageOptionsAsync(CancellationToken cancellationToken)
+    {
+        var data = await permissionApplication.GetDefaultPageOptionsAsync(cancellationToken);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 创建用户。
     /// </summary>
     /// <param name="request">用户创建请求。</param>
@@ -80,7 +91,8 @@ public sealed class UsersController(
                 request.Phone,
                 request.Email,
                 request.Enable,
-                request.OrgId
+                request.OrgId,
+                request.DefaultPageId
             ),
             cancellationToken
         );
@@ -99,7 +111,14 @@ public sealed class UsersController(
     {
         await userApplication.UpdateAsync(
             request.Id,
-            new UpdateUserInput(request.DisplayName, request.Phone, request.Email, request.OrgId, request.Version),
+            new UpdateUserInput(
+                request.DisplayName,
+                request.Phone,
+                request.Email,
+                request.OrgId,
+                request.Version,
+                request.DefaultPageId
+            ),
             cancellationToken
         );
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
@@ -277,6 +296,7 @@ public sealed record LoginRequest(
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Enable">是否启用。</param>
 /// <param name="OrgId">所属机构 ID。</param>
+/// <param name="DefaultPageId">登录后默认页面权限 ID。</param>
 public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Validation.AccountRequired)]
     [StringLength(50, MinimumLength = 3, ErrorMessage = MessageKeys.Validation.AccountLengthInvalid)]
@@ -288,7 +308,8 @@ public sealed record CreateUserRequest(
     [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
     bool Enable,
-    Guid OrgId
+    Guid OrgId,
+    Guid? DefaultPageId
 );
 
 /// <summary>
@@ -300,13 +321,15 @@ public sealed record CreateUserRequest(
 /// <param name="Email">电子邮箱。</param>
 /// <param name="OrgId">所属机构 ID。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
+/// <param name="DefaultPageId">登录后默认页面权限 ID。</param>
 public sealed record UpdateUserRequest(
     Guid Id,
     [Required(ErrorMessage = MessageKeys.Users.DisplayNameRequired)] string DisplayName,
     [Required(ErrorMessage = MessageKeys.Users.PhoneRequired)] string Phone,
     [Required(ErrorMessage = MessageKeys.Users.EmailRequired)] string Email,
     Guid OrgId,
-    Guid Version
+    Guid Version,
+    Guid? DefaultPageId
 );
 
 /// <summary>

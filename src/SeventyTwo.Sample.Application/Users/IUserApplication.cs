@@ -106,7 +106,15 @@ public sealed record LoginOutput(string AccessToken, string RefreshToken, DateTi
 /// <param name="DisplayName">用户姓名。</param>
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
-public sealed record UserOutput(Guid Id, string Username, string DisplayName, string Phone, string Email);
+/// <param name="DefaultPagePath">登录后默认页面路由；配置无效时为空字符串。</param>
+public sealed record UserOutput(
+    Guid Id,
+    string Username,
+    string DisplayName,
+    string Phone,
+    string Email,
+    string DefaultPagePath = ""
+);
 
 /// <summary>
 /// 用户列表项。
@@ -127,7 +135,8 @@ public sealed record UserListOutput(
     string Email,
     bool Enable,
     Guid OrgId,
-    Guid Version
+    Guid Version,
+    Guid? DefaultPageId = null
 );
 
 /// <summary>
@@ -147,7 +156,8 @@ public sealed record CreateUserInput(
     string Phone,
     string Email,
     bool Enable,
-    Guid OrgId
+    Guid OrgId,
+    Guid? DefaultPageId = null
 );
 
 /// <summary>
@@ -157,7 +167,14 @@ public sealed record CreateUserInput(
 /// <param name="Phone">手机号码。</param>
 /// <param name="Email">电子邮箱。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
-public sealed record UpdateUserInput(string DisplayName, string Phone, string Email, Guid OrgId, Guid Version);
+public sealed record UpdateUserInput(
+    string DisplayName,
+    string Phone,
+    string Email,
+    Guid OrgId,
+    Guid Version,
+    Guid? DefaultPageId = null
+);
 
 /// <summary>
 /// 用户启用状态设置输入。

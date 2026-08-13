@@ -38,6 +38,11 @@ public interface IPermissionApplication
     Task<IReadOnlyList<PermissionListOutput>> GetListAsync(CancellationToken cancellationToken);
 
     /// <summary>
+    /// 获取可配置为用户默认页面的有效页面权限。
+    /// </summary>
+    Task<IReadOnlyList<DefaultPageOptionOutput>> GetDefaultPageOptionsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// 获取用户权限。
     /// </summary>
     /// <param name="userId">用户 ID。</param>
@@ -145,6 +150,11 @@ public sealed record UserAuthorizationOutput(
     IReadOnlyList<PermissionListOutput> Permissions,
     IReadOnlyList<Guid> PermissionIds
 );
+
+/// <summary>
+/// 用户默认页面候选项。
+/// </summary>
+public sealed record DefaultPageOptionOutput(Guid Id, string Title, int SortOrder);
 
 /// <summary>
 /// 目录或页面权限。

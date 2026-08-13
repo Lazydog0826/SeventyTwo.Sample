@@ -45,4 +45,8 @@ internal sealed class UserAccountRecord : BaseEntity
     /// </summary>
     [SugarColumn(ColumnName = "email")]
     public string Email { get; init; } = string.Empty;
+
+    /// <summary>登录后默认跳转的页面权限 ID。</summary>
+    [SugarColumn(ColumnName = "default_page_id", IsNullable = true, ColumnDataType = "uuid")]
+    public Guid? DefaultPageId { get; init; }
 }

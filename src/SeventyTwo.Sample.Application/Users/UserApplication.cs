@@ -5,6 +5,7 @@ using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Organizations;
+using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Domain.Users;
 
 // ReSharper disable ConvertIfStatementToReturnStatement
@@ -22,7 +23,8 @@ public sealed class UserApplication(
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
     IUserTokenCacheService userTokenCacheService,
-    IUserInfoCacheInvalidationPublisher userInfoCacheInvalidationPublisher
+    IUserInfoCacheInvalidationPublisher userInfoCacheInvalidationPublisher,
+    IPermissionRepository permissionRepository
 ) : IUserApplication
 {
     public async Task<UserListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken)
@@ -52,7 +54,10 @@ public sealed class UserApplication(
             async () =>
             {
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
+                if (input.DefaultPageId.HasValue)
+                    await permissionRepository.AcquireCatalogSharedLockAsync(cancellationToken);
                 await ValidateOrganizationAsync(input.OrgId, cancellationToken);
+                await ValidateDefaultPageAsync(input.DefaultPageId, cancellationToken);
                 if (await userRepository.UsernameExistsAsync(username, cancellationToken))
                 {
                     throw new UserDomainException(MessageKeys.Users.UsernameExists, DomainErrorType.Conflict);
@@ -63,7 +68,8 @@ public sealed class UserApplication(
                     passwordHash,
                     input.DisplayName,
                     input.Phone,
-                    input.Email
+                    input.Email,
+                    input.DefaultPageId
                 )
                 {
                     Enable = input.Enable,
@@ -82,12 +88,16 @@ public sealed class UserApplication(
             async () =>
             {
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
+                if (input.DefaultPageId.HasValue)
+                    await permissionRepository.AcquireCatalogSharedLockAsync(cancellationToken);
                 var user = await GetRequiredAsync(id, cancellationToken);
                 await ValidateOrganizationAsync(input.OrgId, cancellationToken);
+                await ValidateDefaultPageAsync(input.DefaultPageId, cancellationToken);
                 user.UpdateProfile(
                     input.DisplayName,
                     input.Phone,
                     input.Email,
+                    input.DefaultPageId,
                     input.Version,
                     SystemIds.System,
                     DateTimeExtension.Now()
@@ -143,8 +153,21 @@ public sealed class UserApplication(
     /// <inheritdoc />
     public async Task<UserOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await userInfoCacheService.FindAsync(id, cancellationToken)
+        var user =
+            await userInfoCacheService.FindAsync(id, cancellationToken)
             ?? throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
+        var defaultPagePath = "";
+        if (user.DefaultPageId.HasValue)
+        {
+            // 权限可能在用户配置后被禁用或失去有效祖先，读取时必须按当前权限树重新判断。
+            var permission = (await permissionRepository.GetAllAsync(cancellationToken)).SingleOrDefault(candidate =>
+                candidate.Id == user.DefaultPageId.Value
+            );
+            if (permission is { Type: PermissionType.Page })
+                defaultPagePath = permission.RoutePath;
+        }
+
+        return new UserOutput(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, defaultPagePath);
     }
 
     /// <inheritdoc />
@@ -282,6 +305,27 @@ public sealed class UserApplication(
             throw new UserDomainException(MessageKeys.Users.OrganizationDisabled);
     }
 
+    private async Task ValidateDefaultPageAsync(Guid? id, CancellationToken cancellationToken)
+    {
+        if (!id.HasValue || id == Guid.Empty)
+            return;
+        var permission = (await permissionRepository.GetAllAsync(cancellationToken)).SingleOrDefault(candidate =>
+            candidate.Id == id.Value
+        );
+        if (permission is not { Type: PermissionType.Page })
+            throw new UserDomainException(MessageKeys.Users.DefaultPageInvalid);
+    }
+
     private static UserListOutput ToListOutput(User user) =>
-        new(user.Id, user.Username, user.DisplayName, user.Phone, user.Email, user.Enable, user.OrgId, user.Version);
+        new(
+            user.Id,
+            user.Username,
+            user.DisplayName,
+            user.Phone,
+            user.Email,
+            user.Enable,
+            user.OrgId,
+            user.Version,
+            user.DefaultPageId
+        );
 }

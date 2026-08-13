@@ -7,8 +7,16 @@ public sealed class User : AggregateRoot
 {
     private User() { }
 
-    public User(Guid id, string username, string passwordHash, string displayName, string phone, string email)
-        : this(id, username, passwordHash, displayName, phone, email, false) { }
+    public User(
+        Guid id,
+        string username,
+        string passwordHash,
+        string displayName,
+        string phone,
+        string email,
+        Guid? defaultPageId = null
+    )
+        : this(id, username, passwordHash, displayName, phone, email, defaultPageId, false) { }
 
     private User(
         Guid id,
@@ -17,6 +25,7 @@ public sealed class User : AggregateRoot
         string displayName,
         string phone,
         string email,
+        Guid? defaultPageId,
         bool restore
     )
     {
@@ -35,6 +44,7 @@ public sealed class User : AggregateRoot
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
         Email = RequireText(email, MessageKeys.Users.EmailRequired);
+        DefaultPageId = NormalizeOptionalId(defaultPageId);
     }
 
     internal static User Restore(
@@ -43,8 +53,9 @@ public sealed class User : AggregateRoot
         string passwordHash,
         string displayName,
         string phone,
-        string email
-    ) => new(id, username, passwordHash, displayName, phone, email, true);
+        string email,
+        Guid? defaultPageId = null
+    ) => new(id, username, passwordHash, displayName, phone, email, defaultPageId, true);
 
     /// <summary>
     /// 用户名。
@@ -71,10 +82,25 @@ public sealed class User : AggregateRoot
     /// </summary>
     public string Email { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// 登录后默认跳转的页面权限 ID。
+    /// </summary>
+    public Guid? DefaultPageId { get; private set; }
+
     public void UpdateProfile(
         string displayName,
         string phone,
         string email,
+        Guid version,
+        Guid updatedBy,
+        DateTimeOffset updatedAt
+    ) => UpdateProfile(displayName, phone, email, DefaultPageId, version, updatedBy, updatedAt);
+
+    public void UpdateProfile(
+        string displayName,
+        string phone,
+        string email,
+        Guid? defaultPageId,
         Guid version,
         Guid updatedBy,
         DateTimeOffset updatedAt
@@ -84,6 +110,7 @@ public sealed class User : AggregateRoot
         DisplayName = RequireText(displayName, MessageKeys.Users.DisplayNameRequired);
         Phone = RequireText(phone, MessageKeys.Users.PhoneRequired);
         Email = RequireText(email, MessageKeys.Users.EmailRequired);
+        DefaultPageId = NormalizeOptionalId(defaultPageId);
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;
     }
@@ -130,4 +157,6 @@ public sealed class User : AggregateRoot
     {
         return string.IsNullOrWhiteSpace(value) ? throw new UserDomainException(message) : value.Trim();
     }
+
+    private static Guid? NormalizeOptionalId(Guid? value) => value == Guid.Empty ? null : value;
 }
