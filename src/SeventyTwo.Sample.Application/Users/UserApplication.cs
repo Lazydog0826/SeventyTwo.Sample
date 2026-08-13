@@ -102,6 +102,8 @@ public sealed class UserApplication(
 
     public async Task SetEnableAsync(Guid id, SetUserEnableInput input, CancellationToken cancellationToken)
     {
+        // 规范：禁用或删除用户时，令牌失效标记必须在数据库事务提交前成功写入；即使后续回滚会造成额外登出，
+        // 也不得改为提交后异步失效，否则会产生用户已禁用或删除但旧令牌仍可用的安全窗口。
         await unitOfWork.ExecuteAsync(
             async () =>
             {
