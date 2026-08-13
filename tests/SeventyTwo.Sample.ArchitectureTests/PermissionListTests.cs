@@ -100,8 +100,10 @@ public sealed class PermissionListTests
         DateTimeOffset? deleteAt = null
     )
     {
+        var id = Guid.CreateVersion7();
         return new PermissionRecord
         {
+            Id = id,
             Code = code,
             Title = code,
             Type = PermissionType.Page,
@@ -111,6 +113,7 @@ public sealed class PermissionListTests
             RoutePath = $"/{code}",
             RouteName = code,
             MetaData = new PermissionMetaData(true),
+            Path = id.ToString(),
             DeleteAt = deleteAt,
         };
     }

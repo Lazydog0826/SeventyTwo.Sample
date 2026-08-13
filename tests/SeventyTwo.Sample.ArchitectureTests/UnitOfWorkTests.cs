@@ -315,6 +315,7 @@ public sealed class UnitOfWorkTests
             RoutePath = "/tests",
             RouteName = "Tests",
             MetaData = new PermissionMetaData(true),
+            Path = permissionId.ToString(),
         };
     }
 

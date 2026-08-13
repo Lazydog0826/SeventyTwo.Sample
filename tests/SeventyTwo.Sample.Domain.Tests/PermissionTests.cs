@@ -7,6 +7,41 @@ namespace SeventyTwo.Sample.Domain.Tests;
 public sealed class PermissionTests
 {
     [Fact]
+    public void Constructor_ShouldBuildHierarchyPath()
+    {
+        var root = CreatePage();
+        var childId = Guid.CreateVersion7();
+        var child = new Permission(
+            childId,
+            "child",
+            "子权限",
+            PermissionType.Page,
+            0,
+            null,
+            "/src/views/child.vue",
+            "/child",
+            "Child",
+            root.Id,
+            new PermissionMetaData(true),
+            $"{root.Path}/{childId}"
+        );
+
+        Assert.Equal(root.Id.ToString(), root.Path);
+        Assert.Equal($"{root.Id}/{childId}", child.Path);
+    }
+
+    [Fact]
+    public void ChangePath_ShouldUseNewParentPath()
+    {
+        var permission = CreatePage();
+        var parentId = Guid.CreateVersion7();
+
+        permission.ChangePath(parentId.ToString());
+
+        Assert.Equal($"{parentId}/{permission.Id}", permission.Path);
+    }
+
+    [Fact]
     public void CreatePage_ShouldNormalizeAndRequireRouteInformation()
     {
         var permission = CreatePage();

@@ -422,6 +422,54 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task Create_ShouldReportParentNotFound_WhenParentDoesNotExist()
+    {
+        var repository = new FakePermissionRepository([]);
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            null!
+        );
+        var input = CreateInput("Child") with { ParentId = Guid.CreateVersion7() };
+
+        var exception = await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.CreateAsync(input, CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Permissions.ParentNotFound, exception.Message);
+        Assert.Equal(DomainErrorType.NotFound, exception.ErrorType);
+    }
+
+    [Fact]
+    public async Task Create_ShouldReportParentIdRequired_WhenParentIdIsEmpty()
+    {
+        var repository = new FakePermissionRepository([]);
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            null!
+        );
+        var input = CreateInput("Child") with { ParentId = Guid.Empty };
+
+        var exception = await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.CreateAsync(input, CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Permissions.ParentIdRequired, exception.Message);
+        Assert.Equal(DomainErrorType.Validation, exception.ErrorType);
+    }
+
+    [Fact]
     public async Task ApplicationMutation_ShouldPublishCacheInvalidationMessage()
     {
         var permission = CreatePermission("Editable", PermissionType.Page);
@@ -952,8 +1000,9 @@ public sealed class PermissionCrudTests
         bool enable = true
     )
     {
+        var id = Guid.CreateVersion7();
         return new Permission(
-            Guid.CreateVersion7(),
+            id,
             code,
             code,
             type,
@@ -963,7 +1012,8 @@ public sealed class PermissionCrudTests
             type == PermissionType.Page ? $"/{code}" : null,
             type == PermissionType.Page ? code : null,
             parentId,
-            new PermissionMetaData(true)
+            new PermissionMetaData(true),
+            parentId is null ? null : $"{parentId}/{id}"
         )
         {
             Enable = enable,
@@ -1047,6 +1097,7 @@ public sealed class PermissionCrudTests
             Type = PermissionType.Directory,
             Icon = "Folder",
             ParentId = parentId,
+            Path = parentId is null ? id.ToString() : $"{parentId}/{id}",
             MetaData = new PermissionMetaData(true),
             Enable = enable,
         };
