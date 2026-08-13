@@ -4,6 +4,7 @@ using SeventyTwo.Sample.Application.Products;
 using SeventyTwo.Sample.Domain.Orders;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.WebApi.Controllers;
+using SeventyTwo.Sample.WebApi.Contracts.Products;
 
 namespace SeventyTwo.Sample.ArchitectureTests;
 
