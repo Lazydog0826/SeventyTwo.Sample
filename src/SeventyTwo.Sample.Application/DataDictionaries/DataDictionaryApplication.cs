@@ -90,7 +90,9 @@ public sealed class DataDictionaryApplication(
         };
     }
 
-    /// <summary>校验字典管理列表的分页参数。</summary>
+    /// <summary>
+    /// 校验字典管理列表的分页参数。
+    /// </summary>
     private static void ValidatePageRequest(PageRequest request)
     {
         if (request.Index <= 0)

@@ -4,7 +4,9 @@ using SeventyTwo.Sample.Application.DataDictionaries;
 
 namespace SeventyTwo.Sample.Infrastructure.Messaging;
 
-/// <summary>基于 CAP 的字典选项缓存失效消息发布器。</summary>
+/// <summary>
+/// 基于 CAP 的字典选项缓存失效消息发布器。
+/// </summary>
 [AutofacDependency(typeof(IDataDictionaryCacheInvalidationPublisher))]
 public sealed class CapDataDictionaryCacheInvalidationPublisher(ICapPublisher capPublisher)
     : IDataDictionaryCacheInvalidationPublisher
@@ -21,10 +23,14 @@ public sealed class CapDataDictionaryCacheInvalidationPublisher(ICapPublisher ca
     }
 }
 
-/// <summary>字典选项缓存失效消息消费者。</summary>
+/// <summary>
+/// 字典选项缓存失效消息消费者。
+/// </summary>
 public sealed class DataDictionaryCacheInvalidationConsumer(DataDictionaryCacheService cacheService) : ICapSubscribe
 {
-    /// <summary>消费消息并删除指定编码的缓存。</summary>
+    /// <summary>
+    /// 消费消息并删除指定编码的缓存。
+    /// </summary>
     [CapSubscribe(
         DataDictionaryCacheInvalidationMessage.TopicName,
         Group = DataDictionaryCacheInvalidationMessage.ConsumerGroup

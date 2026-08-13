@@ -9,12 +9,16 @@ using SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
-/// <summary>数据字典管理接口。</summary>
+/// <summary>
+/// 数据字典管理接口。
+/// </summary>
 [ApiController]
 [Route("api/dataDictionaries")]
 public sealed class DataDictionariesController(IDataDictionaryApplication application) : ControllerBase
 {
-    /// <summary>获取字典管理列表。</summary>
+    /// <summary>
+    /// 获取字典管理列表。
+    /// </summary>
     /// <param name="request">分页及筛选参数。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>字典分页数据。</returns>
@@ -29,7 +33,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>获取指定字典的字典项。</summary>
+    /// <summary>
+    /// 获取指定字典的字典项。
+    /// </summary>
     /// <param name="id">字典 ID。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>字典项及并发版本。</returns>
@@ -41,7 +47,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>创建字典。</summary>
+    /// <summary>
+    /// 创建字典。
+    /// </summary>
     /// <param name="request">创建请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>创建后的字典。</returns>
@@ -56,7 +64,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>更新字典。</summary>
+    /// <summary>
+    /// 更新字典。
+    /// </summary>
     /// <param name="request">更新请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>操作结果。</returns>
@@ -71,7 +81,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
-    /// <summary>删除字典及其字典项。</summary>
+    /// <summary>
+    /// 删除字典及其字典项。
+    /// </summary>
     /// <param name="request">删除请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>操作结果。</returns>
@@ -86,7 +98,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
-    /// <summary>创建字典项。</summary>
+    /// <summary>
+    /// 创建字典项。
+    /// </summary>
     /// <param name="request">创建请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>字典项及新版本。</returns>
@@ -101,7 +115,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>更新字典项。</summary>
+    /// <summary>
+    /// 更新字典项。
+    /// </summary>
     /// <param name="request">更新请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>字典项及新版本。</returns>
@@ -116,7 +132,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>删除字典项。</summary>
+    /// <summary>
+    /// 删除字典项。
+    /// </summary>
     /// <param name="request">删除请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>新版本。</returns>
@@ -131,7 +149,9 @@ public sealed class DataDictionariesController(IDataDictionaryApplication applic
             message: MessageKeys.Common.Success
         );
 
-    /// <summary>按字典编码获取业务选项。</summary>
+    /// <summary>
+    /// 按字典编码获取业务选项。
+    /// </summary>
     /// <param name="code">字典编码。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>按排序号排列的选项。</returns>

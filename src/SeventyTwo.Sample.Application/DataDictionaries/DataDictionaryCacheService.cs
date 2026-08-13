@@ -22,7 +22,9 @@ public sealed class DataDictionaryCacheService(
     private static readonly TimeSpan LockLeaseDuration = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LockExecutionTimeout = TimeSpan.FromSeconds(30);
 
-    /// <summary>获取缓存中的字典选项；缓存未命中时调用加载器。</summary>
+    /// <summary>
+    /// 获取缓存中的字典选项；缓存未命中时调用加载器。
+    /// </summary>
     public async Task<IReadOnlyList<DataDictionaryOptionOutput>?> GetOrLoadAsync(
         string code,
         Func<CancellationToken, Task<IReadOnlyList<DataDictionaryOptionOutput>?>> loader,
@@ -100,7 +102,9 @@ public sealed class DataDictionaryCacheService(
         }
     }
 
-    /// <summary>删除指定编码的字典选项缓存。</summary>
+    /// <summary>
+    /// 删除指定编码的字典选项缓存。
+    /// </summary>
     public async Task DeleteAsync(string code, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
