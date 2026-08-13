@@ -32,6 +32,7 @@ public sealed class BalanceChangeService(
         var allKeys = new List<string> { command.CustomerId.ToString() };
         var keys = await CheckWalletKeysExistAsync(allKeys);
 
+        // 规范：Redis 只用于减少锁记录的幂等插入；客户维度锁初始化必须在无外层数据库事务时提交，且事务内基于数据库行锁的锁完整性校验不得移除。
         if (keys.Any())
         {
             await walletRepository.EnsureChangeLocksAsync(keys, cancellationToken);
