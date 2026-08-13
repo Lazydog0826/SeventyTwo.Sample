@@ -25,15 +25,33 @@ public sealed record PermissionListOutput
 
 /// <summary>创建权限输入。</summary>
 public sealed record CreatePermissionInput(
-    string Code, string Title, PermissionType Type, bool Enable, int SortOrder, string? Icon,
-    string? VueComponentPath, string? RoutePath, string? RouteName, Guid? ParentId, PermissionMetaData? MetaData
+    string Code,
+    string Title,
+    PermissionType Type,
+    bool Enable,
+    int SortOrder,
+    string? Icon,
+    string? VueComponentPath,
+    string? RoutePath,
+    string? RouteName,
+    Guid? ParentId,
+    PermissionMetaData? MetaData
 );
 
 /// <summary>修改权限输入；<paramref name="Version"/> 用于乐观并发控制。</summary>
 public sealed record UpdatePermissionInput(
-    string Code, string Title, PermissionType Type, bool Enable, int SortOrder, string? Icon,
-    string? VueComponentPath, string? RoutePath, string? RouteName, Guid? ParentId,
-    PermissionMetaData? MetaData, Guid Version
+    string Code,
+    string Title,
+    PermissionType Type,
+    bool Enable,
+    int SortOrder,
+    string? Icon,
+    string? VueComponentPath,
+    string? RoutePath,
+    string? RouteName,
+    Guid? ParentId,
+    PermissionMetaData? MetaData,
+    Guid Version
 );
 
 /// <summary>用户权限输出。</summary>
