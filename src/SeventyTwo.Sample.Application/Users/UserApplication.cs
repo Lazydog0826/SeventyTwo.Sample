@@ -157,6 +157,7 @@ public sealed class UserApplication(
             await userInfoCacheService.FindAsync(id, cancellationToken)
             ?? throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
         var defaultPagePath = "";
+        // ReSharper disable once InvertIf
         if (user.DefaultPageId.HasValue)
         {
             // 权限可能在用户配置后被禁用或失去有效祖先，读取时必须按当前权限树重新判断。
