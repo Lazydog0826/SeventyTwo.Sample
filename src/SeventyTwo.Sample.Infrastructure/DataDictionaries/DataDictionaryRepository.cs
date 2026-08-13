@@ -45,12 +45,26 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
         return record.Adapt<DataDictionary>();
     }
 
-    public async Task<IReadOnlyList<DataDictionary>> GetListAsync(CancellationToken cancellationToken)
+    public async Task<DataDictionaryPage> GetPageAsync(
+        DataDictionaryPageRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var records = await db.Queryable<DataDictionaryRecord>()
+        var keyword = request.Keyword?.Trim().ToLowerInvariant();
+        var query = db.Queryable<DataDictionaryRecord>()
             .Where(dictionary => dictionary.OrgId == Guid.Empty && dictionary.DeleteAt == null)
+            .WhereIF(
+                !string.IsNullOrEmpty(keyword),
+                dictionary =>
+                    dictionary.Code.ToLower().Contains(keyword!) || dictionary.Name.ToLower().Contains(keyword!)
+            )
+            .WhereIF(request.Enable.HasValue, dictionary => dictionary.Enable == request.Enable)
             .OrderBy(dictionary => dictionary.CreatedAt)
-            .OrderBy(dictionary => dictionary.Id)
+            .OrderBy(dictionary => dictionary.Id);
+        var total = await query.CountAsync(cancellationToken);
+        var records = await query
+            .Skip((request.Index - 1) * request.Limit)
+            .Take(request.Limit)
             .ToListAsync(cancellationToken);
         var items = await GetItemRecordsAsync(records.Select(record => record.Id).ToArray(), cancellationToken);
         var itemsByDictionary = items.GroupBy(item => item.DictionaryId).ToDictionary(group => group.Key);
@@ -62,7 +76,7 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
             }
         }
 
-        return records.Adapt<List<DataDictionary>>();
+        return new DataDictionaryPage(records.Adapt<List<DataDictionary>>(), total);
     }
 
     public Task<bool> CodeExistsAsync(string code, Guid? excludedId, CancellationToken cancellationToken)

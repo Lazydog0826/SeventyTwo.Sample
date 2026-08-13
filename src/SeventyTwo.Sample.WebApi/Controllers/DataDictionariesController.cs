@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.DataDictionaries;
 using SeventyTwo.Sample.Application.Permissions;
+using SeventyTwo.Sample.Domain.DataDictionaries;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 
@@ -14,12 +15,19 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 public sealed class DataDictionariesController(IDataDictionaryApplication application) : ControllerBase
 {
     /// <summary>获取字典管理列表。</summary>
+    /// <param name="request">分页及筛选参数。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>字典列表。</returns>
+    /// <returns>字典分页数据。</returns>
     [HttpGet("list")]
     [Permission(PermissionMatchMode.All, "dataDictionariesList")]
-    public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken) =>
-        WebApiResponse.Query(await application.GetListAsync(cancellationToken), message: MessageKeys.Common.Success);
+    public async Task<IActionResult> GetListAsync(
+        [FromQuery] DataDictionaryPageRequest request,
+        CancellationToken cancellationToken
+    ) =>
+        WebApiResponse.Query(
+            await application.GetPageAsync(request, cancellationToken),
+            message: MessageKeys.Common.Success
+        );
 
     /// <summary>获取指定字典的字典项。</summary>
     /// <param name="id">字典 ID。</param>

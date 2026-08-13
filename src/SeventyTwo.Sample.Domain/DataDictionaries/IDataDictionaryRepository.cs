@@ -22,11 +22,12 @@ public interface IDataDictionaryRepository
     Task<DataDictionary?> FindEnabledByCodeAsync(string code, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取数据字典及其字典项列表。
+    /// 分页获取数据字典及其字典项。
     /// </summary>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>数据字典列表。</returns>
-    Task<IReadOnlyList<DataDictionary>> GetListAsync(CancellationToken cancellationToken);
+    Task<DataDictionaryPage> GetPageAsync(DataDictionaryPageRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// 检查数据字典编码是否已存在。
@@ -65,3 +66,14 @@ public interface IDataDictionaryRepository
     /// <param name="cancellationToken">取消令牌。</param>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }
+
+/// <summary>数据字典分页请求。</summary>
+public sealed class DataDictionaryPageRequest : PageRequest
+{
+    public string? Keyword { get; init; }
+
+    public bool? Enable { get; init; }
+}
+
+/// <summary>数据字典分页数据。</summary>
+public sealed record DataDictionaryPage(IReadOnlyCollection<DataDictionary> Items, int Total);

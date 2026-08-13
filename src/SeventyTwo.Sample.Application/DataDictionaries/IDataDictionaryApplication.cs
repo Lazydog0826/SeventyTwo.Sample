@@ -1,3 +1,5 @@
+using SeventyTwo.Sample.Domain.DataDictionaries;
+
 namespace SeventyTwo.Sample.Application.DataDictionaries;
 
 /// <summary>
@@ -29,11 +31,15 @@ public interface IDataDictionaryApplication
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取数据字典列表。
+    /// 分页获取数据字典列表。
     /// </summary>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>数据字典列表。</returns>
-    Task<IReadOnlyList<DataDictionaryListOutput>> GetListAsync(CancellationToken cancellationToken);
+    Task<PageResponse<DataDictionaryListOutput>> GetPageAsync(
+        DataDictionaryPageRequest request,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     /// 获取指定数据字典的字典项。

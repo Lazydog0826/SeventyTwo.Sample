@@ -50,10 +50,29 @@ public sealed class DataDictionaryApplication(IDataDictionaryRepository reposito
         await unitOfWork.ExecuteAsync(() => repository.DeleteAsync(id, cancellationToken), cancellationToken);
     }
 
-    public async Task<IReadOnlyList<DataDictionaryListOutput>> GetListAsync(CancellationToken cancellationToken)
+    public async Task<PageResponse<DataDictionaryListOutput>> GetPageAsync(
+        DataDictionaryPageRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var dictionaries = await repository.GetListAsync(cancellationToken);
-        return dictionaries.Adapt<List<DataDictionaryListOutput>>();
+        ValidatePageRequest(request);
+        var page = await repository.GetPageAsync(request, cancellationToken);
+        return new PageResponse<DataDictionaryListOutput>
+        {
+            List = page.Items.Adapt<List<DataDictionaryListOutput>>(),
+            Total = page.Total,
+        };
+    }
+
+    /// <summary>校验字典管理列表的分页参数。</summary>
+    private static void ValidatePageRequest(PageRequest request)
+    {
+        if (request.Index <= 0)
+            throw new DataDictionaryDomainException(MessageKeys.Paging.PageNumberMustBePositive);
+        if (request.Limit is <= 0 or > 100)
+            throw new DataDictionaryDomainException(MessageKeys.Paging.PageSizeOutOfRange100);
+        if (!request.IsOffsetWithinRange())
+            throw new DataDictionaryDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
     }
 
     public async Task<DataDictionaryItemsOutput> GetItemsAsync(Guid id, CancellationToken cancellationToken) =>

@@ -43,10 +43,25 @@ public sealed class UserApplication(
         return user.Adapt<UserListOutput>();
     }
 
-    public async Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken)
+    public async Task<PageResponse<UserListOutput>> GetPageAsync(
+        UserPageRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var users = await userRepository.GetListAsync(cancellationToken);
-        return users.Adapt<List<UserListOutput>>();
+        ValidatePageRequest(request);
+        var page = await userRepository.GetPageAsync(request, cancellationToken);
+        return new PageResponse<UserListOutput> { List = page.Items.Adapt<List<UserListOutput>>(), Total = page.Total };
+    }
+
+    /// <summary>校验用户管理列表的分页参数。</summary>
+    private static void ValidatePageRequest(PageRequest request)
+    {
+        if (request.Index <= 0)
+            throw new UserDomainException(MessageKeys.Paging.PageNumberMustBePositive);
+        if (request.Limit is <= 0 or > 100)
+            throw new UserDomainException(MessageKeys.Paging.PageSizeOutOfRange100);
+        if (!request.IsOffsetWithinRange())
+            throw new UserDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
     }
 
     public async Task<UserListOutput> CreateAsync(CreateUserInput input, CancellationToken cancellationToken)

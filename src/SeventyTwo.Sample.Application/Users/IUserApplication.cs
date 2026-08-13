@@ -1,3 +1,5 @@
+using SeventyTwo.Sample.Domain.Users;
+
 namespace SeventyTwo.Sample.Application.Users;
 
 /// <summary>
@@ -11,11 +13,12 @@ public interface IUserApplication
     Task<UserListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取用户列表。
+    /// 分页获取用户列表。
     /// </summary>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>用户只读列表。</returns>
-    Task<IReadOnlyList<UserListOutput>> GetListAsync(CancellationToken cancellationToken);
+    Task<PageResponse<UserListOutput>> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// 创建用户。

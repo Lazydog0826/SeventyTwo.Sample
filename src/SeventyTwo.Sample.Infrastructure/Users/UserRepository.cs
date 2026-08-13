@@ -37,14 +37,28 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
         return user?.Adapt<User>();
     }
 
-    public async Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken)
+    public async Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken)
     {
-        var records = await db.Queryable<UserAccountRecord>()
+        var keyword = request.Keyword?.Trim().ToLowerInvariant();
+        var query = db.Queryable<UserAccountRecord>()
             .Where(x => x.DeleteAt == null && x.Username != SystemUsernames.SuperAdmin)
+            .WhereIF(
+                !string.IsNullOrEmpty(keyword),
+                x =>
+                    x.Username.ToLower().Contains(keyword!)
+                    || x.DisplayName.ToLower().Contains(keyword!)
+                    || x.Phone.ToLower().Contains(keyword!)
+                    || x.Email.ToLower().Contains(keyword!)
+            )
+            .WhereIF(request.Enable.HasValue, x => x.Enable == request.Enable)
             .OrderBy(x => x.CreatedAt)
-            .OrderBy(x => x.Id)
+            .OrderBy(x => x.Id);
+        var total = await query.CountAsync(cancellationToken);
+        var records = await query
+            .Skip((request.Index - 1) * request.Limit)
+            .Take(request.Limit)
             .ToListAsync(cancellationToken);
-        return records.Adapt<List<User>>();
+        return new UserPage(records.Adapt<List<User>>(), total);
     }
 
     public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>

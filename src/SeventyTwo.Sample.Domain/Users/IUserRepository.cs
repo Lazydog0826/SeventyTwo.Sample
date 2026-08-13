@@ -29,11 +29,12 @@ public interface IUserRepository
     Task<User?> GetByAccountAsync(string account, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 获取所有未删除的用户。
+    /// 分页查询未删除的用户。
     /// </summary>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>用户只读列表。</returns>
-    Task<IReadOnlyList<User>> GetListAsync(CancellationToken cancellationToken);
+    Task<UserPage> GetPageAsync(UserPageRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// 检查是否存在指定用户名的未删除用户。
@@ -70,3 +71,14 @@ public interface IUserRepository
     /// <param name="cancellationToken">取消令牌。</param>
     Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken);
 }
+
+/// <summary>用户分页请求。</summary>
+public sealed class UserPageRequest : PageRequest
+{
+    public string? Keyword { get; init; }
+
+    public bool? Enable { get; init; }
+}
+
+/// <summary>用户分页数据。</summary>
+public sealed record UserPage(IReadOnlyCollection<User> Items, int Total);

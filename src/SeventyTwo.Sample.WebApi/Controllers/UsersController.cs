@@ -6,6 +6,7 @@ using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Organizations;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Users;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Contracts.Users;
 
@@ -39,13 +40,17 @@ public sealed class UsersController(
     /// <summary>
     /// 获取用户管理列表。
     /// </summary>
+    /// <param name="request">分页及筛选参数。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>所有未删除的用户。</returns>
+    /// <returns>用户分页数据。</returns>
     [HttpGet("list")]
     [Permission(PermissionMatchMode.All, "usersList")]
-    public async Task<IActionResult> GetListAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetListAsync(
+        [FromQuery] UserPageRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        var data = await userApplication.GetListAsync(cancellationToken);
+        var data = await userApplication.GetPageAsync(request, cancellationToken);
         return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
     }
 
