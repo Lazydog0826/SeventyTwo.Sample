@@ -121,6 +121,30 @@ public sealed class UserRepository(ISqlSugarClient db) : IUserRepository
         user.Version = nextVersion;
     }
 
+    public async Task SavePasswordAsync(User user, CancellationToken cancellationToken)
+    {
+        var nextVersion = Guid.CreateVersion7();
+        var record = new UserAccountRecord
+        {
+            Id = user.Id,
+            PasswordHash = user.PasswordHash,
+            UpdatedBy = user.UpdatedBy,
+            UpdatedAt = user.UpdatedAt,
+            Version = nextVersion,
+        };
+        var affectedRows = await db.Updateable(record)
+            .UpdateColumns(x => new { x.PasswordHash, x.UpdatedBy, x.UpdatedAt, x.Version })
+            .Where(x => x.Id == user.Id && x.Version == user.Version && x.DeleteAt == null)
+            .ExecuteCommandAsync(cancellationToken);
+        if (affectedRows == 0)
+        {
+            if (await GetAsync(user.Id, cancellationToken) is not null)
+                throw new UserDomainException(MessageKeys.Users.DataChanged, DomainErrorType.Conflict);
+            throw new UserDomainException(MessageKeys.Users.NotFound, DomainErrorType.NotFound);
+        }
+        user.Version = nextVersion;
+    }
+
     public async Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
     {
         if (await db.Queryable<UserPermissionRecord>().Where(x => x.UserId == id).AnyAsync(cancellationToken))

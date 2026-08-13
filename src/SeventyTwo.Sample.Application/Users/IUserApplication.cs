@@ -42,6 +42,11 @@ public interface IUserApplication
     Task SetEnableAsync(Guid id, SetUserEnableInput input, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 为指定用户生成并设置新密码，同时使既有登录会话失效。
+    /// </summary>
+    Task<ResetPasswordOutput> ResetPasswordAsync(Guid id, Guid version, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 删除指定用户。
     /// </summary>
     /// <param name="id">用户 ID。</param>

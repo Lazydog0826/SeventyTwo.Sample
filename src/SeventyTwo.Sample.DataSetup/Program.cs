@@ -65,6 +65,7 @@ try
     var usersUpdatePermissionId = Guid.CreateVersion7();
     var usersDeletePermissionId = Guid.CreateVersion7();
     var usersAuthorizePermissionId = Guid.CreateVersion7();
+    var usersResetPasswordPermissionId = Guid.CreateVersion7();
     var passwordHash = new PasswordHasher<string>().HashPassword(SystemUsernames.SuperAdmin, initialPassword);
 
     db.Insertable(
@@ -390,6 +391,18 @@ try
                     SortOrder = 405,
                     ParentId = usersListPermissionId,
                     Path = $"{usersPermissionId}/{usersListPermissionId}/{usersAuthorizePermissionId}",
+                    MetaData = default,
+                    OrgId = Guid.Empty,
+                },
+                new PermissionRecord
+                {
+                    Id = usersResetPasswordPermissionId,
+                    Code = "usersResetPassword",
+                    Title = "重置用户密码",
+                    Type = PermissionType.Button,
+                    SortOrder = 406,
+                    ParentId = usersListPermissionId,
+                    Path = $"{usersPermissionId}/{usersListPermissionId}/{usersResetPasswordPermissionId}",
                     MetaData = default,
                     OrgId = Guid.Empty,
                 },

@@ -101,3 +101,8 @@ public sealed record UpdateUserInput(
 /// <param name="Enable">是否启用。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
 public sealed record SetUserEnableInput(bool Enable, Guid Version);
+
+/// <summary>
+/// 密码重置结果；明文密码仅通过本次响应返回。
+/// </summary>
+public sealed record ResetPasswordOutput(string Password);

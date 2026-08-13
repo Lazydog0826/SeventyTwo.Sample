@@ -123,6 +123,17 @@ public sealed class User : AggregateRoot
         UpdatedAt = updatedAt;
     }
 
+    /// <summary>
+    /// 重置密码摘要，并通过并发版本防止覆盖其他用户变更。
+    /// </summary>
+    public void ResetPassword(string passwordHash, Guid version, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        ValidateMutation(version, updatedAt);
+        PasswordHash = RequireText(passwordHash, MessageKeys.Users.PasswordHashRequired);
+        UpdatedBy = updatedBy;
+        UpdatedAt = updatedAt;
+    }
+
     public void EnsureCanDelete(Guid version)
     {
         EnsureMutable();

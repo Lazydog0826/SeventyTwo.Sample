@@ -138,6 +138,20 @@ public sealed class UsersController(
     }
 
     /// <summary>
+    /// 重置指定用户的密码，并仅在本次响应中返回生成的密码。
+    /// </summary>
+    [HttpPost("reset-password")]
+    [Permission(PermissionMatchMode.All, "usersResetPassword")]
+    public async Task<IActionResult> ResetPasswordAsync(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        var data = await userApplication.ResetPasswordAsync(request.Id, request.Version, cancellationToken);
+        return WebApiResponse.Query(data, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
     /// 删除用户。
     /// </summary>
     /// <param name="request">用户删除请求，包含客户端持有的并发版本。</param>

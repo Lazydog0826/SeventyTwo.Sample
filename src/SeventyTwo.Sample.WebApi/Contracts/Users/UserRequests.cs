@@ -82,3 +82,8 @@ public sealed record SetUserEnableRequest(Guid Id, bool Enable, Guid Version);
 /// <param name="Id">用户 ID。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
 public sealed record DeleteUserRequest(Guid Id, Guid Version);
+
+/// <summary>
+/// 用户密码重置请求。
+/// </summary>
+public sealed record ResetPasswordRequest(Guid Id, Guid Version);

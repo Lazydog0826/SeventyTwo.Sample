@@ -58,6 +58,11 @@ public interface IUserRepository
     Task SaveAsync(User user, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 使用乐观锁保存密码摘要变更。
+    /// </summary>
+    Task SavePasswordAsync(User user, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 使用乐观锁删除指定用户。
     /// </summary>
     /// <param name="id">用户 ID。</param>

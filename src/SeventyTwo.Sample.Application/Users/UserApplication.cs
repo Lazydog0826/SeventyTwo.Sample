@@ -1,5 +1,6 @@
 using Mapster;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Cryptography;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Application.Authentication;
@@ -27,6 +28,11 @@ public sealed class UserApplication(
     IPermissionRepository permissionRepository
 ) : IUserApplication
 {
+    private const string PasswordUppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    private const string PasswordLowercase = "abcdefghijkmnopqrstuvwxyz";
+    private const string PasswordDigits = "23456789";
+    private const string PasswordSpecial = "!@#$%^&*-_+";
+
     public async Task<UserListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await GetRequiredAsync(id, cancellationToken);
@@ -129,6 +135,32 @@ public sealed class UserApplication(
             },
             cancellationToken
         );
+    }
+
+    public async Task<ResetPasswordOutput> ResetPasswordAsync(
+        Guid id,
+        Guid version,
+        CancellationToken cancellationToken
+    )
+    {
+        var password = GeneratePassword();
+        await unitOfWork.ExecuteAsync(
+            async () =>
+            {
+                await userRepository.AcquireSecurityLockAsync(id, cancellationToken);
+                var user = await GetRequiredAsync(id, cancellationToken);
+                var passwordHash = new PasswordHasher<string>().HashPassword(user.Username, password);
+                user.ResetPassword(passwordHash, version, SystemIds.System, DateTimeExtension.Now());
+                await userRepository.SavePasswordAsync(user, cancellationToken);
+                // 密码变更与禁用、删除具有相同的会话安全要求，失效标记必须在事务提交前写入。
+                // 失效时间与 JWT iat 均为秒级；重置后同一秒立即登录时，新令牌可能被判为失效。
+                // 该极短边界属于当前方案的已知取舍，不额外等待或引入安全版本号处理。
+                if (!await userTokenCacheService.SetInvalidBeforeAsync(id, cancellationToken))
+                    throw new InvalidOperationException("设置用户令牌失效时间失败");
+            },
+            cancellationToken
+        );
+        return new ResetPasswordOutput(password);
     }
 
     public async Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
@@ -290,6 +322,28 @@ public sealed class UserApplication(
         string.IsNullOrWhiteSpace(value)
             ? throw new UserDomainException(MessageKeys.Validation.PasswordRequired)
             : value;
+
+    private static string GeneratePassword()
+    {
+        var characterGroups = new[] { PasswordUppercase, PasswordLowercase, PasswordDigits, PasswordSpecial };
+        var allCharacters = string.Concat(characterGroups);
+        var password = new char[16];
+        for (var index = 0; index < characterGroups.Length; index++)
+        {
+            var group = characterGroups[index];
+            password[index] = group[RandomNumberGenerator.GetInt32(group.Length)];
+        }
+        for (var index = characterGroups.Length; index < password.Length; index++)
+            password[index] = allCharacters[RandomNumberGenerator.GetInt32(allCharacters.Length)];
+
+        // 打散强制字符的位置，避免密码结构泄露固定模式。
+        for (var index = password.Length - 1; index > 0; index--)
+        {
+            var target = RandomNumberGenerator.GetInt32(index + 1);
+            (password[index], password[target]) = (password[target], password[index]);
+        }
+        return new string(password);
+    }
 
     private async Task ValidateOrganizationAsync(Guid orgId, CancellationToken cancellationToken)
     {
