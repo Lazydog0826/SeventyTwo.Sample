@@ -13,6 +13,9 @@ public static partial class MessageKeys
         /// <summary>每页数量必须在一到一千之间。</summary>
         public const string PageSizeOutOfRange1000 = "paging.pageSizeOutOfRange1000";
 
+        /// <summary>分页偏移超出支持范围。</summary>
+        public const string PageOffsetOutOfRange = "paging.pageOffsetOutOfRange";
+
         /// <summary>游标时间和游标 ID 必须同时提供。</summary>
         public const string CursorFieldsMustBeProvidedTogether = "paging.cursorFieldsMustBeProvidedTogether";
 

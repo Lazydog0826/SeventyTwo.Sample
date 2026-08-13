@@ -23,6 +23,11 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
             throw new OrderDomainException(MessageKeys.Paging.PageSizeOutOfRange1000);
         }
 
+        if (!request.IsOffsetWithinRange())
+        {
+            throw new OrderDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
+        }
+
         var page = await orderRepository.GetPageAsync(request, cancellationToken);
         return new PageResponse<OrderOutput> { List = page.Items.Adapt<List<OrderOutput>>(), Total = page.Total };
     }
@@ -40,6 +45,11 @@ public class OrderApplication(IOrderRepository orderRepository) : IOrderApplicat
         if (request.Limit is <= 0 or > 1000)
         {
             throw new OrderDomainException(MessageKeys.Paging.PageSizeOutOfRange1000);
+        }
+
+        if (!request.IsOffsetWithinRange())
+        {
+            throw new OrderDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
         }
 
         var page = await orderRepository.GetPageByIdsAsync(request, cancellationToken);

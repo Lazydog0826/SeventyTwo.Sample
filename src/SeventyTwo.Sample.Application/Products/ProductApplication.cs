@@ -56,6 +56,11 @@ public sealed class ProductApplication(IProductRepository productRepository) : I
             throw new ProductDomainException(MessageKeys.Paging.PageSizeOutOfRange100);
         }
 
+        if (!request.IsOffsetWithinRange())
+        {
+            throw new ProductDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
+        }
+
         var page = await productRepository.GetPageAsync(request, cancellationToken);
         return new PageResponse<ProductOutput> { List = page.Items.Adapt<List<ProductOutput>>(), Total = page.Total };
     }
