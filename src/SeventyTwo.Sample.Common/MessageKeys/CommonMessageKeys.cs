@@ -7,10 +7,14 @@ public static partial class MessageKeys
 {
     public static class Common
     {
-        /// <summary>操作成功。</summary>
+        /// <summary>
+        /// 操作成功。
+        /// </summary>
         public const string Success = "common.success";
 
-        /// <summary>系统内部错误。</summary>
+        /// <summary>
+        /// 系统内部错误。
+        /// </summary>
         public const string InternalError = "common.internalError";
     }
 }

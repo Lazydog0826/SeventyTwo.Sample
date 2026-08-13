@@ -1,5 +1,8 @@
 using SeventyTwo.Sample.Domain.Wallets;
 
+// ReSharper disable NotAccessedPositionalProperty.Global
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace SeventyTwo.Sample.Application.Wallets.BalanceChange;
 
 public sealed record BalanceChangeInput(
