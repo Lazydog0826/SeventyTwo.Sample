@@ -104,7 +104,7 @@ try
                 {
                     Id = Guid.CreateVersion7(),
                     DictionaryId = dataPermissionTypeDictionaryId,
-                    Value = ((short)DataPermissionType.All).ToString(),
+                    Value = nameof(DataPermissionType.All),
                     Label = "全部数据",
                     SortOrder = 1,
                 },
@@ -112,7 +112,7 @@ try
                 {
                     Id = Guid.CreateVersion7(),
                     DictionaryId = dataPermissionTypeDictionaryId,
-                    Value = ((short)DataPermissionType.Organization).ToString(),
+                    Value = nameof(DataPermissionType.Organization),
                     Label = "本机构数据",
                     SortOrder = 2,
                 },
@@ -120,7 +120,7 @@ try
                 {
                     Id = Guid.CreateVersion7(),
                     DictionaryId = dataPermissionTypeDictionaryId,
-                    Value = ((short)DataPermissionType.OrganizationAndDescendants).ToString(),
+                    Value = nameof(DataPermissionType.OrganizationAndDescendants),
                     Label = "本机构与下级机构数据",
                     SortOrder = 3,
                 },
@@ -128,7 +128,7 @@ try
                 {
                     Id = Guid.CreateVersion7(),
                     DictionaryId = dataPermissionTypeDictionaryId,
-                    Value = ((short)DataPermissionType.Self).ToString(),
+                    Value = nameof(DataPermissionType.Self),
                     Label = "自己的数据",
                     SortOrder = 4,
                 },
