@@ -13,13 +13,13 @@ public sealed class Permission : AggregateRoot
         string title,
         PermissionType type,
         int sortOrder,
-        string? icon,
-        string? vueComponentPath,
-        string? routePath,
-        string? routeName,
+        string icon,
+        string vueComponentPath,
+        string routePath,
+        string routeName,
         Guid? parentId,
         PermissionMetaData? metaData = null,
-        string? path = null
+        string path = ""
     )
     {
         if (id == Guid.Empty)
@@ -55,10 +55,10 @@ public sealed class Permission : AggregateRoot
         PermissionType type,
         bool enable,
         int sortOrder,
-        string? icon,
-        string? vueComponentPath,
-        string? routePath,
-        string? routeName,
+        string icon,
+        string vueComponentPath,
+        string routePath,
+        string routeName,
         Guid? parentId,
         PermissionMetaData? metaData,
         Guid version,
@@ -87,10 +87,10 @@ public sealed class Permission : AggregateRoot
         string title,
         PermissionType type,
         int sortOrder,
-        string? icon,
-        string? vueComponentPath,
-        string? routePath,
-        string? routeName,
+        string icon,
+        string vueComponentPath,
+        string routePath,
+        string routeName,
         Guid? parentId,
         PermissionMetaData? metaData
     )
@@ -214,22 +214,22 @@ public sealed class Permission : AggregateRoot
     /// <summary>
     /// 根据新的上级权限更新层级路径；上级为空时重置为根路径。
     /// </summary>
-    public void ChangePath(string? parentPath)
+    public void ChangePath(string parentPath)
     {
-        Path = parentPath is null ? Id.ToString() : $"{RequirePath(parentPath)}/{Id}";
+        Path = string.IsNullOrEmpty(parentPath) ? Id.ToString() : $"{RequirePath(parentPath)}/{Id}";
     }
 
-    private static string RequireText(string? value, string message)
+    private static string RequireText(string value, string message)
     {
         return string.IsNullOrWhiteSpace(value) ? throw new PermissionDomainException(message) : value.Trim();
     }
 
-    private static string NormalizeOptionalText(string? value)
+    private static string NormalizeOptionalText(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
-    private static string RequirePath(string? path)
+    private static string RequirePath(string path)
     {
         return string.IsNullOrWhiteSpace(path)
             ? throw new ArgumentException("上级权限 Path 不能为空。", nameof(path))

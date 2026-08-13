@@ -202,7 +202,7 @@ public sealed class PermissionCacheService(
 
             return permissions;
         }
-        catch (Exception exception) when (exception is JsonException or PermissionDomainException)
+        catch (Exception exception) when (exception is JsonException or PermissionDomainException or ArgumentException)
         {
             // 任一缓存项无效时重新加载全部权限，避免返回不完整数据。
             return null;
@@ -273,6 +273,7 @@ public sealed class PermissionCacheService(
         string RoutePath,
         string RouteName,
         Guid? ParentId,
+        string Path,
         PermissionMetaData MetaData,
         bool Enable,
         Guid? DeleteBy,
@@ -316,7 +317,8 @@ public sealed class PermissionCacheService(
                 source.RoutePath,
                 source.RouteName,
                 source.ParentId,
-                source.MetaData
+                source.MetaData,
+                source.Path
             ));
         return config;
     }

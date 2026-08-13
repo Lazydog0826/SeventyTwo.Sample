@@ -50,7 +50,7 @@ public sealed class PermissionApplication(
                     input.RouteName,
                     input.ParentId,
                     input.MetaData,
-                    parent is null ? null : $"{parent.Path}/{id}"
+                    parent is null ? string.Empty : $"{parent.Path}/{id}"
                 )
                 {
                     Enable = input.Enable,
@@ -96,7 +96,7 @@ public sealed class PermissionApplication(
                     SystemIds.System,
                     DateTimeExtension.Now()
                 );
-                permission.ChangePath(parent?.Path);
+                permission.ChangePath(parent?.Path ?? string.Empty);
                 await permissionRepository.SaveAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
