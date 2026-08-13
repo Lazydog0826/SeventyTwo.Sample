@@ -311,5 +311,4 @@ public sealed class UserApplication(
         if (permission is not { Type: PermissionType.Page })
             throw new UserDomainException(MessageKeys.Users.DefaultPageInvalid);
     }
-
 }

@@ -1,7 +1,6 @@
 using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Application.Wallets.BalanceChange;
-using SeventyTwo.Sample.Domain.Wallets;
 
 namespace SeventyTwo.Sample.Application.Wallets;
 

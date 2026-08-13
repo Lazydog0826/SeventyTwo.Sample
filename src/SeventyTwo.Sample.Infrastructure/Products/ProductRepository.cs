@@ -1,5 +1,5 @@
-using SeventyTwo.InfraKit.Autofac;
 using Mapster;
+using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;

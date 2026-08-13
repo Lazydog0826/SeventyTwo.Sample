@@ -309,5 +309,4 @@ public sealed class PermissionApplication(
             currentId = byId.TryGetValue(currentId.Value, out var current) ? current.ParentId : null;
         }
     }
-
 }

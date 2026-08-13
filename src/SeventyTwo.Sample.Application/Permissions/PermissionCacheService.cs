@@ -7,6 +7,9 @@ using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Domain.Permissions;
 using StackExchange.Redis;
 
+// ReSharper disable ClassNeverInstantiated.Local
+// ReSharper disable NotAccessedPositionalProperty.Local
+
 namespace SeventyTwo.Sample.Application.Permissions;
 
 /// <summary>

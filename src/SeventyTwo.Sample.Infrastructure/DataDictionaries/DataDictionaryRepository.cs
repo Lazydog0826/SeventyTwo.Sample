@@ -219,5 +219,4 @@ public sealed class DataDictionaryRepository(ISqlSugarClient db) : IDataDictiona
             .OrderBy(item => item.Id)
             .ToListAsync(cancellationToken);
     }
-
 }
