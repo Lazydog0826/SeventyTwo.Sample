@@ -1,5 +1,6 @@
 using Mapster;
 using SeventyTwo.Sample.Application.DataDictionaries;
+using SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 

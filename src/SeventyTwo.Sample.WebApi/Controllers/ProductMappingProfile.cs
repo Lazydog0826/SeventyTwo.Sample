@@ -1,5 +1,6 @@
 using Mapster;
 using SeventyTwo.Sample.Application.Products;
+using SeventyTwo.Sample.WebApi.Contracts.Products;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 

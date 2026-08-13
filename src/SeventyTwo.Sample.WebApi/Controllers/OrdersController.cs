@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Orders;
 using SeventyTwo.Sample.Domain.Orders;
-
-// ReSharper disable ClassNeverInstantiated.Global
+using SeventyTwo.Sample.WebApi.Contracts.Orders;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
@@ -67,9 +66,3 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
         return orderApplication.GetPageByCursorAsync(request, cancellationToken);
     }
 }
-
-/// <summary>
-/// 随机订单生成请求。
-/// </summary>
-/// <param name="Count">生成数量。</param>
-public sealed record RandomOrdersRequest(int Count);

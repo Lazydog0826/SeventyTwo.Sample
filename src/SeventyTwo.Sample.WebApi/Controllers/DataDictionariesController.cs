@@ -2,6 +2,7 @@ using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.DataDictionaries;
+using SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.WebApi.Authentication;
 

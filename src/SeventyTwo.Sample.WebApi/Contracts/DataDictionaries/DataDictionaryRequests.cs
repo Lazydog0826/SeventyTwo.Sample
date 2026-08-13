@@ -1,5 +1,5 @@
 // ReSharper disable NotAccessedPositionalProperty.Global
-namespace SeventyTwo.Sample.WebApi.Controllers;
+namespace SeventyTwo.Sample.WebApi.Contracts.DataDictionaries;
 
 /// <summary>创建字典请求。</summary>
 /// <param name="Code">编码。</param>
