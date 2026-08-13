@@ -422,6 +422,45 @@ public sealed class PermissionCrudTests
     }
 
     [Fact]
+    public async Task GetDefaultPageOptions_ShouldBuildHierarchicalTitleFromPath()
+    {
+        var root = CreatePermission("Root", PermissionType.Directory);
+        var child = CreatePermission("Child", PermissionType.Directory, root.Id);
+        var pageId = Guid.CreateVersion7();
+        var page = new Permission(
+            pageId,
+            "Page",
+            "Page",
+            PermissionType.Page,
+            0,
+            null,
+            "/src/views/Page.vue",
+            "/Page",
+            "Page",
+            child.Id,
+            new PermissionMetaData(true),
+            $"{root.Id}/{child.Id}/{pageId}"
+        );
+        var repository = new FakePermissionRepository([root, child, page]);
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            null!
+        );
+
+        var options = await application.GetDefaultPageOptionsAsync(CancellationToken.None);
+
+        var option = Assert.Single(options);
+        Assert.Equal(page.Id, option.Id);
+        Assert.Equal("Root / Child / Page", option.Title);
+    }
+
+    [Fact]
     public async Task Create_ShouldReportParentNotFound_WhenParentDoesNotExist()
     {
         var repository = new FakePermissionRepository([]);
