@@ -49,6 +49,8 @@ tests/
 }
 ```
 
+规范：初始化程序仅用于全新空库且只能执行一次；它不是可重复执行的数据迁移程序。
+
 运行初始化程序：
 
 ```powershell
@@ -97,6 +99,8 @@ dotnet run --project src/SeventyTwo.Sample.WebApi
 docker build -t seventytwo-sample .
 docker run --rm -p 8080:8080 seventytwo-sample
 ```
+
+规范：容器的 HTTP `8080` 端口仅用于受信任内网；生产环境必须经 TLS 反向代理访问，且不得将使用 Basic Authentication 的 `/cap` 直接暴露到公网。
 
 生产部署时需通过配置文件、环境变量或挂载文件提供 Web API 配置。
 

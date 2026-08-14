@@ -9,6 +9,7 @@
         <PackageReference Include="DotNetCore.CAP.PostgreSql" />
         <PackageReference Include="Mapster" />
         <PackageReference Include="SeventyTwo.InfraKit" />
+        <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
         <PackageReference Include="SqlSugarCore" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     </ItemGroup>
