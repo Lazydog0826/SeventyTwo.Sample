@@ -117,6 +117,16 @@ builder
 
 #endregion
 
+#region 刷新令牌 Cookie 配置
+
+builder
+    .Services.AddOptions<RefreshTokenCookieConfiguration>()
+    .BindConfiguration(nameof(RefreshTokenCookieConfiguration))
+    .Validate(options => options.SameSite is SameSiteMode.Lax or SameSiteMode.Strict, "SameSite 必须为 Lax 或 Strict")
+    .ValidateOnStart();
+
+#endregion
+
 #region 异常处理
 
 // 注册全局 API 异常处理器与标准 Problem Details 响应支持。

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Organizations;
 using SeventyTwo.Sample.Application.Permissions;
@@ -9,6 +10,7 @@ using SeventyTwo.Sample.Application.Users;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Contracts.Users;
+using SeventyTwo.Sample.WebApi.Infrastructure;
 
 namespace SeventyTwo.Sample.WebApi.Controllers;
 
@@ -18,12 +20,14 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 /// <param name="userApplication">用户应用服务。</param>
 /// <param name="organizationApplication">机构应用服务。</param>
 /// <param name="permissionApplication">权限应用服务。</param>
+/// <param name="refreshTokenCookieConfiguration">刷新令牌 Cookie 配置。</param>
 [ApiController]
 [Route("api/users")]
 public sealed class UsersController(
     IUserApplication userApplication,
     IOrganizationApplication organizationApplication,
-    IPermissionApplication permissionApplication
+    IPermissionApplication permissionApplication,
+    IOptions<RefreshTokenCookieConfiguration> refreshTokenCookieConfiguration
 ) : ControllerBase
 {
     /// <summary>
@@ -260,7 +264,7 @@ public sealed class UsersController(
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Lax,
+                SameSite = refreshTokenCookieConfiguration.Value.SameSite,
                 Path = "/",
             }
         );
@@ -280,10 +284,7 @@ public sealed class UsersController(
             {
                 HttpOnly = true,
                 Secure = true,
-                // 当前前后端即使端口不同，只要仍是同一 schemeful site，Lax 即可满足刷新 Cookie。
-                // 若生产环境部署为不同站点（不同 scheme 或注册域），规范要求改用 SameSite=None；
-                // 同时继续强制 Secure，并将 CORS 精确限制为可信前端来源；优先通过同站反向代理部署。
-                SameSite = SameSiteMode.Lax,
+                SameSite = refreshTokenCookieConfiguration.Value.SameSite,
                 Expires = data.ExpireTime,
                 Path = "/",
             }
