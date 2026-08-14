@@ -21,6 +21,25 @@ public sealed class PermissionApplication(
     IUserRepository userRepository
 ) : IPermissionApplication
 {
+    // 动态页面路由不得覆盖前端初始化时注册的静态路由。
+    private static readonly HashSet<string> FrontendStaticRoutePaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/login",
+        "/",
+        "/404",
+        "/403",
+        "/default-page-unconfigured",
+    };
+
+    private static readonly HashSet<string> FrontendStaticRouteNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "login",
+        "layout",
+        "404",
+        "403",
+        "defaultPageUnconfigured",
+    };
+
     /// <inheritdoc />
     public async Task<PermissionListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
         (await GetRequiredAsync(id, cancellationToken)).Adapt<PermissionListOutput>();
@@ -56,6 +75,7 @@ public sealed class PermissionApplication(
                     Enable = input.Enable,
                 };
                 await ValidateCodeAsync(permission.Code, null, cancellationToken);
+                await ValidatePageRouteAsync(permission, null, cancellationToken);
                 await permissionRepository.AddAsync(permission, cancellationToken);
                 await cacheInvalidationPublisher.PublishAsync(cancellationToken);
                 await userPermissionCacheInvalidationPublisher.PublishAsync(Guid.Empty, true, cancellationToken);
@@ -79,6 +99,7 @@ public sealed class PermissionApplication(
                 await permissionRepository.AcquireCatalogMutationLockAsync(cancellationToken);
                 var permission = await GetRequiredAsync(id, cancellationToken);
                 await ValidateCodeAsync(input.Code.Trim(), id, cancellationToken);
+                await ValidatePageRouteAsync(input.Type, input.RoutePath, input.RouteName, id, cancellationToken);
                 var parent = await ValidateParentAsync(id, input.ParentId, cancellationToken);
                 permission.Update(
                     input.Code,
@@ -283,6 +304,60 @@ public sealed class PermissionApplication(
         if (await permissionRepository.CodeExistsAsync(code, excludedId, cancellationToken))
         {
             throw new PermissionDomainException(MessageKeys.Permissions.CodeExists, DomainErrorType.Conflict);
+        }
+    }
+
+    /// <summary>
+    /// 验证页面路由未与其他页面或前端静态路由冲突。
+    /// </summary>
+    private Task ValidatePageRouteAsync(Permission permission, Guid? excludedId, CancellationToken cancellationToken) =>
+        ValidatePageRouteAsync(
+            permission.Type,
+            permission.RoutePath,
+            permission.RouteName,
+            excludedId,
+            cancellationToken
+        );
+
+    /// <summary>
+    /// 验证页面路由未与其他页面或前端静态路由冲突。
+    /// </summary>
+    private async Task ValidatePageRouteAsync(
+        PermissionType type,
+        string routePath,
+        string routeName,
+        Guid? excludedId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (type != PermissionType.Page || string.IsNullOrWhiteSpace(routePath) || string.IsNullOrWhiteSpace(routeName))
+        {
+            return;
+        }
+
+        var normalizedRoutePath = routePath.Trim();
+        var normalizedRouteName = routeName.Trim();
+        var pages = (await permissionRepository.GetListAsync(cancellationToken)).Where(permission =>
+            permission.Type == PermissionType.Page && permission.Id != excludedId
+        );
+        if (
+            FrontendStaticRouteNames.Contains(normalizedRouteName)
+            || pages.Any(permission =>
+                string.Equals(permission.RouteName, normalizedRouteName, StringComparison.OrdinalIgnoreCase)
+            )
+        )
+        {
+            throw new PermissionDomainException(MessageKeys.Permissions.RouteNameExists, DomainErrorType.Conflict);
+        }
+
+        if (
+            FrontendStaticRoutePaths.Contains(normalizedRoutePath)
+            || pages.Any(permission =>
+                string.Equals(permission.RoutePath, normalizedRoutePath, StringComparison.OrdinalIgnoreCase)
+            )
+        )
+        {
+            throw new PermissionDomainException(MessageKeys.Permissions.RoutePathExists, DomainErrorType.Conflict);
         }
     }
 

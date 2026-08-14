@@ -403,6 +403,72 @@ public sealed class PermissionCrudTests
         Assert.Equal(2, repository.CatalogMutationLockAcquireCount);
     }
 
+    [Theory]
+    [InlineData("/Created", "existing", MessageKeys.Permissions.RouteNameExists)]
+    [InlineData("/existing", "Created", MessageKeys.Permissions.RoutePathExists)]
+    [InlineData("/Created", "LAYOUT", MessageKeys.Permissions.RouteNameExists)]
+    [InlineData("/LOGIN", "Created", MessageKeys.Permissions.RoutePathExists)]
+    public async Task CreatePage_WithConflictingRoute_ShouldFail(
+        string routePath,
+        string routeName,
+        string expectedMessage
+    )
+    {
+        var existing = CreatePermission("Existing", PermissionType.Page);
+        var repository = new FakePermissionRepository([existing]) { RequireCatalogMutationLock = true };
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            null!
+        );
+        var input = CreateInput("Created") with { RoutePath = routePath, RouteName = routeName };
+
+        var exception = await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.CreateAsync(input, CancellationToken.None)
+        );
+
+        Assert.Equal(expectedMessage, exception.Message);
+        Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
+    }
+
+    [Fact]
+    public async Task UpdateDirectoryToPage_WithExistingRoute_ShouldFail()
+    {
+        var existing = CreatePermission("Existing", PermissionType.Page);
+        var directory = CreatePermission("Directory", PermissionType.Directory);
+        var repository = new FakePermissionRepository([existing, directory]) { RequireCatalogMutationLock = true };
+        var (cacheService, _, _, _) = CreateCacheService();
+        var application = new PermissionApplication(
+            repository,
+            cacheService,
+            new FakeUserPermissionCacheService(),
+            new FakePermissionCacheInvalidationPublisher(),
+            new FakeUserPermissionCacheInvalidationPublisher(),
+            new FakeUnitOfWork(),
+            null!
+        );
+        var input = UpdateInput(directory, null) with
+        {
+            Type = PermissionType.Page,
+            VueComponentPath = "/src/views/Directory.vue",
+            RoutePath = "/Existing",
+            RouteName = "Existing",
+        };
+
+        var exception = await Assert.ThrowsAsync<PermissionDomainException>(() =>
+            application.UpdateAsync(directory.Id, input, CancellationToken.None)
+        );
+
+        Assert.Equal(MessageKeys.Permissions.RouteNameExists, exception.Message);
+        Assert.Equal(DomainErrorType.Conflict, exception.ErrorType);
+        Assert.Equal(PermissionType.Directory, directory.Type);
+    }
+
     [Fact]
     public async Task GetDefaultPageOptions_ShouldBuildHierarchicalTitleFromPath()
     {

@@ -110,6 +110,16 @@ public static partial class MessageKeys
         public const string RouteNameRequired = "permission.routeNameRequired";
 
         /// <summary>
+        /// 页面路由路径已存在。
+        /// </summary>
+        public const string RoutePathExists = "permission.routePathExists";
+
+        /// <summary>
+        /// 页面路由名称已存在。
+        /// </summary>
+        public const string RouteNameExists = "permission.routeNameExists";
+
+        /// <summary>
         /// 路由元数据不能为空。
         /// </summary>
         public const string RouteMetadataRequired = "permission.routeMetadataRequired";
