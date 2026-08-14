@@ -57,7 +57,7 @@ tests/
 dotnet run --project src/SeventyTwo.Sample.DataSetup
 ```
 
-初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员和权限管理、机构管理、数据字典、用户管理所需的初始权限。默认管理员账号为 `superadmin`，初始密码为 `123456`；相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Program.cs` 中。
+初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员、测试机构、测试用户，以及权限管理、机构管理、数据字典、用户管理所需的初始权限。默认管理员账号为 `superadmin`；测试账号包括 `group.admin`、`east.manager`、`shanghai.manager`、`pudong.sales`、`shenzhen.manager` 和 `operations.manager`，所有初始密码均为 `123456`。相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Program.cs` 中。
 
 ## 配置 Web API
 

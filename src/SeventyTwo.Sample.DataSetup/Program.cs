@@ -4,6 +4,7 @@ using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure;
 using SeventyTwo.Sample.Infrastructure.DataDictionaries;
+using SeventyTwo.Sample.Infrastructure.Organizations;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
@@ -44,7 +45,17 @@ try
     db.CodeFirst.InitTables(entityTypes);
     Console.WriteLine($"已根据 {entityTypes.Length} 个数据库实体完成建表。");
 
-    var userId = Guid.CreateVersion7();
+    var superAdminUserId = Guid.CreateVersion7();
+    var groupId = Guid.CreateVersion7();
+    var eastRegionId = Guid.CreateVersion7();
+    var shanghaiBranchId = Guid.CreateVersion7();
+    var pudongSalesId = Guid.CreateVersion7();
+    var xuhuiResearchId = Guid.CreateVersion7();
+    var hangzhouBranchId = Guid.CreateVersion7();
+    var southRegionId = Guid.CreateVersion7();
+    var shenzhenBranchId = Guid.CreateVersion7();
+    var partnerCompanyId = Guid.CreateVersion7();
+    var operationsCenterId = Guid.CreateVersion7();
     var dataPermissionTypeDictionaryId = Guid.CreateVersion7();
     var homePermissionId = Guid.CreateVersion7();
     var permissionsPermissionId = Guid.CreateVersion7();
@@ -74,7 +85,7 @@ try
     db.Insertable(
             new UserAccountRecord
             {
-                Id = userId,
+                Id = superAdminUserId,
                 Username = SystemUsernames.SuperAdmin,
                 PasswordHash = passwordHash,
                 DisplayName = displayName,
@@ -86,6 +97,156 @@ try
             }
         )
         .ExecuteCommand();
+
+    // 测试机构包含两棵机构树，主机构树最深四级，便于验证机构树和下级数据权限。
+    var group = CreateOrganization(groupId, "GROUP", "示例集团", null, null, groupId, 10);
+    var eastRegion = CreateOrganization(eastRegionId, "EAST", "华东区域", groupId, group.Path, groupId, 20);
+    var shanghaiBranch = CreateOrganization(
+        shanghaiBranchId,
+        "SHANGHAI",
+        "上海分公司",
+        eastRegionId,
+        eastRegion.Path,
+        groupId,
+        30
+    );
+    var pudongSales = CreateOrganization(
+        pudongSalesId,
+        "PUDONG_SALES",
+        "浦东销售部",
+        shanghaiBranchId,
+        shanghaiBranch.Path,
+        groupId,
+        40
+    );
+    var xuhuiResearch = CreateOrganization(
+        xuhuiResearchId,
+        "XUHUI_RESEARCH",
+        "徐汇研发部",
+        shanghaiBranchId,
+        shanghaiBranch.Path,
+        groupId,
+        50
+    );
+    var hangzhouBranch = CreateOrganization(
+        hangzhouBranchId,
+        "HANGZHOU",
+        "杭州分公司",
+        eastRegionId,
+        eastRegion.Path,
+        groupId,
+        60
+    );
+    var southRegion = CreateOrganization(southRegionId, "SOUTH", "华南区域", groupId, group.Path, groupId, 70);
+    var shenzhenBranch = CreateOrganization(
+        shenzhenBranchId,
+        "SHENZHEN",
+        "深圳分公司",
+        southRegionId,
+        southRegion.Path,
+        groupId,
+        80
+    );
+    var partnerCompany = CreateOrganization(
+        partnerCompanyId,
+        "PARTNER",
+        "合作伙伴公司",
+        null,
+        null,
+        partnerCompanyId,
+        90
+    );
+    var operationsCenter = CreateOrganization(
+        operationsCenterId,
+        "OPERATIONS",
+        "运营中心",
+        partnerCompanyId,
+        partnerCompany.Path,
+        partnerCompanyId,
+        100
+    );
+    db.Insertable(
+            new[]
+            {
+                group,
+                eastRegion,
+                shanghaiBranch,
+                pudongSales,
+                xuhuiResearch,
+                hangzhouBranch,
+                southRegion,
+                shenzhenBranch,
+                partnerCompany,
+                operationsCenter,
+            }
+        )
+        .ExecuteCommand();
+
+    // 测试用户分布在不同机构层级，并覆盖全部数据权限类型。
+    var testUsers = new[]
+    {
+        CreateUser(
+            "group.admin",
+            "集团管理员",
+            "13800000001",
+            "group.admin@example.com",
+            DataPermissionType.All,
+            groupId,
+            homePermissionId,
+            initialPassword
+        ),
+        CreateUser(
+            "east.manager",
+            "华东区域经理",
+            "13800000002",
+            "east.manager@example.com",
+            DataPermissionType.OrganizationAndDescendants,
+            eastRegionId,
+            homePermissionId,
+            initialPassword
+        ),
+        CreateUser(
+            "shanghai.manager",
+            "上海分公司经理",
+            "13800000003",
+            "shanghai.manager@example.com",
+            DataPermissionType.Organization,
+            shanghaiBranchId,
+            homePermissionId,
+            initialPassword
+        ),
+        CreateUser(
+            "pudong.sales",
+            "浦东销售专员",
+            "13800000004",
+            "pudong.sales@example.com",
+            DataPermissionType.Self,
+            pudongSalesId,
+            homePermissionId,
+            initialPassword
+        ),
+        CreateUser(
+            "shenzhen.manager",
+            "深圳分公司经理",
+            "13800000005",
+            "shenzhen.manager@example.com",
+            DataPermissionType.Organization,
+            shenzhenBranchId,
+            homePermissionId,
+            initialPassword
+        ),
+        CreateUser(
+            "operations.manager",
+            "运营中心经理",
+            "13800000006",
+            "operations.manager@example.com",
+            DataPermissionType.OrganizationAndDescendants,
+            operationsCenterId,
+            homePermissionId,
+            initialPassword
+        ),
+    };
+    db.Insertable(testUsers).ExecuteCommand();
     db.Insertable(
             new DataDictionaryRecord
             {
@@ -463,11 +624,69 @@ try
             }
         )
         .ExecuteCommand();
+
+    db.Insertable(
+            testUsers
+                .Select(user => new UserPermissionRecord
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
+                    PermissionId = homePermissionId,
+                    OrgId = Guid.Empty,
+                })
+                .ToArray()
+        )
+        .ExecuteCommand();
     db.Ado.CommitTran();
-    Console.WriteLine("超级管理员和权限初始化完成。");
+    Console.WriteLine("超级管理员、测试机构、测试用户和权限初始化完成。");
 }
 catch
 {
     db.Ado.RollbackTran();
     throw;
 }
+
+return;
+
+static OrganizationRecord CreateOrganization(
+    Guid id,
+    string code,
+    string name,
+    Guid? parentId,
+    string? parentPath,
+    Guid orgId,
+    int sortOrder
+) =>
+    new()
+    {
+        Id = id,
+        Code = code,
+        Name = name,
+        ParentId = parentId,
+        Path = parentPath is null ? id.ToString() : $"{parentPath}/{id}",
+        SortOrder = sortOrder,
+        OrgId = orgId,
+    };
+
+static UserAccountRecord CreateUser(
+    string username,
+    string displayName,
+    string phone,
+    string email,
+    DataPermissionType dataPermissionType,
+    Guid orgId,
+    Guid defaultPageId,
+    string password
+) =>
+    new()
+    {
+        Id = Guid.CreateVersion7(),
+        Username = username,
+        PasswordHash = new PasswordHasher<string>().HashPassword(username, password),
+        DisplayName = displayName,
+        Phone = phone,
+        Email = email,
+        DataPermissionType = dataPermissionType,
+        DefaultPageId = defaultPageId,
+        OrgId = orgId,
+    };
