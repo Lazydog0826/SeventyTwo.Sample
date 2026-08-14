@@ -8,6 +8,7 @@ using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
 using SqlSugar;
 
+// 项目为 DEMO 账号密码写死即可
 const string displayName = "超级管理员";
 const string initialPassword = "123456";
 const string phone = "00000000000";
