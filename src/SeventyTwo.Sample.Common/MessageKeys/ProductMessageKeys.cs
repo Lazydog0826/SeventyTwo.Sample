@@ -54,4 +54,70 @@ public static partial class MessageKeys
         /// </summary>
         public const string PriceScaleInvalid = "product.priceScaleInvalid";
     }
+
+    /// <summary>
+    /// 商品类目消息键。
+    /// </summary>
+    public static class ProductCategories
+    {
+        /// <summary>
+        /// 商品类目 ID 不能为空。
+        /// </summary>
+        public const string IdRequired = "productCategory.idRequired";
+
+        /// <summary>
+        /// 商品类目不存在。
+        /// </summary>
+        public const string NotFound = "productCategory.notFound";
+
+        /// <summary>
+        /// 上级类目不存在。
+        /// </summary>
+        public const string ParentNotFound = "productCategory.parentNotFound";
+
+        /// <summary>
+        /// 商品类目的后代不能作为其上级类目。
+        /// </summary>
+        public const string DescendantCannotBeParent = "productCategory.descendantCannotBeParent";
+
+        /// <summary>
+        /// 商品类目存在下级类目，不能删除。
+        /// </summary>
+        public const string HasChildren = "productCategory.hasChildren";
+
+        /// <summary>
+        /// 商品类目数据已变更，需要刷新后重试。
+        /// </summary>
+        public const string DataChanged = "productCategory.dataChanged";
+
+        /// <summary>
+        /// 商品类目修改时间不能为空。
+        /// </summary>
+        public const string ModifiedAtRequired = "productCategory.modifiedAtRequired";
+
+        /// <summary>
+        /// 商品类目删除时间不能为空。
+        /// </summary>
+        public const string DeletedAtRequired = "productCategory.deletedAtRequired";
+
+        /// <summary>
+        /// 商品类目名称不能为空。
+        /// </summary>
+        public const string NameRequired = "productCategory.nameRequired";
+
+        /// <summary>
+        /// 商品类目名称长度超出限制。
+        /// </summary>
+        public const string NameTooLong = "productCategory.nameTooLong";
+
+        /// <summary>
+        /// 商品类目上级 ID 不能为空。
+        /// </summary>
+        public const string ParentIdRequired = "productCategory.parentIdRequired";
+
+        /// <summary>
+        /// 商品类目不能作为自身的上级类目。
+        /// </summary>
+        public const string SelfCannotBeParent = "productCategory.selfCannotBeParent";
+    }
 }
