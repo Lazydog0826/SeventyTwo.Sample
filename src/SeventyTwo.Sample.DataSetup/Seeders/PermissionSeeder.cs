@@ -388,7 +388,7 @@ internal static class PermissionSeeder
                     {
                         Id = productCategoriesPermissionId,
                         Code = "productCategories",
-                        Title = "商品类目列表",
+                        Title = "商品类目",
                         Type = PermissionType.Page,
                         SortOrder = 501,
                         Icon = string.Empty,
