@@ -4,7 +4,7 @@ namespace SeventyTwo.Sample.Domain;
 /// <summary>
 /// 聚合根公共字段基类。
 /// </summary>
-public abstract class AggregateRoot
+public abstract class AggregateRoot : IDataPermissionScoped
 {
     /// <summary>
     /// 主键 UUID。

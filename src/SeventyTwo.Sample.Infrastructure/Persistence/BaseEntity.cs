@@ -6,7 +6,7 @@ namespace SeventyTwo.Sample.Infrastructure.Persistence;
 /// <summary>
 /// 持久化实体公共字段基类。
 /// </summary>
-public abstract class BaseEntity
+public abstract class BaseEntity : IDataPermissionScoped
 {
     /// <summary>
     /// 主键 UUIDv7。
