@@ -44,11 +44,12 @@ public interface IOrganizationRepository
     Task AddAsync(Organization organization, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 保存机构变更。
+    /// 保存机构变更；Path 变更时会级联替换后代机构路径。
     /// </summary>
     /// <param name="organization">待保存的机构。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    Task SaveAsync(Organization organization, CancellationToken cancellationToken);
+    /// <returns>Path 发生变化的机构 ID（含自身）；Path 未变化时仅含自身。</returns>
+    Task<IReadOnlyList<Guid>> SaveAsync(Organization organization, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除指定机构。

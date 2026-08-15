@@ -7,8 +7,11 @@ using SeventyTwo.Sample.Domain.Organizations;
 namespace SeventyTwo.Sample.Application.Organizations;
 
 [AutofacDependency(typeof(IOrganizationApplication))]
-public sealed class OrganizationApplication(IOrganizationRepository organizationRepository, IUnitOfWork unitOfWork)
-    : IOrganizationApplication
+public sealed class OrganizationApplication(
+    IOrganizationRepository organizationRepository,
+    IUnitOfWork unitOfWork,
+    IOrganizationsCacheInvalidationPublisher cacheInvalidationPublisher
+) : IOrganizationApplication
 {
     public async Task<OrganizationListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
         (await GetRequiredAsync(id, cancellationToken)).Adapt<OrganizationListOutput>();
@@ -81,7 +84,10 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
                 {
                     organization.ChangePath(parent.Path);
                 }
-                await organizationRepository.SaveAsync(organization, cancellationToken);
+                var affectedIds = await organizationRepository.SaveAsync(organization, cancellationToken);
+                // 事务内发布失效消息，依赖 CAP 本地消息表保证机构数据与缓存失效最终一致；
+                // Path 级联变更的后代机构缓存必须一并失效，否则数据权限过滤会使用过期路径。
+                await cacheInvalidationPublisher.PublishAsync(affectedIds, cancellationToken);
             },
             cancellationToken
         );
@@ -95,6 +101,8 @@ public sealed class OrganizationApplication(IOrganizationRepository organization
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
                 _ = await GetRequiredAsync(id, cancellationToken);
                 await organizationRepository.DeleteAsync(id, cancellationToken);
+                // 删除后残留的路径缓存会掩盖机构已不存在的事实，需在事务内发布失效消息。
+                await cacheInvalidationPublisher.PublishAsync([id], cancellationToken);
             },
             cancellationToken
         );

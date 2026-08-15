@@ -78,7 +78,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
         record.AggregateRootToEntity(organization);
     }
 
-    public async Task SaveAsync(Organization organization, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Guid>> SaveAsync(Organization organization, CancellationToken cancellationToken)
     {
         var persisted = await db.Queryable<OrganizationRecord>()
             .Where(entity => entity.Id == organization.Id && entity.DeleteAt == null)
@@ -133,6 +133,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
 
         organization.Version = nextVersion;
 
+        var affectedIds = new List<Guid> { organization.Id };
         if (oldPath != organization.Path)
         {
             var descendantPrefix = $"{oldPath}/";
@@ -150,6 +151,7 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
                     UpdatedAt = organization.UpdatedAt,
                 })
                 .ToList();
+            affectedIds.AddRange(descendantUpdates.Select(descendant => descendant.Id));
             if (descendantUpdates.Count > 0)
             {
                 await db.Updateable(descendantUpdates)
@@ -163,6 +165,9 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
                     .ExecuteCommandAsync(cancellationToken);
             }
         }
+
+        // 调用方依赖该列表发布路径缓存失效消息，必须包含自身及全部 Path 被级联替换的后代。
+        return affectedIds;
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
