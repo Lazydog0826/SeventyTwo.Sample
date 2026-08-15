@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using SeventyTwo.InfraKit.Cache;
 using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Application.Users;
+using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.WebApi.Authentication;
 using StackExchange.Redis;
 
@@ -30,7 +31,18 @@ public sealed class BusinessJwtAuthenticationTests
                 _ => { }
             );
         services.AddSingleton<ITokenService>(
-            new FixedTokenService(new(userId, "user", "用户", "access", sessionId, issuedAt))
+            new FixedTokenService(
+                new(
+                    userId,
+                    "user",
+                    "用户",
+                    Guid.CreateVersion7(),
+                    DataPermissionType.All,
+                    "access",
+                    sessionId,
+                    issuedAt
+                )
+            )
         );
         services.AddSingleton<IUserTokenCacheService>(userTokenCacheService);
         services.AddSingleton<IRedisCacheService>(new FakeRedisCacheService(database));

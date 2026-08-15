@@ -141,6 +141,7 @@ public sealed class UserManagementTests
         };
         var userRepository = new CapturingUserRepository(user);
         var organizationRepository = new FakeOrganizationRepository(organization);
+        var tokenCacheService = new CapturingUserTokenCacheService();
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
         var application = new UserApplication(
             userRepository,
@@ -148,7 +149,7 @@ public sealed class UserManagementTests
             null!,
             new FakeUnitOfWork(),
             null!,
-            null!,
+            tokenCacheService,
             cacheInvalidationPublisher,
             null!
         );
@@ -170,6 +171,8 @@ public sealed class UserManagementTests
         Assert.Equal(1, organizationRepository.MutationLockAcquireCount);
         Assert.Same(user, userRepository.SavedUser);
         Assert.Equal(DataPermissionType.Organization, user.DataPermissionType);
+        Assert.Equal([user.Id], userRepository.LockedUserIds);
+        Assert.Equal([user.Id], tokenCacheService.InvalidatedUserIds);
         Assert.Equal([user.Id], cacheInvalidationPublisher.UserIds);
     }
 
@@ -597,7 +600,16 @@ public sealed class UserManagementTests
         const long issuedAt = 1_800_000_000;
         var userId = Guid.CreateVersion7();
         var tokenService = new FixedTokenService(
-            new(userId, "user", "用户", "refresh", Guid.CreateVersion7(), issuedAt)
+            new(
+                userId,
+                "user",
+                "用户",
+                Guid.CreateVersion7(),
+                DataPermissionType.All,
+                "refresh",
+                Guid.CreateVersion7(),
+                issuedAt
+            )
         );
         var tokenCacheService = new RejectingUserTokenCacheService();
         var application = new UserApplication(
