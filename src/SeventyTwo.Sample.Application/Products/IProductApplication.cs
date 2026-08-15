@@ -1,4 +1,5 @@
 using SeventyTwo.Sample.Domain;
+using SeventyTwo.Sample.Domain.Products;
 
 namespace SeventyTwo.Sample.Application.Products;
 
@@ -21,11 +22,21 @@ public interface IProductApplication
     Task UpdateAsync(Guid id, UpdateProductInput input, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 软删除商品。
+    /// 切换商品上架状态。
     /// </summary>
     /// <param name="id">商品 ID。</param>
+    /// <param name="status">目标上架状态。</param>
+    /// <param name="version">客户端持有的商品版本 UUIDv7。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken);
+    Task ChangeStatusAsync(Guid id, ProductStatus status, Guid version, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 物理删除商品。
+    /// </summary>
+    /// <param name="id">商品 ID。</param>
+    /// <param name="version">客户端持有的商品版本 UUIDv7。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken);
 
     /// <summary>
     /// 查询商品详情。
@@ -41,5 +52,5 @@ public interface IProductApplication
     /// <param name="request">分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
-    Task<PageResponse<ProductOutput>> GetPageAsync(PageRequest request, CancellationToken cancellationToken);
+    Task<PageResponse<ProductOutput>> GetPageAsync(ProductPageRequest request, CancellationToken cancellationToken);
 }

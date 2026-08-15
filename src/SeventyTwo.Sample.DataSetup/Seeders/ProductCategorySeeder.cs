@@ -3,10 +3,23 @@ using SqlSugar;
 
 namespace SeventyTwo.Sample.DataSetup.Seeders;
 
+// 类目种子结果：仅暴露被商品种子引用的叶子类目 Id，其余类目无下游引用。
+internal sealed record ProductCategorySeedResult(
+    Guid SmartphoneId,
+    Guid LaptopId,
+    Guid WearableId,
+    Guid RefrigeratorId,
+    Guid WashingMachineId,
+    Guid MenswearId,
+    Guid WomenswearId,
+    Guid SnackId,
+    Guid GrainOilId
+);
+
 // 商品类目种子：构建测试类目树。
 internal static class ProductCategorySeeder
 {
-    public static void Seed(SqlSugarClient db)
+    public static ProductCategorySeedResult Seed(SqlSugarClient db)
     {
         var digitalId = Guid.CreateVersion7();
         var phoneId = Guid.CreateVersion7();
@@ -73,6 +86,18 @@ internal static class ProductCategorySeeder
                 }
             )
             .ExecuteCommand();
+
+        return new ProductCategorySeedResult(
+            smartphoneId,
+            laptopId,
+            wearableId,
+            refrigeratorId,
+            washingMachineId,
+            menswearId,
+            womenswearId,
+            snackId,
+            grainOilId
+        );
     }
 
     private static ProductCategoryRecord CreateCategory(

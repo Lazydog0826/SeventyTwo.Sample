@@ -25,11 +25,6 @@ public static partial class MessageKeys
         public const string ModifiedAtRequired = "product.modifiedAtRequired";
 
         /// <summary>
-        /// 商品删除时间不能为空。
-        /// </summary>
-        public const string DeletedAtRequired = "product.deletedAtRequired";
-
-        /// <summary>
         /// 商品名称不能为空。
         /// </summary>
         public const string NameRequired = "product.nameRequired";
@@ -53,6 +48,41 @@ public static partial class MessageKeys
         /// 商品价格的小数位数不符合要求。
         /// </summary>
         public const string PriceScaleInvalid = "product.priceScaleInvalid";
+
+        /// <summary>
+        /// 商品编码不能为空。
+        /// </summary>
+        public const string CodeRequired = "product.codeRequired";
+
+        /// <summary>
+        /// 商品编码长度超出限制。
+        /// </summary>
+        public const string CodeTooLong = "product.codeTooLong";
+
+        /// <summary>
+        /// 商品编码已被其他商品占用。
+        /// </summary>
+        public const string CodeExists = "product.codeExists";
+
+        /// <summary>
+        /// 商品描述长度超出限制。
+        /// </summary>
+        public const string DescriptionTooLong = "product.descriptionTooLong";
+
+        /// <summary>
+        /// 商品计量单位长度超出限制。
+        /// </summary>
+        public const string UnitTooLong = "product.unitTooLong";
+
+        /// <summary>
+        /// 商品类目不存在。
+        /// </summary>
+        public const string CategoryNotFound = "product.categoryNotFound";
+
+        /// <summary>
+        /// 商品上架状态无效。
+        /// </summary>
+        public const string StatusInvalid = "product.statusInvalid";
     }
 
     /// <summary>

@@ -15,7 +15,16 @@ public sealed class ProductPersistenceMappingProfile : IRegister
     {
         config
             .NewConfig<ProductRecord, Product>()
-            .ConstructUsing(source => new Product(source.Id, source.Name, source.Price))
+            .ConstructUsing(source => new Product(
+                source.Id,
+                source.Name,
+                source.Price,
+                source.Code,
+                source.Description,
+                source.Unit,
+                source.CategoryId,
+                source.Status
+            ))
             .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
         config
             .NewConfig<Product, ProductRecord>()

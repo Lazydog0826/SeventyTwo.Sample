@@ -21,15 +21,35 @@ public sealed class MapsterConfigurationTests
         );
         configuration.Compile();
 
-        var createInput = new CreateProductRequest("商品", 1m).Adapt<CreateProductInput>(configuration);
         var version = Guid.CreateVersion7();
         var productId = Guid.CreateVersion7();
+        var categoryId = Guid.CreateVersion7();
+        var createInput = new CreateProductRequest(
+            "商品",
+            1m,
+            "SKU-001",
+            "描述",
+            "件",
+            categoryId,
+            ProductStatus.OnShelf
+        ).Adapt<CreateProductInput>(configuration);
         var orderId = Guid.CreateVersion7();
         var orderItemId = Guid.CreateVersion7();
-        var product = new Product(productId, "商品", 1m) { Version = version };
-        var updateInput = new UpdateProductRequest(productId, "商品", 2m, version).Adapt<UpdateProductInput>(
-            configuration
-        );
+        var product = new Product(productId, "商品", 1m, "SKU-001", "描述", "件", categoryId, ProductStatus.OnShelf)
+        {
+            Version = version,
+        };
+        var updateInput = new UpdateProductRequest(
+            productId,
+            "商品",
+            2m,
+            "SKU-001",
+            ProductStatus.OnShelf,
+            version,
+            "描述",
+            "件",
+            categoryId
+        ).Adapt<UpdateProductInput>(configuration);
         var output = product.Adapt<ProductOutput>(configuration);
         var orderOutput = new Order(
             orderId,
@@ -48,11 +68,22 @@ public sealed class MapsterConfigurationTests
             [new OrderItem(orderItemId, orderId, 1, Guid.CreateVersion7(), "商品", "件", 3, 4m, 2, 1, "明细备注")]
         ).Adapt<OrderOutput>(configuration);
 
-        Assert.Equal(new CreateProductInput("商品", 1m), createInput);
-        Assert.Equal(new UpdateProductInput("商品", 2m, version), updateInput);
+        Assert.Equal(
+            new CreateProductInput("商品", 1m, "SKU-001", "描述", "件", categoryId, ProductStatus.OnShelf),
+            createInput
+        );
+        Assert.Equal(
+            new UpdateProductInput("商品", 2m, "SKU-001", ProductStatus.OnShelf, version, "描述", "件", categoryId),
+            updateInput
+        );
         Assert.Equal(productId, output.Id);
         Assert.Equal("商品", output.Name);
         Assert.Equal(1m, output.Price);
+        Assert.Equal("SKU-001", output.Code);
+        Assert.Equal("描述", output.Description);
+        Assert.Equal("件", output.Unit);
+        Assert.Equal(categoryId, output.CategoryId);
+        Assert.Equal(ProductStatus.OnShelf, output.Status);
         Assert.Equal(product.Version, output.Version);
         Assert.Equal(orderId, orderOutput.Id);
         Assert.Equal("ORDER-1", orderOutput.OrderNo);

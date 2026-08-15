@@ -37,10 +37,11 @@ try
     var homePermissionId = PermissionSeeder.Seed(db);
     var organizations = OrganizationSeeder.Seed(db);
     UserSeeder.Seed(db, homePermissionId, organizations);
-    ProductCategorySeeder.Seed(db);
+    var productCategories = ProductCategorySeeder.Seed(db);
+    ProductSeeder.Seed(db, productCategories);
 
     db.Ado.CommitTran();
-    Console.WriteLine("超级管理员、测试机构、测试用户、权限和商品类目初始化完成。");
+    Console.WriteLine("超级管理员、测试机构、测试用户、权限、商品类目和商品初始化完成。");
 }
 catch
 {
