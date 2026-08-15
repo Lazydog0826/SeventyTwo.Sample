@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using SeventyTwo.Sample.Application;
+using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Orders;
 using SeventyTwo.Sample.Domain.Orders;
 using SeventyTwo.Sample.WebApi.Contracts.Orders;
@@ -22,9 +22,10 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// <param name="request">新增数量。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("random")]
-    public Task AddRandom(RandomOrdersRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddRandom(RandomOrdersRequest request, CancellationToken cancellationToken)
     {
-        return randomOrderDataService.AddAsync(request.Count, cancellationToken);
+        await randomOrderDataService.AddAsync(request.Count, cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -34,9 +35,10 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>订单分页数据。</returns>
     [HttpPost("page")]
-    public Task<PageResponse<OrderOutput>> GetPage(OrderPageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPage(OrderPageRequest request, CancellationToken cancellationToken)
     {
-        return orderApplication.GetPageAsync(request, cancellationToken);
+        var result = await orderApplication.GetPageAsync(request, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -46,9 +48,10 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>订单分页数据。</returns>
     [HttpPost("page/ids")]
-    public Task<PageResponse<OrderOutput>> GetPageByIds(OrderPageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPageByIds(OrderPageRequest request, CancellationToken cancellationToken)
     {
-        return orderApplication.GetPageByIdsAsync(request, cancellationToken);
+        var result = await orderApplication.GetPageByIdsAsync(request, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -58,11 +61,9 @@ public sealed class OrdersController(IRandomOrderDataService randomOrderDataServ
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>订单分页数据及上一页、下一页游标。</returns>
     [HttpPost("page/cursor")]
-    public Task<CursorPageResponse<OrderOutput>> GetPageByCursor(
-        OrderPageRequest request,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> GetPageByCursor(OrderPageRequest request, CancellationToken cancellationToken)
     {
-        return orderApplication.GetPageByCursorAsync(request, cancellationToken);
+        var result = await orderApplication.GetPageByCursorAsync(request, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 }

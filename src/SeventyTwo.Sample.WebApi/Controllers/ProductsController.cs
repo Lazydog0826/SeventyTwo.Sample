@@ -1,6 +1,6 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
-using SeventyTwo.Sample.Application;
+using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Products;
 using SeventyTwo.Sample.Domain.Products;
@@ -25,9 +25,10 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <returns>创建后的商品信息。</returns>
     [HttpPost("create")]
     [Permission(PermissionMatchMode.All, "productsCreate")]
-    public Task<ProductOutput> Create(CreateProductRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(CreateProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.CreateAsync(request.Adapt<CreateProductInput>(), cancellationToken);
+        var result = await productApplication.CreateAsync(request.Adapt<CreateProductInput>(), cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -37,9 +38,10 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("update")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
-    public Task Update(UpdateProductRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(UpdateProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.UpdateAsync(request.Id, request.Adapt<UpdateProductInput>(), cancellationToken);
+        await productApplication.UpdateAsync(request.Id, request.Adapt<UpdateProductInput>(), cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -49,9 +51,13 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("change-status")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
-    public Task ChangeStatus(ChangeProductStatusRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangeStatus(
+        ChangeProductStatusRequest request,
+        CancellationToken cancellationToken
+    )
     {
-        return productApplication.ChangeStatusAsync(request.Id, request.Status, request.Version, cancellationToken);
+        await productApplication.ChangeStatusAsync(request.Id, request.Status, request.Version, cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -61,9 +67,10 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("delete")]
     [Permission(PermissionMatchMode.All, "productsDelete")]
-    public Task Delete(DeleteProductRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(DeleteProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.DeleteAsync(request.Id, request.Version, cancellationToken);
+        await productApplication.DeleteAsync(request.Id, request.Version, cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -74,9 +81,10 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <returns>商品信息。</returns>
     [HttpPost("get")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
-    public Task<ProductOutput> Get(GetProductRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(GetProductRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.GetAsync(request.Id, cancellationToken);
+        var result = await productApplication.GetAsync(request.Id, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 
     /// <summary>
@@ -87,8 +95,9 @@ public sealed class ProductsController(IProductApplication productApplication) :
     /// <returns>商品分页数据。</returns>
     [HttpPost("page")]
     [Permission(PermissionMatchMode.All, "productsList")]
-    public Task<PageResponse<ProductOutput>> GetPage(ProductPageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPage(ProductPageRequest request, CancellationToken cancellationToken)
     {
-        return productApplication.GetPageAsync(request, cancellationToken);
+        var result = await productApplication.GetPageAsync(request, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 }

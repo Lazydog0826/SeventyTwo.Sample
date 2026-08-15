@@ -1,5 +1,6 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
+using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Inventories;
 using SeventyTwo.Sample.Application.Inventories.ChangeInventory;
 using SeventyTwo.Sample.WebApi.Contracts.Inventories;
@@ -20,8 +21,9 @@ public sealed class InventoriesController(IInventoryApplication inventoryApplica
     /// <param name="request">库存变更请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("changes")]
-    public async Task Change(ChangeInventoryRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Change(ChangeInventoryRequest request, CancellationToken cancellationToken)
     {
         await inventoryApplication.ChangeAsync(request.Adapt<ChangeInventoryInput>(), cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 }

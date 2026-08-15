@@ -1,5 +1,6 @@
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
+using SeventyTwo.InfraKit.Core;
 using SeventyTwo.Sample.Application.Wallets;
 using SeventyTwo.Sample.Application.Wallets.BalanceChange;
 using SeventyTwo.Sample.WebApi.Contracts.Wallets;
@@ -20,8 +21,9 @@ public sealed class WalletsController(IWalletApplication walletApplication) : Co
     /// <param name="request">余额变更请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("changes")]
-    public Task BalanceChange(BalanceChangeRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> BalanceChange(BalanceChangeRequest request, CancellationToken cancellationToken)
     {
-        return walletApplication.BalanceChangeAsync(request.Adapt<BalanceChangeInput>(), cancellationToken);
+        await walletApplication.BalanceChangeAsync(request.Adapt<BalanceChangeInput>(), cancellationToken);
+        return WebApiResponse.Operate(message: MessageKeys.Common.Success);
     }
 }
