@@ -47,6 +47,7 @@ public sealed class ProductCategoriesController(IProductCategoryApplication prod
     /// <returns>创建后的类目信息。</returns>
     [HttpPost("create")]
     [Permission(PermissionMatchMode.All, "productCategoriesCreate")]
+    [BusinessUserContext]
     public async Task<IActionResult> CreateAsync(
         CreateProductCategoryRequest request,
         CancellationToken cancellationToken
@@ -67,6 +68,7 @@ public sealed class ProductCategoriesController(IProductCategoryApplication prod
     /// <returns>操作结果。</returns>
     [HttpPost("update")]
     [Permission(PermissionMatchMode.All, "productCategoriesUpdate")]
+    [BusinessUserContext]
     public async Task<IActionResult> UpdateAsync(
         UpdateProductCategoryRequest request,
         CancellationToken cancellationToken
@@ -88,6 +90,7 @@ public sealed class ProductCategoriesController(IProductCategoryApplication prod
     /// <returns>操作结果。</returns>
     [HttpPost("delete")]
     [Permission(PermissionMatchMode.All, "productCategoriesDelete")]
+    [BusinessUserContext]
     public async Task<IActionResult> DeleteAsync(
         DeleteProductCategoryRequest request,
         CancellationToken cancellationToken

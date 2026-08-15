@@ -76,19 +76,34 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
     public async Task SaveAsync(Product product, CancellationToken cancellationToken)
     {
         var nextVersion = Guid.CreateVersion7();
-        var affectedRows = await db.Updateable<ProductRecord>()
-            .SetColumns(x => new ProductRecord
+        // 实体加 UpdateColumns 的更新风格才会经过公共字段拦截器自动填充修改人与修改时间。
+        var record = new ProductRecord
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price,
+            Code = product.Code,
+            Description = product.Description,
+            Unit = product.Unit,
+            CategoryId = product.CategoryId,
+            Status = product.Status,
+            UpdatedBy = product.UpdatedBy,
+            UpdatedAt = product.UpdatedAt,
+            Version = nextVersion,
+        };
+        var affectedRows = await db.Updateable(record)
+            .UpdateColumns(x => new
             {
-                Name = product.Name,
-                Price = product.Price,
-                Code = product.Code,
-                Description = product.Description,
-                Unit = product.Unit,
-                CategoryId = product.CategoryId,
-                Status = product.Status,
-                UpdatedBy = product.UpdatedBy,
-                UpdatedAt = product.UpdatedAt,
-                Version = nextVersion,
+                x.Name,
+                x.Price,
+                x.Code,
+                x.Description,
+                x.Unit,
+                x.CategoryId,
+                x.Status,
+                x.UpdatedBy,
+                x.UpdatedAt,
+                x.Version,
             })
             .Where(x => x.Id == product.Id && x.Version == product.Version && x.DeleteAt == null)
             .ExecuteCommandAsync(cancellationToken);
@@ -103,6 +118,9 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             throw new ProductNotFoundException();
         }
 
+        // 拦截器在生成更新时填充了实际落库的修改人、修改时间，回写保持聚合与数据库一致。
+        product.UpdatedBy = record.UpdatedBy;
+        product.UpdatedAt = record.UpdatedAt;
         product.Version = nextVersion;
     }
 

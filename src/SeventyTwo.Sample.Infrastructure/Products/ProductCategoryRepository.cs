@@ -1,6 +1,5 @@
 using Mapster;
 using SeventyTwo.InfraKit.Autofac;
-using SeventyTwo.InfraKit.Extension;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
@@ -67,7 +66,6 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
             SortOrder = category.SortOrder,
             Path = category.Path,
             CreatedBy = SystemIds.System,
-            CreatedAt = DateTimeExtension.Now(),
             Version = Guid.CreateVersion7(),
         };
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);
@@ -89,8 +87,11 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
         // 类目为软删除：Delete() 标记后按删除分支落库，不再级联更新后代路径。
         var isDelete = category.DeleteAt.HasValue;
         var nextVersion = Guid.CreateVersion7();
-        var affectedRows = isDelete
-            ? await db.Updateable<ProductCategoryRecord>()
+        int affectedRows;
+        if (isDelete)
+        {
+            // 删除分支不携带审计字段，维持 SetColumns 表达式更新。
+            affectedRows = await db.Updateable<ProductCategoryRecord>()
                 .SetColumns(x => new ProductCategoryRecord
                 {
                     Enable = false,
@@ -99,20 +100,40 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
                     Version = nextVersion,
                 })
                 .Where(x => x.Id == category.Id && x.Version == category.Version && x.DeleteAt == null)
-                .ExecuteCommandAsync(cancellationToken)
-            : await db.Updateable<ProductCategoryRecord>()
-                .SetColumns(x => new ProductCategoryRecord
+                .ExecuteCommandAsync(cancellationToken);
+        }
+        else
+        {
+            // 更新分支使用实体加 UpdateColumns 风格，修改人与修改时间由公共字段拦截器自动填充。
+            var record = new ProductCategoryRecord
+            {
+                Id = category.Id,
+                Name = category.Name,
+                ParentId = category.ParentId,
+                SortOrder = category.SortOrder,
+                Path = category.Path,
+                UpdatedBy = category.UpdatedBy,
+                UpdatedAt = category.UpdatedAt,
+                Version = nextVersion,
+            };
+            affectedRows = await db.Updateable(record)
+                .UpdateColumns(x => new
                 {
-                    Name = category.Name,
-                    ParentId = category.ParentId,
-                    SortOrder = category.SortOrder,
-                    Path = category.Path,
-                    UpdatedBy = category.UpdatedBy,
-                    UpdatedAt = category.UpdatedAt,
-                    Version = nextVersion,
+                    x.Name,
+                    x.ParentId,
+                    x.SortOrder,
+                    x.Path,
+                    x.UpdatedBy,
+                    x.UpdatedAt,
+                    x.Version,
                 })
                 .Where(x => x.Id == category.Id && x.Version == category.Version && x.DeleteAt == null)
                 .ExecuteCommandAsync(cancellationToken);
+
+            // 拦截器在生成更新时填充了实际落库的修改人、修改时间，回写保持聚合与数据库一致。
+            category.UpdatedBy = record.UpdatedBy;
+            category.UpdatedAt = record.UpdatedAt;
+        }
 
         if (affectedRows == 0)
         {
