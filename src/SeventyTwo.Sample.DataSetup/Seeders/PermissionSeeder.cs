@@ -39,9 +39,10 @@ internal static class PermissionSeeder
         var productCategoriesUpdatePermissionId = Guid.CreateVersion7();
         var productCategoriesDeletePermissionId = Guid.CreateVersion7();
         var productsListPermissionId = Guid.CreateVersion7();
+        var productsDeletePermissionId = Guid.CreateVersion7();
+        var productsEditPermissionId = Guid.CreateVersion7();
         var productsCreatePermissionId = Guid.CreateVersion7();
         var productsUpdatePermissionId = Guid.CreateVersion7();
-        var productsDeletePermissionId = Guid.CreateVersion7();
 
         db.Insertable(
                 new[]
@@ -456,13 +457,43 @@ internal static class PermissionSeeder
                     },
                     new PermissionRecord
                     {
+                        Id = productsDeletePermissionId,
+                        Code = "productsDelete",
+                        Title = "删除商品",
+                        Type = PermissionType.Button,
+                        SortOrder = 506,
+                        ParentId = productsListPermissionId,
+                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsDeletePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    // 商品编辑页：独立的新增/编辑页面，不在侧边菜单展示（IsShow=false），仅注册前端路由。
+                    new PermissionRecord
+                    {
+                        Id = productsEditPermissionId,
+                        Code = "productsEdit",
+                        Title = "商品编辑",
+                        Type = PermissionType.Page,
+                        SortOrder = 507,
+                        Icon = string.Empty,
+                        VueComponentPath = "/src/views/products/edit.vue",
+                        RoutePath = "/products/edit",
+                        RouteName = "Products.Edit",
+                        ParentId = productsPermissionId,
+                        Path = $"{productsPermissionId}/{productsEditPermissionId}",
+                        MetaData = new PermissionMetaData(false),
+                        OrgId = Guid.Empty,
+                    },
+                    // 新增/修改按钮挂在编辑页下：授权按钮时祖先连带页面权限，避免出现有按钮权限却无页面路由。
+                    new PermissionRecord
+                    {
                         Id = productsCreatePermissionId,
                         Code = "productsCreate",
                         Title = "新增商品",
                         Type = PermissionType.Button,
-                        SortOrder = 506,
-                        ParentId = productsListPermissionId,
-                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsCreatePermissionId}",
+                        SortOrder = 508,
+                        ParentId = productsEditPermissionId,
+                        Path = $"{productsPermissionId}/{productsEditPermissionId}/{productsCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
@@ -472,21 +503,9 @@ internal static class PermissionSeeder
                         Code = "productsUpdate",
                         Title = "修改商品",
                         Type = PermissionType.Button,
-                        SortOrder = 507,
-                        ParentId = productsListPermissionId,
-                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsUpdatePermissionId}",
-                        MetaData = default,
-                        OrgId = Guid.Empty,
-                    },
-                    new PermissionRecord
-                    {
-                        Id = productsDeletePermissionId,
-                        Code = "productsDelete",
-                        Title = "删除商品",
-                        Type = PermissionType.Button,
-                        SortOrder = 508,
-                        ParentId = productsListPermissionId,
-                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsDeletePermissionId}",
+                        SortOrder = 509,
+                        ParentId = productsEditPermissionId,
+                        Path = $"{productsPermissionId}/{productsEditPermissionId}/{productsUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
