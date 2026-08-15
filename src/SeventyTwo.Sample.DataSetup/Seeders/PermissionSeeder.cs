@@ -82,7 +82,7 @@ internal static class PermissionSeeder
                     {
                         Id = permissionsListPermissionId,
                         Code = "permissionsList",
-                        Title = "列表",
+                        Title = "权限列表",
                         Type = PermissionType.Page,
                         SortOrder = 101,
                         Icon = string.Empty,
@@ -153,7 +153,7 @@ internal static class PermissionSeeder
                     {
                         Id = organizationsListPermissionId,
                         Code = "organizationsList",
-                        Title = "列表",
+                        Title = "机构列表",
                         Type = PermissionType.Page,
                         SortOrder = 201,
                         Icon = string.Empty,
@@ -224,7 +224,7 @@ internal static class PermissionSeeder
                     {
                         Id = dataDictionariesListPermissionId,
                         Code = "dataDictionariesList",
-                        Title = "列表",
+                        Title = "字典列表",
                         Type = PermissionType.Page,
                         SortOrder = 301,
                         Icon = string.Empty,
@@ -295,7 +295,7 @@ internal static class PermissionSeeder
                     {
                         Id = usersListPermissionId,
                         Code = "usersList",
-                        Title = "列表",
+                        Title = "用户列表",
                         Type = PermissionType.Page,
                         SortOrder = 401,
                         Icon = string.Empty,
@@ -387,7 +387,7 @@ internal static class PermissionSeeder
                     {
                         Id = productCategoriesPermissionId,
                         Code = "productCategories",
-                        Title = "商品类目管理",
+                        Title = "商品类目列表",
                         Type = PermissionType.Page,
                         SortOrder = 501,
                         Icon = string.Empty,
