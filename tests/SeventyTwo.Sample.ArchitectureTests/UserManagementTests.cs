@@ -1238,7 +1238,8 @@ public sealed class UserManagementTests
 
         public Task AddAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task SaveAsync(Organization value, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<IReadOnlyList<Guid>> SaveAsync(Organization value, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Guid>>([value.Id]);
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
     }

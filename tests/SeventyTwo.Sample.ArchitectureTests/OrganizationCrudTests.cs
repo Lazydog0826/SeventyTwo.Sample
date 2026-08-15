@@ -25,7 +25,7 @@ public sealed class OrganizationCrudTests
     public async Task Create_ShouldSupportMultipleRootsAndInheritParentRoot()
     {
         var repository = new FakeOrganizationRepository([]);
-        var application = new OrganizationApplication(repository, new FakeUnitOfWork());
+        var application = CreateApplication(repository);
 
         var root1 = await application.CreateAsync(new("ROOT", "根一", true, null), CancellationToken.None);
         var root2 = await application.CreateAsync(new("ROOT", "根二", true, null), CancellationToken.None);
@@ -43,10 +43,7 @@ public sealed class OrganizationCrudTests
     {
         var root = CreateOrganization("ROOT", null);
         var existing = CreateOrganization("DUP", root.Id, root.Id);
-        var application = new OrganizationApplication(
-            new FakeOrganizationRepository([root, existing]),
-            new FakeUnitOfWork()
-        );
+        var application = CreateApplication(new FakeOrganizationRepository([root, existing]));
 
         await Assert.ThrowsAsync<OrganizationDomainException>(() =>
             application.CreateAsync(new("DUP", "重复", true, root.Id), CancellationToken.None)
@@ -56,7 +53,7 @@ public sealed class OrganizationCrudTests
     [Fact]
     public async Task Create_WithEmptyParentId_ShouldReturnParentValidation()
     {
-        var application = new OrganizationApplication(new FakeOrganizationRepository([]), new FakeUnitOfWork());
+        var application = CreateApplication(new FakeOrganizationRepository([]));
 
         var exception = await Assert.ThrowsAsync<OrganizationDomainException>(() =>
             application.CreateAsync(new("CODE", "机构", true, Guid.Empty), CancellationToken.None)
@@ -71,10 +68,7 @@ public sealed class OrganizationCrudTests
         var root = CreateOrganization("ROOT", null);
         var left = CreateOrganization("LEFT", root.Id, root.Id);
         var right = CreateOrganization("RIGHT", root.Id, root.Id);
-        var application = new OrganizationApplication(
-            new FakeOrganizationRepository([root, left, right]),
-            new FakeUnitOfWork()
-        );
+        var application = CreateApplication(new FakeOrganizationRepository([root, left, right]));
 
         await application.UpdateAsync(
             left.Id,
@@ -87,13 +81,30 @@ public sealed class OrganizationCrudTests
     }
 
     [Fact]
+    public async Task Update_ShouldPublishCacheInvalidationForAffectedOrganizations()
+    {
+        var root = CreateOrganization("ROOT", null);
+        var left = CreateOrganization("LEFT", root.Id, root.Id);
+        var repository = new FakeOrganizationRepository([root, left]);
+        var publisher = new FakeOrganizationsCacheInvalidationPublisher();
+        // 模拟 Path 级联变更：仓储返回自身与后代的受影响机构 ID。
+        repository.SaveAffectedIds = [left.Id, Guid.CreateVersion7()];
+        var application = new OrganizationApplication(repository, new FakeUnitOfWork(), publisher);
+
+        await application.UpdateAsync(
+            left.Id,
+            new(left.Code, left.Name, left.Enable, left.ParentId, left.Version),
+            CancellationToken.None
+        );
+
+        Assert.Equal([.. repository.SaveAffectedIds], publisher.PublishedIds);
+    }
+
+    [Fact]
     public async Task Update_WithSelfParent_ShouldReturnSelfParentValidation()
     {
         var organization = CreateOrganization("ROOT", null);
-        var application = new OrganizationApplication(
-            new FakeOrganizationRepository([organization]),
-            new FakeUnitOfWork()
-        );
+        var application = CreateApplication(new FakeOrganizationRepository([organization]));
 
         var exception = await Assert.ThrowsAsync<OrganizationDomainException>(() =>
             application.UpdateAsync(
@@ -117,10 +128,7 @@ public sealed class OrganizationCrudTests
         var root2 = CreateOrganization("ROOT2", null);
         var child = CreateOrganization("CHILD", root1.Id, root1.Id);
         var descendant = CreateOrganization("DESC", child.Id, root1.Id);
-        var application = new OrganizationApplication(
-            new FakeOrganizationRepository([root1, root2, child, descendant]),
-            new FakeUnitOfWork()
-        );
+        var application = CreateApplication(new FakeOrganizationRepository([root1, root2, child, descendant]));
         var target = scenario == "root-to-child" ? root1 : child;
         Guid? parentId = scenario switch
         {
@@ -242,10 +250,12 @@ public sealed class OrganizationCrudTests
             left.Update("LEFT", "LEFT", true, rightId, left.Version, Guid.Empty, DateTimeOffset.UtcNow);
             left.ChangePath($"{rootId}/{rightId}");
 
-            await repository.SaveAsync(left, CancellationToken.None);
+            var affectedIds = await repository.SaveAsync(left, CancellationToken.None);
 
             var child = await db.Queryable<OrganizationRecord>().SingleAsync(item => item.Id == childId);
             Assert.Equal($"{rootId}/{rightId}/{leftId}/{childId}", child.Path);
+            // 缓存失效依赖返回值覆盖自身与全部 Path 被级联替换的后代。
+            Assert.Equal(new[] { leftId, childId }.OrderBy(id => id), affectedIds.OrderBy(id => id));
             db.Ado.Close();
         }
         finally
@@ -300,6 +310,25 @@ public sealed class OrganizationCrudTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task Delete_ShouldPublishCacheInvalidationForDeletedOrganization()
+    {
+        var organization = CreateOrganization("ROOT", null);
+        var publisher = new FakeOrganizationsCacheInvalidationPublisher();
+        var application = new OrganizationApplication(
+            new FakeOrganizationRepository([organization]),
+            new FakeUnitOfWork(),
+            publisher
+        );
+
+        await application.DeleteAsync(organization.Id, CancellationToken.None);
+
+        Assert.Equal([organization.Id], publisher.PublishedIds);
+    }
+
+    private static OrganizationApplication CreateApplication(FakeOrganizationRepository repository) =>
+        new(repository, new FakeUnitOfWork(), new FakeOrganizationsCacheInvalidationPublisher());
 
     private static Organization CreateOrganization(string code, Guid? parentId, Guid? orgId = null)
     {
@@ -377,6 +406,11 @@ public sealed class OrganizationCrudTests
     {
         public List<Organization> Items { get; } = [.. organizations];
 
+        /// <summary>
+        /// SaveAsync 返回的受影响机构 ID；未设置时默认仅返回被保存机构自身。
+        /// </summary>
+        public IReadOnlyList<Guid>? SaveAffectedIds { get; set; }
+
         public Task AcquireMutationLockAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<Organization?> FindAsync(Guid id, CancellationToken cancellationToken) =>
@@ -398,11 +432,23 @@ public sealed class OrganizationCrudTests
             return Task.CompletedTask;
         }
 
-        public Task SaveAsync(Organization organization, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<IReadOnlyList<Guid>> SaveAsync(Organization organization, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Guid>>(SaveAffectedIds ?? [organization.Id]);
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
         {
             Items.RemoveAll(item => item.Id == id);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeOrganizationsCacheInvalidationPublisher : IOrganizationsCacheInvalidationPublisher
+    {
+        public List<Guid> PublishedIds { get; } = [];
+
+        public Task PublishAsync(IReadOnlyCollection<Guid> organizationIds, CancellationToken cancellationToken)
+        {
+            PublishedIds.AddRange(organizationIds);
             return Task.CompletedTask;
         }
     }
