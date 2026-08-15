@@ -93,7 +93,8 @@ internal static class PermissionSeeder
                         Type = PermissionType.Button,
                         SortOrder = 102,
                         ParentId = permissionsListPermissionId,
-                        Path = $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsCreatePermissionId}",
+                        Path =
+                            $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
@@ -105,7 +106,8 @@ internal static class PermissionSeeder
                         Type = PermissionType.Button,
                         SortOrder = 103,
                         ParentId = permissionsListPermissionId,
-                        Path = $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsUpdatePermissionId}",
+                        Path =
+                            $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
@@ -117,7 +119,8 @@ internal static class PermissionSeeder
                         Type = PermissionType.Button,
                         SortOrder = 104,
                         ParentId = permissionsListPermissionId,
-                        Path = $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsDeletePermissionId}",
+                        Path =
+                            $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
