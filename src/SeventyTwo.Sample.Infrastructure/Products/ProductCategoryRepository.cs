@@ -42,7 +42,7 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
     {
         var records = await db.Queryable<ProductCategoryRecord>()
             .Where(category => category.DeleteAt == null)
-            .OrderBy(category => category.Name)
+            .OrderBy(category => category.SortOrder)
             .OrderBy(category => category.Id)
             .ToListAsync(cancellationToken);
         return records.Adapt<List<ProductCategory>>();
@@ -64,6 +64,7 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
             Id = category.Id,
             Name = category.Name,
             ParentId = category.ParentId,
+            SortOrder = category.SortOrder,
             Path = category.Path,
             CreatedBy = SystemIds.System,
             CreatedAt = DateTimeExtension.Now(),
@@ -104,6 +105,7 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
                 {
                     Name = category.Name,
                     ParentId = category.ParentId,
+                    SortOrder = category.SortOrder,
                     Path = category.Path,
                     UpdatedBy = category.UpdatedBy,
                     UpdatedAt = category.UpdatedAt,

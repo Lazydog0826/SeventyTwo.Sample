@@ -53,7 +53,7 @@ public sealed class ProductCategoriesController(IProductCategoryApplication prod
     )
     {
         var result = await productCategoryApplication.CreateAsync(
-            new CreateProductCategoryInput(request.Name, request.ParentId),
+            new CreateProductCategoryInput(request.Name, request.ParentId, request.SortOrder),
             cancellationToken
         );
         return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
@@ -74,7 +74,7 @@ public sealed class ProductCategoriesController(IProductCategoryApplication prod
     {
         await productCategoryApplication.UpdateAsync(
             request.Id,
-            new UpdateProductCategoryInput(request.Name, request.ParentId, request.Version),
+            new UpdateProductCategoryInput(request.Name, request.ParentId, request.Version, request.SortOrder),
             cancellationToken
         );
         return WebApiResponse.Operate(message: MessageKeys.Common.Success);

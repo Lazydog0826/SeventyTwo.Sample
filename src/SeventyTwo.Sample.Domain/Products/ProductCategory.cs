@@ -20,7 +20,8 @@ public sealed class ProductCategory : AggregateRoot
     /// <param name="name">类目名称。</param>
     /// <param name="parentId">上级类目 ID；顶级类目为 <see langword="null"/>。</param>
     /// <param name="path">上级类目的层级路径，顶级类目无需传入。</param>
-    public ProductCategory(Guid id, string name, Guid? parentId = null, string? path = null)
+    /// <param name="sortOrder">排序号，同级内按升序展示。</param>
+    public ProductCategory(Guid id, string name, Guid? parentId = null, string? path = null, int sortOrder = 0)
     {
         if (id == Guid.Empty)
         {
@@ -29,7 +30,7 @@ public sealed class ProductCategory : AggregateRoot
 
         Id = id;
         Enable = true;
-        SetInfo(name, parentId);
+        SetInfo(name, parentId, sortOrder);
         Path = parentId is null ? id.ToString() : RequirePath(path);
     }
 
@@ -49,6 +50,11 @@ public sealed class ProductCategory : AggregateRoot
     public string Path { get; private set; } = string.Empty;
 
     /// <summary>
+    /// 排序号，同级内按升序展示。
+    /// </summary>
+    public int SortOrder { get; private set; }
+
+    /// <summary>
     /// 修改类目基础信息。
     /// </summary>
     /// <param name="name">类目名称。</param>
@@ -56,7 +62,15 @@ public sealed class ProductCategory : AggregateRoot
     /// <param name="version">客户端持有的类目版本 UUIDv7。</param>
     /// <param name="updatedBy">修改人 ID。</param>
     /// <param name="updatedAt">修改时间。</param>
-    public void Update(string name, Guid? parentId, Guid version, Guid updatedBy, DateTimeOffset updatedAt)
+    /// <param name="sortOrder">排序号，同级内按升序展示。</param>
+    public void Update(
+        string name,
+        Guid? parentId,
+        Guid version,
+        Guid updatedBy,
+        DateTimeOffset updatedAt,
+        int sortOrder = 0
+    )
     {
         if (version != Version)
         {
@@ -68,7 +82,7 @@ public sealed class ProductCategory : AggregateRoot
             throw new ProductDomainException(MessageKeys.ProductCategories.ModifiedAtRequired);
         }
 
-        SetInfo(name, parentId);
+        SetInfo(name, parentId, sortOrder);
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;
     }
@@ -104,7 +118,8 @@ public sealed class ProductCategory : AggregateRoot
     /// </summary>
     /// <param name="name">类目名称。</param>
     /// <param name="parentId">上级类目 ID；顶级类目为 <see langword="null"/>。</param>
-    private void SetInfo(string name, Guid? parentId)
+    /// <param name="sortOrder">排序号，同级内按升序展示。</param>
+    private void SetInfo(string name, Guid? parentId, int sortOrder)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -127,8 +142,14 @@ public sealed class ProductCategory : AggregateRoot
             throw new ProductDomainException(MessageKeys.ProductCategories.SelfCannotBeParent);
         }
 
+        if (sortOrder < 0)
+        {
+            throw new ProductDomainException(MessageKeys.ProductCategories.SortMustNotBeNegative);
+        }
+
         Name = name;
         ParentId = parentId;
+        SortOrder = sortOrder;
     }
 
     /// <summary>

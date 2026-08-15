@@ -5,7 +5,8 @@ namespace SeventyTwo.Sample.WebApi.Contracts.Products;
 /// </summary>
 /// <param name="Name">类目名称。</param>
 /// <param name="ParentId">上级类目 ID；为空时创建顶级类目。</param>
-public record CreateProductCategoryRequest(string Name, Guid? ParentId = null);
+/// <param name="SortOrder">排序号，同级内按升序展示。</param>
+public record CreateProductCategoryRequest(string Name, Guid? ParentId = null, int SortOrder = 0);
 
 /// <summary>
 /// 商品类目修改请求。
@@ -14,8 +15,9 @@ public record CreateProductCategoryRequest(string Name, Guid? ParentId = null);
 /// <param name="Name">类目名称。</param>
 /// <param name="ParentId">上级类目 ID；顶级类目为 null。</param>
 /// <param name="Version">客户端持有的并发版本。</param>
-public sealed record UpdateProductCategoryRequest(Guid Id, string Name, Guid? ParentId, Guid Version)
-    : CreateProductCategoryRequest(Name, ParentId);
+/// <param name="SortOrder">排序号，同级内按升序展示。</param>
+public sealed record UpdateProductCategoryRequest(Guid Id, string Name, Guid? ParentId, Guid Version, int SortOrder = 0)
+    : CreateProductCategoryRequest(Name, ParentId, SortOrder);
 
 /// <summary>
 /// 商品类目删除请求。

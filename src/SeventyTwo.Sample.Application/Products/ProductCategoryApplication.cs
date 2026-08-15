@@ -37,7 +37,8 @@ public sealed class ProductCategoryApplication(
                     id,
                     input.Name,
                     input.ParentId,
-                    parent is null ? null : $"{parent.Path}/{id}"
+                    parent is null ? null : $"{parent.Path}/{id}",
+                    input.SortOrder
                 );
                 await productCategoryRepository.AddAsync(category, cancellationToken);
             },
@@ -59,7 +60,14 @@ public sealed class ProductCategoryApplication(
                 await productCategoryRepository.AcquireMutationLockAsync(cancellationToken);
                 var category = await GetRequiredAsync(id, cancellationToken);
                 var parent = await ValidateParentChangeAsync(category, input.ParentId, cancellationToken);
-                category.Update(input.Name, input.ParentId, input.Version, SystemIds.System, DateTimeExtension.Now());
+                category.Update(
+                    input.Name,
+                    input.ParentId,
+                    input.Version,
+                    SystemIds.System,
+                    DateTimeExtension.Now(),
+                    input.SortOrder
+                );
                 // 类目允许在顶级与子级之间移动，统一按新上级重算路径，由仓储级联更新后代。
                 category.ChangePath(parent?.Path ?? string.Empty);
                 await productCategoryRepository.SaveAsync(category, cancellationToken);

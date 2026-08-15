@@ -28,6 +28,11 @@ public sealed record ProductCategoryListOutput
     public string Path { get; init; } = string.Empty;
 
     /// <summary>
+    /// 排序号，同级内按升序展示。
+    /// </summary>
+    public int SortOrder { get; init; }
+
+    /// <summary>
     /// 并发版本。
     /// </summary>
     public Guid Version { get; init; }
@@ -38,7 +43,8 @@ public sealed record ProductCategoryListOutput
 /// </summary>
 /// <param name="Name">类目名称。</param>
 /// <param name="ParentId">上级类目 ID；顶级类目为 <see langword="null"/>。</param>
-public record CreateProductCategoryInput(string Name, Guid? ParentId = null);
+/// <param name="SortOrder">排序号，同级内按升序展示。</param>
+public record CreateProductCategoryInput(string Name, Guid? ParentId = null, int SortOrder = 0);
 
 /// <summary>
 /// 更新商品类目的输入。
@@ -46,5 +52,6 @@ public record CreateProductCategoryInput(string Name, Guid? ParentId = null);
 /// <param name="Name">类目名称。</param>
 /// <param name="ParentId">上级类目 ID；顶级类目为 <see langword="null"/>。</param>
 /// <param name="Version">客户端读取类目时获得的并发版本。</param>
-public sealed record UpdateProductCategoryInput(string Name, Guid? ParentId, Guid Version)
-    : CreateProductCategoryInput(Name, ParentId);
+/// <param name="SortOrder">排序号，同级内按升序展示。</param>
+public sealed record UpdateProductCategoryInput(string Name, Guid? ParentId, Guid Version, int SortOrder = 0)
+    : CreateProductCategoryInput(Name, ParentId, SortOrder);

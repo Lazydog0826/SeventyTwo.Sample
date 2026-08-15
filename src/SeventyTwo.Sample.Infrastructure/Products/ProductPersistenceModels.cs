@@ -36,6 +36,12 @@ internal sealed class ProductCategoryRecord : BaseEntity
     public Guid? ParentId { get; init; }
 
     /// <summary>
+    /// 排序号，同级内按升序展示。
+    /// </summary>
+    [SugarColumn(ColumnName = "sort_order")]
+    public int SortOrder { get; init; }
+
+    /// <summary>
     /// 由类目 ID 组成的完整层级路径。
     /// </summary>
     [SugarColumn(ColumnName = "path", ColumnDataType = "text")]

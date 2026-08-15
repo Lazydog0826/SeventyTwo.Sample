@@ -13,7 +13,7 @@ public sealed class ProductCategoryMappingProfile : IRegister
     {
         config
             .NewConfig<ProductCategoryRecord, ProductCategory>()
-            .ConstructUsing(x => new ProductCategory(x.Id, x.Name, x.ParentId, x.Path))
+            .ConstructUsing(x => new ProductCategory(x.Id, x.Name, x.ParentId, x.Path, x.SortOrder))
             .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
     }
 }

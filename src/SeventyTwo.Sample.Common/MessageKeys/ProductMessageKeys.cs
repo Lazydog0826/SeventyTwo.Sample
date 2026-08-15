@@ -119,5 +119,10 @@ public static partial class MessageKeys
         /// 商品类目不能作为自身的上级类目。
         /// </summary>
         public const string SelfCannotBeParent = "productCategory.selfCannotBeParent";
+
+        /// <summary>
+        /// 商品类目排序号不能小于零。
+        /// </summary>
+        public const string SortMustNotBeNegative = "productCategory.sortMustNotBeNegative";
     }
 }
