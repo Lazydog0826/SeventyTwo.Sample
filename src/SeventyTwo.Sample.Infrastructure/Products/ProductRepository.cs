@@ -3,6 +3,7 @@ using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.Sample.Common.MessageKeys;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
+using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
 
 // ReSharper disable MemberCanBeMadeStatic.Local
@@ -13,20 +14,30 @@ namespace SeventyTwo.Sample.Infrastructure.Products;
 public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
 {
     /// <inheritdoc />
-    public async Task<Product?> FindAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Product?> FindAsync(
+        Guid id,
+        DataPermissionScope dataPermissionScope,
+        CancellationToken cancellationToken
+    )
     {
         var record = await db.Queryable<ProductRecord>()
             .Where(x => x.Id == id && x.DeleteAt == null)
+            .ApplyDataPermission(dataPermissionScope)
             .FirstAsync(cancellationToken);
         return record?.Adapt<Product>();
     }
 
     /// <inheritdoc />
-    public async Task<ProductPage> GetPageAsync(ProductPageRequest request, CancellationToken cancellationToken)
+    public async Task<ProductPage> GetPageAsync(
+        ProductPageRequest request,
+        DataPermissionScope dataPermissionScope,
+        CancellationToken cancellationToken
+    )
     {
         var keyword = request.Keyword?.Trim().ToLowerInvariant();
         var query = db.Queryable<ProductRecord>()
             .Where(x => x.DeleteAt == null)
+            .ApplyDataPermission(dataPermissionScope)
             .WhereIF(
                 !string.IsNullOrEmpty(keyword),
                 x => x.Name.ToLower().Contains(keyword!) || x.Code.ToLower().Contains(keyword!)
@@ -84,7 +95,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
 
         if (affectedRows == 0)
         {
-            if (await FindAsync(product.Id, cancellationToken) is not null)
+            if (await ExistsAsync(product.Id, cancellationToken))
             {
                 throw new ProductDomainException(MessageKeys.Products.DataChanged, DomainErrorType.Conflict);
             }
@@ -106,11 +117,22 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             return;
         }
 
-        if (await FindAsync(id, cancellationToken) is not null)
+        if (await ExistsAsync(id, cancellationToken))
         {
             throw new ProductDomainException(MessageKeys.Products.DataChanged, DomainErrorType.Conflict);
         }
 
         throw new ProductNotFoundException();
+    }
+
+    /// <summary>
+    /// 判断指定未删除商品是否存在；用于乐观锁失败后区分并发冲突与未找到，不做数据权限过滤。
+    /// </summary>
+    /// <param name="id">商品 ID。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>商品存在时返回 <see langword="true"/>。</returns>
+    private Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return db.Queryable<ProductRecord>().Where(x => x.Id == id && x.DeleteAt == null).AnyAsync(cancellationToken);
     }
 }

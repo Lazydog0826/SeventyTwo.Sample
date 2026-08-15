@@ -1,15 +1,20 @@
 using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Application.Authentication;
+using SeventyTwo.Sample.Application.Organizations;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
+using SeventyTwo.Sample.Domain.Users;
 
 namespace SeventyTwo.Sample.Application.Products;
 
 [AutofacDependency(typeof(IProductApplication))]
 public sealed class ProductApplication(
     IProductRepository productRepository,
-    IProductCategoryRepository productCategoryRepository
+    IProductCategoryRepository productCategoryRepository,
+    IBusinessUserContext businessUserContext,
+    OrganizationsCacheService organizationsCacheService
 ) : IProductApplication
 {
     /// <inheritdoc />
@@ -33,7 +38,11 @@ public sealed class ProductApplication(
     /// <inheritdoc />
     public async Task UpdateAsync(Guid id, UpdateProductInput input, CancellationToken cancellationToken)
     {
-        var product = await GetRequiredAsync(id, cancellationToken);
+        var product = await GetRequiredAsync(
+            id,
+            await CreateDataPermissionScopeAsync(cancellationToken),
+            cancellationToken
+        );
         await ValidateCodeAndCategoryAsync(input.Code, id, input.CategoryId, cancellationToken);
         product.Update(
             input.Name,
@@ -58,7 +67,11 @@ public sealed class ProductApplication(
         CancellationToken cancellationToken
     )
     {
-        var product = await GetRequiredAsync(id, cancellationToken);
+        var product = await GetRequiredAsync(
+            id,
+            await CreateDataPermissionScopeAsync(cancellationToken),
+            cancellationToken
+        );
         product.ChangeStatus(status, version, SystemIds.System, DateTimeExtension.Now());
         await productRepository.SaveAsync(product, cancellationToken);
     }
@@ -66,7 +79,11 @@ public sealed class ProductApplication(
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, Guid version, CancellationToken cancellationToken)
     {
-        var product = await GetRequiredAsync(id, cancellationToken);
+        var product = await GetRequiredAsync(
+            id,
+            await CreateDataPermissionScopeAsync(cancellationToken),
+            cancellationToken
+        );
         product.EnsureCanDelete(version);
         await productRepository.DeleteAsync(id, version, cancellationToken);
     }
@@ -74,7 +91,11 @@ public sealed class ProductApplication(
     /// <inheritdoc />
     public async Task<ProductOutput> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var product = await GetRequiredAsync(id, cancellationToken);
+        var product = await GetRequiredAsync(
+            id,
+            await CreateDataPermissionScopeAsync(cancellationToken),
+            cancellationToken
+        );
         return product.Adapt<ProductOutput>();
     }
 
@@ -99,24 +120,58 @@ public sealed class ProductApplication(
             throw new ProductDomainException(MessageKeys.Paging.PageOffsetOutOfRange);
         }
 
-        var page = await productRepository.GetPageAsync(request, cancellationToken);
+        var page = await productRepository.GetPageAsync(
+            request,
+            await CreateDataPermissionScopeAsync(cancellationToken),
+            cancellationToken
+        );
         return new PageResponse<ProductOutput> { List = page.Items.Adapt<List<ProductOutput>>(), Total = page.Total };
     }
 
     /// <summary>
-    /// 查询指定商品，不存在时抛出业务异常。
+    /// 从当前用户上下文构建数据权限范围；
+    /// 本机构与下级机构类型需要机构 Path 做前缀匹配，从机构路径缓存解析后补充。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>数据权限范围。</returns>
+    private async Task<DataPermissionScope> CreateDataPermissionScopeAsync(CancellationToken cancellationToken)
+    {
+        var scope = new DataPermissionScope(
+            businessUserContext.DataPermissionType,
+            businessUserContext.UserId,
+            businessUserContext.OrgId
+        );
+        if (scope.DataPermissionType == DataPermissionType.OrganizationAndDescendants)
+        {
+            scope = scope with
+            {
+                OrganizationPath = await organizationsCacheService.FindPathAsync(scope.OrgId, cancellationToken),
+            };
+        }
+
+        return scope;
+    }
+
+    /// <summary>
+    /// 查询指定商品，不存在或不在当前用户数据权限范围内时抛出业务异常。
     /// </summary>
     /// <param name="id">商品 ID。</param>
+    /// <param name="dataPermissionScope">当前用户的数据权限范围。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品聚合。</returns>
-    private async Task<Product> GetRequiredAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<Product> GetRequiredAsync(
+        Guid id,
+        DataPermissionScope dataPermissionScope,
+        CancellationToken cancellationToken
+    )
     {
         if (id == Guid.Empty)
         {
             throw new ProductDomainException(MessageKeys.Products.IdRequired);
         }
 
-        return await productRepository.FindAsync(id, cancellationToken) ?? throw new ProductNotFoundException();
+        return await productRepository.FindAsync(id, dataPermissionScope, cancellationToken)
+            ?? throw new ProductNotFoundException();
     }
 
     /// <summary>

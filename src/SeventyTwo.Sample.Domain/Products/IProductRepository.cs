@@ -4,20 +4,26 @@ namespace SeventyTwo.Sample.Domain.Products;
 public interface IProductRepository
 {
     /// <summary>
-    /// 根据 ID 查询未删除的商品。
+    /// 根据 ID 查询未删除的商品，并按数据权限过滤；不在权限范围内时视为不存在。
     /// </summary>
     /// <param name="id">商品 ID。</param>
+    /// <param name="dataPermissionScope">当前用户的数据权限范围。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>商品聚合；不存在时返回 <see langword="null"/>。</returns>
-    Task<Product?> FindAsync(Guid id, CancellationToken cancellationToken);
+    /// <returns>商品聚合；不存在或不在权限范围内时返回 <see langword="null"/>。</returns>
+    Task<Product?> FindAsync(Guid id, DataPermissionScope dataPermissionScope, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 分页查询未删除的商品。
+    /// 分页查询未删除的商品，并按数据权限过滤。
     /// </summary>
     /// <param name="request">分页请求。</param>
+    /// <param name="dataPermissionScope">当前用户的数据权限范围。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
-    Task<ProductPage> GetPageAsync(ProductPageRequest request, CancellationToken cancellationToken);
+    Task<ProductPage> GetPageAsync(
+        ProductPageRequest request,
+        DataPermissionScope dataPermissionScope,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     /// 判断商品编码是否已被其他未删除商品占用。

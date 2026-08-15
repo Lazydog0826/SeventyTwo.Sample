@@ -32,12 +32,13 @@ public sealed class ProductsController(IProductApplication productApplication) :
     }
 
     /// <summary>
-    /// 修改商品。
+    /// 修改商品，按当前用户的数据权限过滤。
     /// </summary>
     /// <param name="request">修改商品请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("update")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
+    [BusinessUserContext]
     public async Task<IActionResult> Update(UpdateProductRequest request, CancellationToken cancellationToken)
     {
         await productApplication.UpdateAsync(request.Id, request.Adapt<UpdateProductInput>(), cancellationToken);
@@ -45,12 +46,13 @@ public sealed class ProductsController(IProductApplication productApplication) :
     }
 
     /// <summary>
-    /// 切换商品上架状态。
+    /// 切换商品上架状态，按当前用户的数据权限过滤。
     /// </summary>
     /// <param name="request">商品上架状态切换请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("change-status")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
+    [BusinessUserContext]
     public async Task<IActionResult> ChangeStatus(
         ChangeProductStatusRequest request,
         CancellationToken cancellationToken
@@ -61,12 +63,13 @@ public sealed class ProductsController(IProductApplication productApplication) :
     }
 
     /// <summary>
-    /// 删除商品。
+    /// 删除商品，按当前用户的数据权限过滤。
     /// </summary>
     /// <param name="request">删除商品请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     [HttpPost("delete")]
     [Permission(PermissionMatchMode.All, "productsDelete")]
+    [BusinessUserContext]
     public async Task<IActionResult> Delete(DeleteProductRequest request, CancellationToken cancellationToken)
     {
         await productApplication.DeleteAsync(request.Id, request.Version, cancellationToken);
@@ -74,13 +77,14 @@ public sealed class ProductsController(IProductApplication productApplication) :
     }
 
     /// <summary>
-    /// 查询商品详情。
+    /// 查询商品详情，按当前用户的数据权限过滤。
     /// </summary>
     /// <param name="request">查询商品请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品信息。</returns>
     [HttpPost("get")]
     [Permission(PermissionMatchMode.All, "productsUpdate")]
+    [BusinessUserContext]
     public async Task<IActionResult> Get(GetProductRequest request, CancellationToken cancellationToken)
     {
         var result = await productApplication.GetAsync(request.Id, cancellationToken);
@@ -88,13 +92,14 @@ public sealed class ProductsController(IProductApplication productApplication) :
     }
 
     /// <summary>
-    /// 分页查询商品。
+    /// 分页查询商品，按当前用户的数据权限过滤。
     /// </summary>
     /// <param name="request">分页请求。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>商品分页数据。</returns>
     [HttpPost("page")]
     [Permission(PermissionMatchMode.All, "productsList")]
+    [BusinessUserContext]
     public async Task<IActionResult> GetPage(ProductPageRequest request, CancellationToken cancellationToken)
     {
         var result = await productApplication.GetPageAsync(request, cancellationToken);
