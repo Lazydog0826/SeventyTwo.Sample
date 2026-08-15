@@ -114,6 +114,9 @@ public sealed class UserApplication(
                 await organizationRepository.AcquireMutationLockAsync(cancellationToken);
                 if (input.DefaultPageId.HasValue)
                     await permissionRepository.AcquireCatalogSharedLockAsync(cancellationToken);
+                // 机构与数据权限类型随令牌快照分发，变更后旧令牌在剩余有效期内仍携带旧值，
+                // 必须与禁用等安全操作一样强制失效并串行化令牌签发，由用户重新登录获取新值。
+                await userRepository.AcquireSecurityLockAsync(id, cancellationToken);
                 var user = await GetRequiredAsync(id, cancellationToken);
                 await ValidateOrganizationAsync(input.OrgId, cancellationToken);
                 await ValidateDefaultPageAsync(input.DefaultPageId, cancellationToken);
@@ -129,6 +132,10 @@ public sealed class UserApplication(
                 );
                 user.OrgId = input.OrgId;
                 await userRepository.SaveAsync(user, cancellationToken);
+                if (!await userTokenCacheService.SetInvalidBeforeAsync(id, cancellationToken))
+                {
+                    throw new InvalidOperationException("设置用户令牌失效时间失败");
+                }
                 await userInfoCacheInvalidationPublisher.PublishAsync(id, cancellationToken);
             },
             cancellationToken

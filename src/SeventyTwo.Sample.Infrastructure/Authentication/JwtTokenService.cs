@@ -67,31 +67,7 @@ public sealed class JwtTokenService(
                 out _
             );
 
-            var userIdValue = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-            var username = principal.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value;
-            var displayName = principal.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
-            var tokenType = principal.FindFirst("token_type")?.Value;
-            var sessionIdValue = principal.FindFirst("session_id")?.Value;
-            var issuedAtValue = principal.FindFirst(JwtRegisteredClaimNames.Iat)?.Value;
-            if (
-                !Guid.TryParse(userIdValue, out var userId)
-                || string.IsNullOrWhiteSpace(username)
-                || string.IsNullOrWhiteSpace(displayName)
-                || string.IsNullOrWhiteSpace(tokenType)
-                || !Guid.TryParse(sessionIdValue, out var sessionId)
-                || !long.TryParse(
-                    issuedAtValue,
-                    NumberStyles.Integer,
-                    CultureInfo.InvariantCulture,
-                    out var issuedAtUnixTimeSeconds
-                )
-            )
-            {
-                return false;
-            }
-
-            payload = new TokenPayload(userId, username, displayName, tokenType, sessionId, issuedAtUnixTimeSeconds);
-            return true;
+            return TryCreatePayload(principal, out payload);
         }
         catch (SecurityTokenException)
         {
@@ -101,6 +77,63 @@ public sealed class JwtTokenService(
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// 从已通过签名与有效期校验的令牌主体中解析业务载荷。
+    /// 逐字段解析，任一 claim 缺失或非法即整体拒绝且不区分失败原因（fail-closed）。
+    /// </summary>
+    private static bool TryCreatePayload(ClaimsPrincipal principal, out TokenPayload? payload)
+    {
+        payload = null;
+
+        if (!Guid.TryParse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId))
+            return false;
+        var username = principal.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value;
+        if (string.IsNullOrWhiteSpace(username))
+            return false;
+        var displayName = principal.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
+        if (string.IsNullOrWhiteSpace(displayName))
+            return false;
+        if (!Guid.TryParse(principal.FindFirst("org_id")?.Value, out var orgId))
+            return false;
+        // 数据权限类型以枚举底层 short 数值存储，解析时校验必须是已定义的枚举值，
+        // 防止伪造令牌携带越权数值绕过数据权限过滤。
+        if (
+            !short.TryParse(
+                principal.FindFirst("data_permission_type")?.Value,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var dataPermissionType
+            ) || !Enum.IsDefined((DataPermissionType)dataPermissionType)
+        )
+            return false;
+        var tokenType = principal.FindFirst("token_type")?.Value;
+        if (string.IsNullOrWhiteSpace(tokenType))
+            return false;
+        if (!Guid.TryParse(principal.FindFirst("session_id")?.Value, out var sessionId))
+            return false;
+        if (
+            !long.TryParse(
+                principal.FindFirst(JwtRegisteredClaimNames.Iat)?.Value,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var issuedAtUnixTimeSeconds
+            )
+        )
+            return false;
+
+        payload = new TokenPayload(
+            userId,
+            username,
+            displayName,
+            orgId,
+            (DataPermissionType)dataPermissionType,
+            tokenType,
+            sessionId,
+            issuedAtUnixTimeSeconds
+        );
+        return true;
     }
 
     /// <summary>
@@ -119,6 +152,9 @@ public sealed class JwtTokenService(
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
             new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
+            new Claim("org_id", user.OrgId.ToString()),
+            // 存枚举底层 short 数值而非成员名，枚举成员重命名不会导致已颁发令牌解析语义变化。
+            new Claim("data_permission_type", ((short)user.DataPermissionType).ToString(CultureInfo.InvariantCulture)),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("token_type", tokenType),
             new Claim("session_id", sessionId),

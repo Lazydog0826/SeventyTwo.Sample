@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -100,12 +101,18 @@ public sealed class BusinessJwtAuthenticationHandler(
         }
 
         // 将 Token 载荷转换为 ASP.NET Core ClaimsIdentity，供控制器、授权策略及业务代码
-        // 通过 HttpContext.User 获取用户、显示名称和登录会话等信息。
+        // 通过 HttpContext.User 获取用户、显示名称和登录会话等信息；
+        // 机构与数据权限类型随令牌分发，业务侧零查询读取。
         var identity = new ClaimsIdentity(
             [
                 new Claim(ClaimTypes.NameIdentifier, payload.UserId.ToString()),
                 new Claim(ClaimTypes.Name, payload.Username),
                 new Claim("display_name", payload.DisplayName),
+                new Claim("org_id", payload.OrgId.ToString()),
+                new Claim(
+                    "data_permission_type",
+                    ((short)payload.DataPermissionType).ToString(CultureInfo.InvariantCulture)
+                ),
                 new Claim("session_id", payload.SessionId.ToString()),
             ],
             Scheme.Name
