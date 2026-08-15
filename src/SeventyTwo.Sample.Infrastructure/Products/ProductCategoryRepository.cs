@@ -136,7 +136,8 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
                 .Select(descendant => new ProductCategoryRecord
                 {
                     Id = descendant.Id,
-                    Path = $"{category.Path}{descendant.Path[oldPath.Length..]}",
+                    // Path 段为定长 GUID，oldPath 在后代路径中仅作为前缀出现一次，Replace 即精确替换前缀。
+                    Path = descendant.Path.Replace(oldPath, category.Path),
                     Version = Guid.CreateVersion7(),
                     UpdatedBy = category.UpdatedBy,
                     UpdatedAt = category.UpdatedAt,

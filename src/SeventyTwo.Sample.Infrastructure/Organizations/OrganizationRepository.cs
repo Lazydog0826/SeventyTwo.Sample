@@ -143,7 +143,8 @@ public sealed class OrganizationRepository(ISqlSugarClient db) : IOrganizationRe
                 .Select(descendant => new OrganizationRecord
                 {
                     Id = descendant.Id,
-                    Path = $"{organization.Path}{descendant.Path[oldPath.Length..]}",
+                    // Path 段为定长 GUID，oldPath 在后代路径中仅作为前缀出现一次，Replace 即精确替换前缀。
+                    Path = descendant.Path.Replace(oldPath, organization.Path),
                     Version = Guid.CreateVersion7(),
                     UpdatedBy = organization.UpdatedBy,
                     UpdatedAt = organization.UpdatedAt,

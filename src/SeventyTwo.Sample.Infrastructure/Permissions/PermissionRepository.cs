@@ -176,7 +176,8 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
                 .Select(descendant => new PermissionRecord
                 {
                     Id = descendant.Id,
-                    Path = $"{permission.Path}{descendant.Path[oldPath.Length..]}",
+                    // Path 段为定长 GUID，oldPath 在后代路径中仅作为前缀出现一次，Replace 即精确替换前缀。
+                    Path = descendant.Path.Replace(oldPath, permission.Path),
                     Version = Guid.CreateVersion7(),
                     UpdatedBy = permission.UpdatedBy,
                     UpdatedAt = permission.UpdatedAt,
