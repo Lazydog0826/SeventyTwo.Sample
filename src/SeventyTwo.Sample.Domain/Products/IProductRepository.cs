@@ -1,3 +1,4 @@
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace SeventyTwo.Sample.Domain.Products;
 
 public interface IProductRepository

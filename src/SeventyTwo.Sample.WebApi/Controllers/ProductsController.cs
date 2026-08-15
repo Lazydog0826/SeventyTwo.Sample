@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SeventyTwo.Sample.Application;
 using SeventyTwo.Sample.Application.Permissions;
 using SeventyTwo.Sample.Application.Products;
-using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.WebApi.Authentication;
 using SeventyTwo.Sample.WebApi.Contracts.Products;

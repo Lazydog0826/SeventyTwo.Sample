@@ -1,4 +1,3 @@
-using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 
 namespace SeventyTwo.Sample.Application.Products;
