@@ -33,6 +33,15 @@ internal static class PermissionSeeder
         var usersDeletePermissionId = Guid.CreateVersion7();
         var usersAuthorizePermissionId = Guid.CreateVersion7();
         var usersResetPasswordPermissionId = Guid.CreateVersion7();
+        var productsPermissionId = Guid.CreateVersion7();
+        var productCategoriesPermissionId = Guid.CreateVersion7();
+        var productCategoriesCreatePermissionId = Guid.CreateVersion7();
+        var productCategoriesUpdatePermissionId = Guid.CreateVersion7();
+        var productCategoriesDeletePermissionId = Guid.CreateVersion7();
+        var productsListPermissionId = Guid.CreateVersion7();
+        var productsCreatePermissionId = Guid.CreateVersion7();
+        var productsUpdatePermissionId = Guid.CreateVersion7();
+        var productsDeletePermissionId = Guid.CreateVersion7();
 
         db.Insertable(
                 new[]
@@ -355,6 +364,129 @@ internal static class PermissionSeeder
                         SortOrder = 406,
                         ParentId = usersListPermissionId,
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersResetPasswordPermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productsPermissionId,
+                        Code = "products",
+                        Title = "商品管理",
+                        Type = PermissionType.Directory,
+                        SortOrder = 500,
+                        Icon = "ShoppingBag",
+                        VueComponentPath = string.Empty,
+                        RoutePath = string.Empty,
+                        RouteName = string.Empty,
+                        ParentId = null,
+                        Path = productsPermissionId.ToString(),
+                        MetaData = new PermissionMetaData(true),
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productCategoriesPermissionId,
+                        Code = "productCategories",
+                        Title = "商品类目管理",
+                        Type = PermissionType.Page,
+                        SortOrder = 501,
+                        Icon = string.Empty,
+                        VueComponentPath = "/src/views/productCategories/list.vue",
+                        RoutePath = "/productCategories/list",
+                        RouteName = "ProductCategories.List",
+                        ParentId = productsPermissionId,
+                        Path = $"{productsPermissionId}/{productCategoriesPermissionId}",
+                        MetaData = new PermissionMetaData(true),
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productCategoriesCreatePermissionId,
+                        Code = "productCategoriesCreate",
+                        Title = "新增商品类目",
+                        Type = PermissionType.Button,
+                        SortOrder = 502,
+                        ParentId = productCategoriesPermissionId,
+                        Path =
+                            $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesCreatePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productCategoriesUpdatePermissionId,
+                        Code = "productCategoriesUpdate",
+                        Title = "修改商品类目",
+                        Type = PermissionType.Button,
+                        SortOrder = 503,
+                        ParentId = productCategoriesPermissionId,
+                        Path =
+                            $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesUpdatePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productCategoriesDeletePermissionId,
+                        Code = "productCategoriesDelete",
+                        Title = "删除商品类目",
+                        Type = PermissionType.Button,
+                        SortOrder = 504,
+                        ParentId = productCategoriesPermissionId,
+                        Path =
+                            $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesDeletePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productsListPermissionId,
+                        Code = "productsList",
+                        Title = "商品列表",
+                        Type = PermissionType.Page,
+                        SortOrder = 505,
+                        Icon = string.Empty,
+                        VueComponentPath = "/src/views/products/list.vue",
+                        RoutePath = "/products/list",
+                        RouteName = "Products.List",
+                        ParentId = productsPermissionId,
+                        Path = $"{productsPermissionId}/{productsListPermissionId}",
+                        MetaData = new PermissionMetaData(true),
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productsCreatePermissionId,
+                        Code = "productsCreate",
+                        Title = "新增商品",
+                        Type = PermissionType.Button,
+                        SortOrder = 506,
+                        ParentId = productsListPermissionId,
+                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsCreatePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productsUpdatePermissionId,
+                        Code = "productsUpdate",
+                        Title = "修改商品",
+                        Type = PermissionType.Button,
+                        SortOrder = 507,
+                        ParentId = productsListPermissionId,
+                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsUpdatePermissionId}",
+                        MetaData = default,
+                        OrgId = Guid.Empty,
+                    },
+                    new PermissionRecord
+                    {
+                        Id = productsDeletePermissionId,
+                        Code = "productsDelete",
+                        Title = "删除商品",
+                        Type = PermissionType.Button,
+                        SortOrder = 508,
+                        ParentId = productsListPermissionId,
+                        Path = $"{productsPermissionId}/{productsListPermissionId}/{productsDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
                     },
