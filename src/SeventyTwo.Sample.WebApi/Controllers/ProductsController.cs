@@ -13,9 +13,13 @@ namespace SeventyTwo.Sample.WebApi.Controllers;
 /// 商品接口。
 /// </summary>
 /// <param name="productApplication">商品应用服务。</param>
+/// <param name="productCategoryApplication">商品类目应用服务，用于提供编辑页的类目选项。</param>
 [ApiController]
 [Route("api/products")]
-public sealed class ProductsController(IProductApplication productApplication) : ControllerBase
+public sealed class ProductsController(
+    IProductApplication productApplication,
+    IProductCategoryApplication productCategoryApplication
+) : ControllerBase
 {
     /// <summary>
     /// 创建商品。
@@ -103,6 +107,19 @@ public sealed class ProductsController(IProductApplication productApplication) :
     public async Task<IActionResult> GetPage(ProductPageRequest request, CancellationToken cancellationToken)
     {
         var result = await productApplication.GetPageAsync(request, cancellationToken);
+        return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
+    }
+
+    /// <summary>
+    /// 获取商品新增、编辑时可选择的类目，独立于类目管理页的 list 接口（参照 UserController 的 organization-options）。
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>所有未删除的类目。</returns>
+    [HttpGet("category-options")]
+    [Permission(PermissionMatchMode.Any, "productsCreate", "productsUpdate")]
+    public async Task<IActionResult> GetCategoryOptions(CancellationToken cancellationToken)
+    {
+        var result = await productCategoryApplication.GetListAsync(cancellationToken);
         return WebApiResponse.Query(result, message: MessageKeys.Common.Success);
     }
 }
