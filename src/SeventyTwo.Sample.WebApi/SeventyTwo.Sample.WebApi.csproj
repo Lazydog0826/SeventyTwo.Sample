@@ -21,4 +21,7 @@
         <ProjectReference Include="..\SeventyTwo.Sample.Common\SeventyTwo.Sample.Common.csproj" />
         <ProjectReference Include="..\SeventyTwo.Sample.Infrastructure\SeventyTwo.Sample.Infrastructure.csproj" />
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
 </Project>
