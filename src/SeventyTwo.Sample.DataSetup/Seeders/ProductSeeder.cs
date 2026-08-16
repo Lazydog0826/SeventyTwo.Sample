@@ -1,3 +1,5 @@
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.Infrastructure.Products;
 using SqlSugar;
@@ -127,6 +129,7 @@ internal static class ProductSeeder
     ) =>
         new()
         {
+            Id = Guid.CreateVersion7(),
             Code = code,
             Name = name,
             Price = price,
@@ -134,5 +137,10 @@ internal static class ProductSeeder
             Description = description,
             Unit = unit,
             Status = status,
+            OrgId = Guid.Empty,
+            Enable = true,
+            CreatedBy = SystemIds.System,
+            CreatedAt = DateTimeExtension.Now(),
+            Version = Guid.CreateVersion7(),
         };
 }

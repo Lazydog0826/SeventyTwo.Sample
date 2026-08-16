@@ -1,3 +1,5 @@
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Infrastructure.Products;
 using SqlSugar;
 
@@ -114,5 +116,10 @@ internal static class ProductCategorySeeder
             ParentId = parentId,
             SortOrder = sortOrder,
             Path = parentPath is null ? id.ToString() : $"{parentPath}/{id}",
+            OrgId = Guid.Empty,
+            Enable = true,
+            CreatedBy = SystemIds.System,
+            CreatedAt = DateTimeExtension.Now(),
+            Version = Guid.CreateVersion7(),
         };
 }

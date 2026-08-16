@@ -1,3 +1,5 @@
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Infrastructure.Organizations;
 using SqlSugar;
 
@@ -141,5 +143,9 @@ internal static class OrganizationSeeder
             Path = parentPath is null ? id.ToString() : $"{parentPath}/{id}",
             SortOrder = sortOrder,
             OrgId = orgId,
+            Enable = true,
+            CreatedBy = SystemIds.System,
+            CreatedAt = DateTimeExtension.Now(),
+            Version = Guid.CreateVersion7(),
         };
 }

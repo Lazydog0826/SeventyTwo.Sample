@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Identity;
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Users;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SeventyTwo.Sample.Infrastructure.Users;
@@ -32,6 +34,10 @@ internal static class UserSeeder
                     DataPermissionType = DataPermissionType.All,
                     DefaultPageId = homePermissionId,
                     OrgId = Guid.Empty,
+                    Enable = true,
+                    CreatedBy = SystemIds.System,
+                    CreatedAt = DateTimeExtension.Now(),
+                    Version = Guid.CreateVersion7(),
                 }
             )
             .ExecuteCommand();
@@ -110,6 +116,10 @@ internal static class UserSeeder
                         UserId = user.Id,
                         PermissionId = homePermissionId,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     })
                     .ToArray()
             )
@@ -137,5 +147,9 @@ internal static class UserSeeder
             DataPermissionType = dataPermissionType,
             DefaultPageId = defaultPageId,
             OrgId = orgId,
+            Enable = true,
+            CreatedBy = SystemIds.System,
+            CreatedAt = DateTimeExtension.Now(),
+            Version = Guid.CreateVersion7(),
         };
 }

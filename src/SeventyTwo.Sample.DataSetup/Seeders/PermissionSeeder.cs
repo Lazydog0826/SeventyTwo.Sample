@@ -1,3 +1,5 @@
+using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Permissions;
 using SeventyTwo.Sample.Infrastructure.Permissions;
 using SqlSugar;
@@ -62,6 +64,10 @@ internal static class PermissionSeeder
                         Path = homePermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -78,6 +84,10 @@ internal static class PermissionSeeder
                         Path = permissionsPermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -94,6 +104,10 @@ internal static class PermissionSeeder
                         Path = $"{permissionsPermissionId}/{permissionsListPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -107,6 +121,10 @@ internal static class PermissionSeeder
                             $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -120,6 +138,10 @@ internal static class PermissionSeeder
                             $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -133,6 +155,10 @@ internal static class PermissionSeeder
                             $"{permissionsPermissionId}/{permissionsListPermissionId}/{permissionsDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -149,6 +175,10 @@ internal static class PermissionSeeder
                         Path = organizationsPermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -165,6 +195,10 @@ internal static class PermissionSeeder
                         Path = $"{organizationsPermissionId}/{organizationsListPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -178,6 +212,10 @@ internal static class PermissionSeeder
                             $"{organizationsPermissionId}/{organizationsListPermissionId}/{organizationsCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -191,6 +229,10 @@ internal static class PermissionSeeder
                             $"{organizationsPermissionId}/{organizationsListPermissionId}/{organizationsUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -204,6 +246,10 @@ internal static class PermissionSeeder
                             $"{organizationsPermissionId}/{organizationsListPermissionId}/{organizationsDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -220,6 +266,10 @@ internal static class PermissionSeeder
                         Path = dataDictionariesPermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -236,6 +286,10 @@ internal static class PermissionSeeder
                         Path = $"{dataDictionariesPermissionId}/{dataDictionariesListPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -249,6 +303,10 @@ internal static class PermissionSeeder
                             $"{dataDictionariesPermissionId}/{dataDictionariesListPermissionId}/{dataDictionariesCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -262,6 +320,10 @@ internal static class PermissionSeeder
                             $"{dataDictionariesPermissionId}/{dataDictionariesListPermissionId}/{dataDictionariesUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -275,6 +337,10 @@ internal static class PermissionSeeder
                             $"{dataDictionariesPermissionId}/{dataDictionariesListPermissionId}/{dataDictionariesDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -291,6 +357,10 @@ internal static class PermissionSeeder
                         Path = usersPermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -307,6 +377,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -319,6 +393,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -331,6 +409,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -343,6 +425,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -355,6 +441,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersAuthorizePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -367,6 +457,10 @@ internal static class PermissionSeeder
                         Path = $"{usersPermissionId}/{usersListPermissionId}/{usersResetPasswordPermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -383,6 +477,10 @@ internal static class PermissionSeeder
                         Path = productsPermissionId.ToString(),
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -399,6 +497,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productCategoriesPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -412,6 +514,10 @@ internal static class PermissionSeeder
                             $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -425,6 +531,10 @@ internal static class PermissionSeeder
                             $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -438,6 +548,10 @@ internal static class PermissionSeeder
                             $"{productsPermissionId}/{productCategoriesPermissionId}/{productCategoriesDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -454,6 +568,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productsListPermissionId}",
                         MetaData = new PermissionMetaData(true),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -466,6 +584,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productsListPermissionId}/{productsDeletePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     // 商品编辑页：独立的新增/编辑页面，不在侧边菜单展示（IsShow=false），仅注册前端路由。
                     new PermissionRecord
@@ -483,6 +605,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productsEditPermissionId}",
                         MetaData = new PermissionMetaData(false),
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     // 新增/修改按钮挂在编辑页下：授权按钮时祖先连带页面权限，避免出现有按钮权限却无页面路由。
                     new PermissionRecord
@@ -496,6 +622,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productsEditPermissionId}/{productsCreatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                     new PermissionRecord
                     {
@@ -508,6 +638,10 @@ internal static class PermissionSeeder
                         Path = $"{productsPermissionId}/{productsEditPermissionId}/{productsUpdatePermissionId}",
                         MetaData = default,
                         OrgId = Guid.Empty,
+                        Enable = true,
+                        CreatedBy = SystemIds.System,
+                        CreatedAt = DateTimeExtension.Now(),
+                        Version = Guid.CreateVersion7(),
                     },
                 }
             )
