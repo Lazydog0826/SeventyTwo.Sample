@@ -6,19 +6,23 @@ namespace SeventyTwo.Sample.Infrastructure.Persistence;
 /// <summary>
 /// 持久化实体公共字段基类。
 /// </summary>
+/// <remarks>
+/// 基类不预置公共字段默认值：主键与乐观锁版本由构造处显式提供或经聚合映射带入，
+/// 创建时间、创建人、机构归属在未指定时由公共字段拦截器在插入时补全（需实现对应接口）。
+/// </remarks>
 public abstract class BaseEntity : IDataPermissionScoped
 {
     /// <summary>
     /// 主键 UUIDv7。
     /// </summary>
     [SugarColumn(ColumnName = "id", ColumnDescription = "主键ID", IsPrimaryKey = true, ColumnDataType = "uuid")]
-    public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid Id { get; init; }
 
     /// <summary>
     /// 是否启用。
     /// </summary>
     [SugarColumn(ColumnName = "enable", ColumnDescription = "是否启用")]
-    public bool Enable { get; init; } = true;
+    public bool Enable { get; init; }
 
     /// <summary>
     /// 删除人 UUIDv7。
@@ -36,13 +40,13 @@ public abstract class BaseEntity : IDataPermissionScoped
     /// 创建人 UUIDv7。
     /// </summary>
     [SugarColumn(ColumnName = "created_by", ColumnDescription = "创建人", ColumnDataType = "uuid")]
-    public Guid CreatedBy { get; init; } = SystemIds.System;
+    public Guid CreatedBy { get; init; }
 
     /// <summary>
     /// 创建时间。
     /// </summary>
     [SugarColumn(ColumnName = "created_at", ColumnDescription = "创建时间")]
-    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; init; }
 
     /// <summary>
     /// 修改人 UUIDv7。
@@ -60,13 +64,13 @@ public abstract class BaseEntity : IDataPermissionScoped
     /// 组织 UUIDv7。
     /// </summary>
     [SugarColumn(ColumnName = "org_id", ColumnDescription = "机构ID", ColumnDataType = "uuid")]
-    public Guid OrgId { get; init; } = Guid.Empty;
+    public Guid OrgId { get; init; }
 
     /// <summary>
     /// 乐观锁版本 UUIDv7。
     /// </summary>
     [SugarColumn(ColumnName = "version", ColumnDescription = "并发更新控制", ColumnDataType = "uuid")]
-    public Guid Version { get; init; } = Guid.CreateVersion7();
+    public Guid Version { get; init; }
 
     /// <summary>
     /// 将持久化实体的公共字段赋值给聚合根。
