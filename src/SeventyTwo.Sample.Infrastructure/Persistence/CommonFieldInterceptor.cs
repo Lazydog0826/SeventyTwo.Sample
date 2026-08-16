@@ -8,7 +8,7 @@ namespace SeventyTwo.Sample.Infrastructure.Persistence;
 /// <summary>
 /// 公共字段自动填充拦截器。
 /// 持久化实体按需实现 <see cref="IAudited"/>、<see cref="IOrgScoped"/>，
-/// 即在写入时自动填充对应字段：插入时生成创建时间、补全创建人与机构归属，
+/// 即在写入时自动填充对应字段：插入时补全创建时间、创建人与机构归属（均仅限未显式指定），
 /// 实体更新时覆盖修改人与修改时间，取值来自当前业务用户上下文；
 /// 未实现接口的实体不受任何影响，全局数据等无需自动归属的实体不实现接口即可。
 /// </summary>
@@ -56,8 +56,8 @@ public static class CommonFieldInterceptor
     }
 
     /// <summary>
-    /// 插入补全：创建时间统一由拦截器生成（创建时刻即入库时刻，覆盖预置值）；
-    /// 创建人与机构归属仅当仍为默认值时补全，保留调用方的显式赋值。
+    /// 插入补全：创建时间、创建人、机构归属仅当仍为默认值时补全，
+    /// 保留调用方显式指定的业务发生时间与归属。
     /// </summary>
     private static void FillInsert(object? oldValue, DataFilterModel info, IBusinessUserContext userContext)
     {
@@ -73,10 +73,11 @@ public static class CommonFieldInterceptor
                 info.SetValue(userContext.OrgId);
                 break;
             case nameof(IAudited.CreatedBy)
-                when info.EntityValue is IAudited && oldValue is Guid createdBy && createdBy == SystemIds.System:
+                when info.EntityValue is IAudited && oldValue is Guid createdBy && createdBy == Guid.Empty:
                 info.SetValue(userContext.UserId);
                 break;
-            case nameof(IAudited.CreatedAt) when info.EntityValue is IAudited:
+            case nameof(IAudited.CreatedAt)
+                when info.EntityValue is IAudited && oldValue is DateTimeOffset createdAt && createdAt == default:
                 info.SetValue(DateTimeExtension.Now());
                 break;
         }
