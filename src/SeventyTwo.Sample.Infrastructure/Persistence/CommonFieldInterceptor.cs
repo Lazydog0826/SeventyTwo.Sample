@@ -59,7 +59,7 @@ public static class CommonFieldInterceptor
     /// 插入补全：创建时间统一由拦截器生成（创建时刻即入库时刻，覆盖预置值）；
     /// 创建人与机构归属仅当仍为默认值时补全，保留调用方的显式赋值。
     /// </summary>
-    private static void FillInsert(object? _, DataFilterModel info, IBusinessUserContext userContext)
+    private static void FillInsert(object? oldValue, DataFilterModel info, IBusinessUserContext userContext)
     {
         if (info.EntityValue is not IOrgScoped && info.EntityValue is not IAudited)
         {
@@ -68,10 +68,12 @@ public static class CommonFieldInterceptor
 
         switch (info.PropertyName)
         {
-            case nameof(IOrgScoped.OrgId) when info.EntityValue is IOrgScoped:
+            case nameof(IOrgScoped.OrgId)
+                when info.EntityValue is IOrgScoped && oldValue is Guid orgId && orgId == Guid.Empty:
                 info.SetValue(userContext.OrgId);
                 break;
-            case nameof(IAudited.CreatedBy) when info.EntityValue is IAudited:
+            case nameof(IAudited.CreatedBy)
+                when info.EntityValue is IAudited && oldValue is Guid createdBy && createdBy == SystemIds.System:
                 info.SetValue(userContext.UserId);
                 break;
             case nameof(IAudited.CreatedAt) when info.EntityValue is IAudited:

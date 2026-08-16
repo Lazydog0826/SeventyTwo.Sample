@@ -42,19 +42,15 @@ public sealed class PermissionCrudTests
             permission.Id
         );
         var (cacheService, _, _, redisCacheService) = CreateCacheService();
+        var userRepository = new FakeUserRepository(user);
         var userInfoCacheService = new UserInfoCacheService(
-            new FakeUserRepository(user),
+            userRepository,
             redisCacheService,
             Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info" })
         );
-        var application = new UserApplication(
-            new FakeUserRepository(user),
-            null!,
+        var application = CreateUserApplication(
+            userRepository,
             userInfoCacheService,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
             new FakePermissionRepository([permission])
         );
 
@@ -77,18 +73,14 @@ public sealed class PermissionCrudTests
             Guid.CreateVersion7()
         );
         var (_, _, _, redisCacheService) = CreateCacheService();
-        var application = new UserApplication(
-            new FakeUserRepository(user),
-            null!,
+        var userRepository = new FakeUserRepository(user);
+        var application = CreateUserApplication(
+            userRepository,
             new UserInfoCacheService(
-                new FakeUserRepository(user),
+                userRepository,
                 redisCacheService,
                 Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info-missing" })
             ),
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
             new FakePermissionRepository([])
         );
 
@@ -112,18 +104,14 @@ public sealed class PermissionCrudTests
             permission.Id
         );
         var (_, _, _, redisCacheService) = CreateCacheService();
-        var application = new UserApplication(
-            new FakeUserRepository(user),
-            null!,
+        var userRepository = new FakeUserRepository(user);
+        var application = CreateUserApplication(
+            userRepository,
             new UserInfoCacheService(
-                new FakeUserRepository(user),
+                userRepository,
                 redisCacheService,
                 Options.Create(new CacheConfiguration { KeyNamespace = "tests-user-info-disabled" })
             ),
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
             new FakePermissionRepository([permission])
         );
 
@@ -1128,6 +1116,26 @@ public sealed class PermissionCrudTests
             File.Delete(databasePath);
         }
     }
+
+    /// <summary>
+    /// 构造 UserApplication 测试实例：默认页路径用例仅触达用户仓储、用户信息缓存与权限仓储，
+    /// 其余依赖按用例路径不会被触达，统一以 null 传入；新增依赖时只需调整此工厂。
+    /// </summary>
+    private static UserApplication CreateUserApplication(
+        IUserRepository userRepository,
+        UserInfoCacheService userInfoCacheService,
+        IPermissionRepository permissionRepository
+    ) =>
+        new(
+            userRepository,
+            null!, // organizationRepository（本测试类不触达）
+            userInfoCacheService,
+            new FakeUnitOfWork(),
+            null!, // tokenService（本测试类不触达）
+            null!, // userTokenCacheService（本测试类不触达）
+            null!, // userInfoCacheInvalidationPublisher（本测试类不触达）
+            permissionRepository
+        );
 
     private static Permission CreatePermission(
         string code,

@@ -33,16 +33,7 @@ public sealed class UserManagementTests
             "superadmin@example.com",
             DataPermissionType.All
         );
-        var application = new UserApplication(
-            new CapturingUserRepository(user),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(new CapturingUserRepository(user));
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.GetDetailAsync(user.Id, CancellationToken.None)
@@ -56,16 +47,7 @@ public sealed class UserManagementTests
     public async Task GetDetail_ShouldReturnRegularUser()
     {
         var user = CreateUser(enable: true);
-        var application = new UserApplication(
-            new CapturingUserRepository(user),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(new CapturingUserRepository(user));
 
         var output = await application.GetDetailAsync(user.Id, CancellationToken.None);
 
@@ -81,16 +63,7 @@ public sealed class UserManagementTests
         var repository = new CapturingUserRepository();
         var organization = CreateOrganization();
         var organizationRepository = new FakeOrganizationRepository(organization);
-        var application = new UserApplication(
-            repository,
-            organizationRepository,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository, organizationRepository: organizationRepository);
 
         await application.CreateAsync(
             new(
@@ -143,15 +116,11 @@ public sealed class UserManagementTests
         var organizationRepository = new FakeOrganizationRepository(organization);
         var tokenCacheService = new CapturingUserTokenCacheService();
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             userRepository,
-            organizationRepository,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            organizationRepository: organizationRepository,
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         await application.UpdateAsync(
@@ -188,15 +157,10 @@ public sealed class UserManagementTests
         var userRepository = new CapturingUserRepository(user);
         var tokenCacheService = new CapturingUserTokenCacheService();
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             userRepository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         await application.SetEnableAsync(user.Id, new(enable, user.Version), CancellationToken.None);
@@ -213,15 +177,10 @@ public sealed class UserManagementTests
         var tokenCacheService = new CapturingUserTokenCacheService { SetInvalidBeforeResult = false };
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
         var userRepository = new CapturingUserRepository(user);
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             userRepository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -240,15 +199,10 @@ public sealed class UserManagementTests
             SetInvalidBeforeException = new InvalidOperationException("Redis unavailable"),
         };
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(user),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -267,15 +221,10 @@ public sealed class UserManagementTests
         var userRepository = new CapturingUserRepository(user, calls);
         var tokenCacheService = new CapturingUserTokenCacheService(calls);
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher(calls);
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             userRepository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         await application.DeleteAsync(user.Id, user.Version, CancellationToken.None);
@@ -294,15 +243,10 @@ public sealed class UserManagementTests
         var user = CreateUser(enable: true);
         var tokenCacheService = new CapturingUserTokenCacheService { SetInvalidBeforeResult = false };
         var cacheInvalidationPublisher = new FakeUserInfoCacheInvalidationPublisher();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(user),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCacheService,
-            cacheInvalidationPublisher,
-            null!
+            userTokenCacheService: tokenCacheService,
+            cacheInvalidationPublisher: cacheInvalidationPublisher
         );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -316,15 +260,9 @@ public sealed class UserManagementTests
     public async Task Create_WithDisabledOrganization_ShouldFail()
     {
         var organization = CreateOrganization(false);
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(),
-            new FakeOrganizationRepository(organization),
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
+            organizationRepository: new FakeOrganizationRepository(organization)
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
@@ -352,15 +290,10 @@ public sealed class UserManagementTests
     {
         var organization = CreateOrganization();
         var unitOfWork = new CapturingUnitOfWork();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(),
-            new FakeOrganizationRepository(organization),
-            null!,
             unitOfWork,
-            null!,
-            null!,
-            null!,
-            null!
+            organizationRepository: new FakeOrganizationRepository(organization)
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
@@ -389,15 +322,10 @@ public sealed class UserManagementTests
     {
         var organization = CreateOrganization();
         var unitOfWork = new CapturingUnitOfWork();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(),
-            new FakeOrganizationRepository(organization),
-            null!,
             unitOfWork,
-            null!,
-            null!,
-            null!,
-            null!
+            organizationRepository: new FakeOrganizationRepository(organization)
         );
         using var cancellationTokenSource = new CancellationTokenSource();
         await cancellationTokenSource.CancelAsync();
@@ -441,16 +369,7 @@ public sealed class UserManagementTests
             Enable = false,
         };
         var userRepository = new CapturingUserRepository(user);
-        var application = new UserApplication(
-            userRepository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(userRepository);
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.LoginAsync(new(username, password), CancellationToken.None)
@@ -480,7 +399,7 @@ public sealed class UserManagementTests
         };
         var userRepository = new CapturingUserRepository(user);
         var unitOfWork = new CapturingUnitOfWork();
-        var application = new UserApplication(userRepository, null!, null!, unitOfWork, null!, null!, null!, null!);
+        var application = CreateUserApplication(userRepository, unitOfWork);
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.LoginAsync(new(username, "invalid-password"), CancellationToken.None)
@@ -522,16 +441,7 @@ public sealed class UserManagementTests
             Enable = true,
         };
         var repository = new WaitingSecurityLockUserRepository(candidate, lockedUser);
-        var application = new UserApplication(
-            repository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository);
 
         var loginTask = application.LoginAsync(new(username, password), CancellationToken.None);
         await repository.LockWaitStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -574,16 +484,7 @@ public sealed class UserManagementTests
             Enable = false,
         };
         var repository = new WaitingSecurityLockUserRepository(enabledUser, disabledUser);
-        var application = new UserApplication(
-            repository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository);
 
         var loginTask = application.LoginAsync(new(username, password), CancellationToken.None);
         await repository.LockWaitStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -612,15 +513,10 @@ public sealed class UserManagementTests
             )
         );
         var tokenCacheService = new RejectingUserTokenCacheService();
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new ThrowingUserRepository(),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            tokenService,
-            tokenCacheService,
-            null!,
-            null!
+            tokenService: tokenService,
+            userTokenCacheService: tokenCacheService
         );
 
         var exception = await Assert.ThrowsAsync<TokenAuthenticationException>(() =>
@@ -677,16 +573,7 @@ public sealed class UserManagementTests
         };
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
-        var application = new UserApplication(
-            repository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCache,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository, userTokenCacheService: tokenCache);
 
         var output = await application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None);
 
@@ -715,16 +602,7 @@ public sealed class UserManagementTests
         var user = CreateUser(enable: true);
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
-        var application = new UserApplication(
-            repository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCache,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository, userTokenCacheService: tokenCache);
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.ResetPasswordAsync(user.Id, Guid.CreateVersion7(), CancellationToken.None)
@@ -738,15 +616,9 @@ public sealed class UserManagementTests
     [Fact]
     public async Task ResetPassword_WithMissingUser_ShouldReject()
     {
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(),
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            new CapturingUserTokenCacheService(),
-            null!,
-            null!
+            userTokenCacheService: new CapturingUserTokenCacheService()
         );
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
@@ -772,16 +644,7 @@ public sealed class UserManagementTests
         user.Version = Guid.CreateVersion7();
         var repository = new CapturingUserRepository(user);
         var tokenCache = new CapturingUserTokenCacheService();
-        var application = new UserApplication(
-            repository,
-            null!,
-            null!,
-            new FakeUnitOfWork(),
-            null!,
-            tokenCache,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(repository, userTokenCacheService: tokenCache);
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.ResetPasswordAsync(user.Id, user.Version, CancellationToken.None)
@@ -796,15 +659,10 @@ public sealed class UserManagementTests
     public async Task ResetPassword_WhenTokenInvalidationFails_ShouldFail()
     {
         var user = CreateUser(enable: true);
-        var application = new UserApplication(
+        var application = CreateUserApplication(
             new CapturingUserRepository(user),
-            null!,
-            null!,
             new CapturingUnitOfWork(),
-            null!,
-            new CapturingUserTokenCacheService { SetInvalidBeforeResult = false },
-            null!,
-            null!
+            userTokenCacheService: new CapturingUserTokenCacheService { SetInvalidBeforeResult = false }
         );
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -978,16 +836,7 @@ public sealed class UserManagementTests
     [InlineData(int.MaxValue, 100, MessageKeys.Paging.PageOffsetOutOfRange)]
     public async Task ApplicationGetPage_ShouldValidatePaging(int index, int limit, string message)
     {
-        var application = new UserApplication(
-            new CapturingUserRepository(),
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!
-        );
+        var application = CreateUserApplication(new CapturingUserRepository());
 
         var exception = await Assert.ThrowsAsync<UserDomainException>(() =>
             application.GetPageAsync(new UserPageRequest { Index = index, Limit = limit }, CancellationToken.None)
@@ -1089,6 +938,29 @@ public sealed class UserManagementTests
             Version = Guid.CreateVersion7(),
         };
     }
+
+    /// <summary>
+    /// 构造 UserApplication 测试实例；未显式提供的依赖按各用例的执行路径不会被触达，统一以 null 传入。
+    /// 集中收敛多参构造，UserApplication 新增依赖时只需调整此工厂而非全部用例。
+    /// </summary>
+    private static UserApplication CreateUserApplication(
+        IUserRepository userRepository,
+        IUnitOfWork? unitOfWork = null,
+        IOrganizationRepository? organizationRepository = null,
+        IUserTokenCacheService? userTokenCacheService = null,
+        IUserInfoCacheInvalidationPublisher? cacheInvalidationPublisher = null,
+        ITokenService? tokenService = null
+    ) =>
+        new(
+            userRepository,
+            organizationRepository!,
+            null!, // userInfoCacheService（本测试类不触达）
+            unitOfWork ?? new FakeUnitOfWork(),
+            tokenService!,
+            userTokenCacheService!,
+            cacheInvalidationPublisher!,
+            null! // permissionRepository（本测试类不触达）
+        );
 
     private sealed class CapturingUserRepository(User? existingUser = null, List<string>? calls = null)
         : IUserRepository

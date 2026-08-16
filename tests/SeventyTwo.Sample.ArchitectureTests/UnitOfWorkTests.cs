@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
 using DotNetCore.CAP;
@@ -144,10 +145,11 @@ public sealed class UnitOfWorkTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task UserDelete_ShouldHoldPostgreSqlSecurityLockUntilCommitAndRejectWaitingLogin()
     {
         var connectionString = GetRemotePostgreSqlConnectionString();
+        await SkipWhenPostgreSqlUnreachableAsync(connectionString);
         using var setup = CreatePostgreSqlDatabase(connectionString);
         using var deleteFixture = CreatePostgreSqlFixture(connectionString);
         using var loginFixture = CreatePostgreSqlFixture(connectionString);
@@ -285,6 +287,29 @@ public sealed class UnitOfWorkTests
                 IsAutoCloseConnection = false,
             }
         );
+
+    /// <summary>
+    /// 远程 PostgreSQL 不可达时跳过本集成测试，避免单元测试套件在无数据库访问权限的环境（CI、离线开发机）整体失败；
+    /// 仅探测 TCP 可达性，数据库可达但认证失败等配置错误仍按测试失败处理。
+    /// </summary>
+    private static async Task SkipWhenPostgreSqlUnreachableAsync(string connectionString)
+    {
+        var settings = connectionString
+            .Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .ToDictionary(pair => pair[0].ToLowerInvariant(), pair => pair.Last());
+        var host = settings.GetValueOrDefault("host") ?? settings.GetValueOrDefault("server");
+        var port = int.TryParse(settings.GetValueOrDefault("port"), out var parsed) ? parsed : 5432;
+        using var probe = new TcpClient();
+        try
+        {
+            await probe.ConnectAsync(host!, port, new CancellationTokenSource(TimeSpan.FromSeconds(5)).Token);
+        }
+        catch (Exception exception) when (exception is SocketException or OperationCanceledException)
+        {
+            throw new SkipException($"远程 PostgreSQL（{host}:{port}）不可达，跳过集成测试：{exception.Message}");
+        }
+    }
 
     private static string GetRemotePostgreSqlConnectionString()
     {
