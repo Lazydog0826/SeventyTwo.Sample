@@ -121,6 +121,8 @@ public sealed class DataDictionaryCrudTests
                         Id = id,
                         Code = "STATUS",
                         Name = "状态",
+                        Enable = true,
+                        CreatedAt = DateTimeOffset.UtcNow,
                         OrgId = Guid.Empty,
                         Version = version,
                     }

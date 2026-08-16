@@ -804,6 +804,8 @@ public sealed class UserManagementTests
                 Phone = ignored.Phone,
                 Email = ignored.Email,
                 DataPermissionType = ignored.DataPermissionType,
+                Enable = true,
+                CreatedAt = ignored.CreatedAt,
                 DeleteAt = DateTimeOffset.UtcNow,
                 Version = ignored.Version,
             };
@@ -910,6 +912,8 @@ public sealed class UserManagementTests
             DisplayName = "测试用户",
             Phone = "13800000000",
             Email = "user@example.com",
+            Enable = true,
+            CreatedAt = DateTimeOffset.UtcNow,
             Version = Guid.CreateVersion7(),
             DataPermissionType = DataPermissionType.Self,
             DefaultPageId = defaultPageId,

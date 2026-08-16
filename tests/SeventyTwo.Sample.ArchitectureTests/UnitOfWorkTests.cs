@@ -175,6 +175,8 @@ public sealed class UnitOfWorkTests
                     Phone = "13800000000",
                     Email = $"{userId:N}@example.com",
                     DataPermissionType = DataPermissionType.Self,
+                    Enable = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
                     OrgId = organizationId,
                     Version = version,
                 }

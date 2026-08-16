@@ -53,9 +53,22 @@ public sealed class CommonFieldInterceptorTests
     }
 
     [Fact]
-    public void Insert_ShouldFillCreatedAtOverridingPresetValue()
+    public void Insert_ShouldFillCreatedAtWhenNotAssigned()
     {
-        // 创建时间统一由拦截器在插入时生成（覆盖预置值），调用方预置的历史时间不落库。
+        // 创建时间未显式指定时由拦截器在插入时生成（创建时刻即入库时刻）。
+        using var db = CreateClient(new StubBusinessUserContext(userId, orgId));
+        var record = new ProductRecord { Name = "测试商品", Code = "P001" };
+
+        db.Insertable(record).ToSqlString();
+
+        Assert.NotEqual(default, record.CreatedAt);
+        Assert.True(record.CreatedAt > DateTimeOffset.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
+    public void Insert_ShouldKeepExplicitlyAssignedCreatedAt()
+    {
+        // 业务显式指定的创建时间（如业务发生时间、历史数据迁移）原样落库，拦截器不覆盖。
         var preset = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
         using var db = CreateClient(new StubBusinessUserContext(userId, orgId));
         var record = new ProductRecord
@@ -67,8 +80,7 @@ public sealed class CommonFieldInterceptorTests
 
         db.Insertable(record).ToSqlString();
 
-        Assert.NotEqual(preset, record.CreatedAt);
-        Assert.True(record.CreatedAt > DateTimeOffset.UtcNow.AddMinutes(-1));
+        Assert.Equal(preset, record.CreatedAt);
     }
 
     [Fact]

@@ -363,6 +363,8 @@ public sealed class OrganizationCrudTests
             Name = code,
             ParentId = parentId,
             Path = path ?? (parentId is null ? id.ToString() : $"{orgId}/{id}"),
+            Enable = true,
+            CreatedAt = DateTimeOffset.UtcNow,
             OrgId = orgId,
             Version = Guid.CreateVersion7(),
         };

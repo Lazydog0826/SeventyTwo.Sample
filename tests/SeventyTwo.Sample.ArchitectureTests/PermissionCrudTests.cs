@@ -1016,7 +1016,16 @@ public sealed class PermissionCrudTests
             var permissionId = Guid.CreateVersion7();
             var userId = Guid.CreateVersion7();
             await db.Insertable(CreateRecord(permissionId, "Reusable", null)).ExecuteCommandAsync();
-            await db.Insertable(new UserPermissionRecord { UserId = userId, PermissionId = permissionId })
+            await db.Insertable(
+                    new UserPermissionRecord
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = userId,
+                        PermissionId = permissionId,
+                        Enable = true,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                    }
+                )
                 .ExecuteCommandAsync();
             var repository = new PermissionRepository(db);
 
@@ -1094,9 +1103,30 @@ public sealed class PermissionCrudTests
             await db.Insertable(
                     new[]
                     {
-                        new UserPermissionRecord { UserId = userId, PermissionId = rootId },
-                        new UserPermissionRecord { UserId = userId, PermissionId = pageId },
-                        new UserPermissionRecord { UserId = userId, PermissionId = buttonId },
+                        new UserPermissionRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            UserId = userId,
+                            PermissionId = rootId,
+                            Enable = true,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                        },
+                        new UserPermissionRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            UserId = userId,
+                            PermissionId = pageId,
+                            Enable = true,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                        },
+                        new UserPermissionRecord
+                        {
+                            Id = Guid.CreateVersion7(),
+                            UserId = userId,
+                            PermissionId = buttonId,
+                            Enable = true,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                        },
                     }
                 )
                 .ExecuteCommandAsync();
