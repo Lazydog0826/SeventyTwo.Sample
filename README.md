@@ -57,7 +57,7 @@ tests/
 dotnet run --project src/SeventyTwo.Sample.DataSetup
 ```
 
-初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员、测试机构、测试用户，以及权限管理、机构管理、数据字典、用户管理所需的初始权限。默认管理员账号为 `superadmin`；测试账号包括 `group.admin`、`east.manager`、`shanghai.manager`、`pudong.sales`、`shenzhen.manager` 和 `operations.manager`，所有初始密码均为 `123456`。相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Seeders/` 目录中。
+初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员、测试机构、测试用户、商品类目和测试商品，以及权限管理、机构管理、数据字典、用户管理、商品类目管理所需的初始权限。默认管理员账号为 `superadmin`；测试账号包括 `group.admin`、`east.manager`、`shanghai.manager`、`pudong.sales`、`shenzhen.manager` 和 `operations.manager`，所有初始密码均为 `123456`。相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Seeders/` 目录中。
 
 ## 配置 Web API
 
@@ -124,17 +124,11 @@ Authorization: Bearer <access-token>
 - `/api/permissions`：权限树及权限管理
 - `/api/organizations`：机构管理
 - `/api/dataDictionaries`：数据字典和字典项管理
-- `/api/products`：商品增删改查及分页查询
+- `/api/productCategories`：商品类目列表及类目管理
+- `/api/products`：商品增删改查、分页查询及类目选项
 - `/api/orders`：随机订单生成及多种分页查询
 - `/api/inventories/changes`：库存变更
 - `/api/wallets/changes`：钱包余额变更
-
-静态示例页面：
-
-- <http://localhost:5272/random-orders.html>
-- <http://localhost:5272/page1.html>
-- <http://localhost:5272/page2.html>
-- <http://localhost:5272/page3.html>
 
 基础设施端点：
 
