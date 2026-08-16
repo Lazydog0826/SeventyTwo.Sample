@@ -37,6 +37,8 @@ public sealed class DataDictionary : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         Code = RequireText(code, MessageKeys.DataDictionaries.CodeRequired);
         Name = RequireText(name, MessageKeys.DataDictionaries.NameRequired);
         Description = NormalizeOptional(description);

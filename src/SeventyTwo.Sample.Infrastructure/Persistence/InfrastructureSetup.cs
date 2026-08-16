@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SeventyTwo.Sample.Application.Authentication;
 using SqlSugar;
 
 namespace SeventyTwo.Sample.Infrastructure.Persistence;
@@ -15,7 +14,7 @@ public static class InfrastructureSetup
             throw new InvalidOperationException("未配置 ConnectionStrings:PostgreSQL");
         }
 
-        services.AddScoped<ISqlSugarClient>(sp =>
+        services.AddScoped<ISqlSugarClient>(_ =>
         {
             var client = new SqlSugarClient(
                 new ConnectionConfig
@@ -26,8 +25,6 @@ public static class InfrastructureSetup
                 }
             );
 
-            // 从同一作用域解析业务用户上下文并挂接公共字段自动填充；未注册时解析失败，启动即暴露配置缺失。
-            CommonFieldInterceptor.Attach(client, sp.GetRequiredService<IBusinessUserContext>());
             return client;
         });
         return services;

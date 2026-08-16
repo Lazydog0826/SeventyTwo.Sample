@@ -8,7 +8,8 @@ namespace SeventyTwo.Sample.Infrastructure.Persistence;
 /// </summary>
 /// <remarks>
 /// 基类不预置公共字段默认值：主键与乐观锁版本由构造处显式提供或经聚合映射带入，
-/// 创建时间、创建人、机构归属在未指定时由公共字段拦截器在插入时补全（需实现对应接口）。
+/// 归属与审计字段（OrgId/CreatedBy/CreatedAt）由应用服务在创建时显式赋值后带入，
+/// 或由构造处显式提供。
 /// </remarks>
 public abstract class BaseEntity : IDataPermissionScoped
 {

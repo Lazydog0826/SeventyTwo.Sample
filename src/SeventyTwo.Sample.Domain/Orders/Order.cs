@@ -22,6 +22,8 @@ public sealed class Order : AggregateRoot
     )
     {
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         OrderNo = orderNo;
         CustomerId = customerId;
         WarehouseId = warehouseId;

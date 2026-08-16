@@ -324,7 +324,11 @@ public sealed class PermissionRepository(ISqlSugarClient db) : IPermissionReposi
                 Id = Guid.CreateVersion7(),
                 UserId = userId,
                 PermissionId = permissionId,
+                Enable = true,
+                CreatedBy = SystemIds.System,
+                CreatedAt = DateTimeExtension.Now(),
                 OrgId = Guid.Empty,
+                Version = Guid.CreateVersion7(),
             })
             .ToArray();
         await db.Insertable(records).ExecuteCommandAsync(cancellationToken);

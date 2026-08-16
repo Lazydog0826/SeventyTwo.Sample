@@ -6,8 +6,8 @@ namespace SeventyTwo.Sample.Domain;
 /// </summary>
 /// <remarks>
 /// 基类不预置公共字段默认值：Enable 与 Version 由聚合创建构造函数显式初始化；
-/// 创建时间由业务按需指定业务发生时间，未指定时由持久化层在插入时生成；
-/// 从持久化还原时公共字段以记录值为准。
+/// 归属与审计字段（OrgId/CreatedBy/CreatedAt）由应用服务在创建时按当前业务用户上下文显式赋值，
+/// 业务需要指定业务发生时间时同样显式赋值；从持久化还原时公共字段以记录值为准。
 /// </remarks>
 public abstract class AggregateRoot : IDataPermissionScoped
 {

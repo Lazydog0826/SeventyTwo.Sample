@@ -76,7 +76,7 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
     public async Task SaveAsync(Product product, CancellationToken cancellationToken)
     {
         var nextVersion = Guid.CreateVersion7();
-        // 实体加 UpdateColumns 的更新风格才会经过公共字段拦截器自动填充修改人与修改时间。
+        // 修改人与修改时间带入聚合值（应用服务已显式赋值为当前操作者）。
         var record = new ProductRecord
         {
             Id = product.Id,
@@ -118,9 +118,6 @@ public sealed class ProductRepository(ISqlSugarClient db) : IProductRepository
             throw new ProductNotFoundException();
         }
 
-        // 拦截器在生成更新时填充了实际落库的修改人、修改时间，回写保持聚合与数据库一致。
-        product.UpdatedBy = record.UpdatedBy;
-        product.UpdatedAt = record.UpdatedAt;
         product.Version = nextVersion;
     }
 

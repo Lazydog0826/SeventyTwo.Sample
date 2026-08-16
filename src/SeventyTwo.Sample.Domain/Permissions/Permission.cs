@@ -28,6 +28,8 @@ public sealed class Permission : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         SetInfo(code, title, type, sortOrder, icon, vueComponentPath, routePath, routeName, parentId, metaData);
         Path = parentId is null ? id.ToString() : RequirePath(path);
     }

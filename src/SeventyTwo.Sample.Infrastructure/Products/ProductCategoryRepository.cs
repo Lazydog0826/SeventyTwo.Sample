@@ -65,7 +65,11 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
             ParentId = category.ParentId,
             SortOrder = category.SortOrder,
             Path = category.Path,
-            CreatedBy = SystemIds.System,
+            Enable = category.Enable,
+            // 归属与审计字段由应用服务在创建时显式赋值，仓储原样带入。
+            CreatedBy = category.CreatedBy,
+            CreatedAt = category.CreatedAt,
+            OrgId = category.OrgId,
             Version = Guid.CreateVersion7(),
         };
         await db.Insertable(record).ExecuteCommandAsync(cancellationToken);
@@ -104,7 +108,7 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
         }
         else
         {
-            // 更新分支使用实体加 UpdateColumns 风格，修改人与修改时间由公共字段拦截器自动填充。
+            // 更新分支使用实体加 UpdateColumns 风格，修改人与修改时间带入聚合值（应用服务已显式赋值）。
             var record = new ProductCategoryRecord
             {
                 Id = category.Id,
@@ -129,10 +133,6 @@ public sealed class ProductCategoryRepository(ISqlSugarClient db) : IProductCate
                 })
                 .Where(x => x.Id == category.Id && x.Version == category.Version && x.DeleteAt == null)
                 .ExecuteCommandAsync(cancellationToken);
-
-            // 拦截器在生成更新时填充了实际落库的修改人、修改时间，回写保持聚合与数据库一致。
-            category.UpdatedBy = record.UpdatedBy;
-            category.UpdatedAt = record.UpdatedAt;
         }
 
         if (affectedRows == 0)

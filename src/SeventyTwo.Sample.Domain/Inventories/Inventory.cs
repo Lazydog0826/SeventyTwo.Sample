@@ -67,6 +67,8 @@ public sealed class Inventory : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         ProductId = productId;
         WarehouseId = warehouseId;
         LocationId = locationId;

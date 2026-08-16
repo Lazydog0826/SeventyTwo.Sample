@@ -1,5 +1,4 @@
 using Mapster;
-using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 
 namespace SeventyTwo.Sample.Infrastructure.Products;
@@ -25,12 +24,8 @@ public sealed class ProductPersistenceMappingProfile : IRegister
                 source.Status
             ))
             .AfterMapping((source, destination) => source.AggregateRootToEntity(destination));
-        config
-            .NewConfig<Product, ProductRecord>()
-            // 新增记录的审计字段和并发版本由持久化层生成；
-            // 创建人、机构置为默认值（System/Empty），由公共字段拦截器按需补全。
-            .Map(destination => destination.CreatedBy, _ => SystemIds.System)
-            .Map(destination => destination.OrgId, _ => Guid.Empty)
-            .Map(destination => destination.Version, _ => Guid.CreateVersion7());
+        // 聚合到记录的公共字段走同名映射带入：归属与审计由应用服务在创建时显式赋值，
+        // Version 由聚合创建构造函数生成，映射不再另行覆盖。
+        config.NewConfig<Product, ProductRecord>();
     }
 }

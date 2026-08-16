@@ -41,6 +41,7 @@ public sealed class Product : AggregateRoot
 
         Id = id;
         Enable = true;
+        Version = Guid.CreateVersion7();
         SetInfo(name, price, code, description, unit, categoryId, status);
     }
 

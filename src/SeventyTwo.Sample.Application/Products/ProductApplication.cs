@@ -29,7 +29,13 @@ public sealed class ProductApplication(
             input.Unit,
             input.CategoryId,
             input.Status
-        );
+        )
+        {
+            // 归属与审计字段显式取自当前业务用户上下文：创建即归属操作者机构、记录真实创建人。
+            OrgId = businessUserContext.OrgId,
+            CreatedBy = businessUserContext.UserId,
+            CreatedAt = DateTimeExtension.Now(),
+        };
         await ValidateCodeAndCategoryAsync(input.Code, null, input.CategoryId, cancellationToken);
         await productRepository.AddAsync(product, cancellationToken);
         return product.Adapt<ProductOutput>();
@@ -53,7 +59,7 @@ public sealed class ProductApplication(
             input.CategoryId,
             input.Status,
             input.Version,
-            SystemIds.System,
+            businessUserContext.UserId,
             DateTimeExtension.Now()
         );
         await productRepository.SaveAsync(product, cancellationToken);
@@ -72,7 +78,7 @@ public sealed class ProductApplication(
             await CreateDataPermissionScopeAsync(cancellationToken),
             cancellationToken
         );
-        product.ChangeStatus(status, version, SystemIds.System, DateTimeExtension.Now());
+        product.ChangeStatus(status, version, businessUserContext.UserId, DateTimeExtension.Now());
         await productRepository.SaveAsync(product, cancellationToken);
     }
 

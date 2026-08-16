@@ -37,6 +37,8 @@ public sealed class User : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         Username = RequireText(username, MessageKeys.Users.UsernameRequired);
         if (!restore && string.Equals(Username, SystemUsernames.SuperAdmin, StringComparison.Ordinal))
         {

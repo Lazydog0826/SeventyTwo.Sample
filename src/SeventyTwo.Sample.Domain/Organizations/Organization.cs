@@ -46,6 +46,8 @@ public sealed class Organization : AggregateRoot
         ValidateSortOrder(sortOrder);
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         Code = RequireText(code, MessageKeys.Organizations.CodeRequired);
         Name = RequireText(name, MessageKeys.Organizations.NameRequired);
         ParentId = parentId;

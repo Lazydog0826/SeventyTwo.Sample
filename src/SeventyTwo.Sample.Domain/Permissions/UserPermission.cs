@@ -25,6 +25,8 @@ public sealed class UserPermission : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         UserId = userId;
         PermissionId = permissionId;
     }

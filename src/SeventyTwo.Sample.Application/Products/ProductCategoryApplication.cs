@@ -1,6 +1,7 @@
 using Mapster;
 using SeventyTwo.InfraKit.Autofac;
 using SeventyTwo.InfraKit.Extension;
+using SeventyTwo.Sample.Application.Authentication;
 using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 
@@ -9,7 +10,8 @@ namespace SeventyTwo.Sample.Application.Products;
 [AutofacDependency(typeof(IProductCategoryApplication))]
 public sealed class ProductCategoryApplication(
     IProductCategoryRepository productCategoryRepository,
-    IUnitOfWork unitOfWork
+    IUnitOfWork unitOfWork,
+    IBusinessUserContext businessUserContext
 ) : IProductCategoryApplication
 {
     public async Task<ProductCategoryListOutput> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
@@ -39,7 +41,13 @@ public sealed class ProductCategoryApplication(
                     input.ParentId,
                     parent is null ? null : $"{parent.Path}/{id}",
                     input.SortOrder
-                );
+                )
+                {
+                    // 归属与审计字段显式取自当前业务用户上下文：创建即归属操作者机构、记录真实创建人。
+                    OrgId = businessUserContext.OrgId,
+                    CreatedBy = businessUserContext.UserId,
+                    CreatedAt = DateTimeExtension.Now(),
+                };
                 await productCategoryRepository.AddAsync(category, cancellationToken);
             },
             cancellationToken
@@ -64,7 +72,7 @@ public sealed class ProductCategoryApplication(
                     input.Name,
                     input.ParentId,
                     input.Version,
-                    SystemIds.System,
+                    businessUserContext.UserId,
                     DateTimeExtension.Now(),
                     input.SortOrder
                 );
@@ -91,7 +99,7 @@ public sealed class ProductCategoryApplication(
                     );
                 }
 
-                category.Delete(SystemIds.System, DateTimeExtension.Now());
+                category.Delete(businessUserContext.UserId, DateTimeExtension.Now());
                 await productCategoryRepository.SaveAsync(category, cancellationToken);
             },
             cancellationToken

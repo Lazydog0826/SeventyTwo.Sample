@@ -30,6 +30,7 @@ public sealed class ProductCategory : AggregateRoot
 
         Id = id;
         Enable = true;
+        Version = Guid.CreateVersion7();
         SetInfo(name, parentId, sortOrder);
         Path = parentId is null ? id.ToString() : RequirePath(path);
     }

@@ -22,6 +22,8 @@ public class Wallet : AggregateRoot
         }
 
         Id = id;
+        Enable = true;
+        Version = Guid.CreateVersion7();
         CustomerId = customerId;
         WalletType = walletType;
         Balance = balance;

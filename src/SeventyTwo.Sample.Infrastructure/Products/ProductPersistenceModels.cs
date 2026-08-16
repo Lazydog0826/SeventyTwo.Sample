@@ -1,4 +1,3 @@
-using SeventyTwo.Sample.Domain;
 using SeventyTwo.Sample.Domain.Products;
 using SeventyTwo.Sample.Infrastructure.Persistence;
 using SqlSugar;
@@ -7,7 +6,7 @@ namespace SeventyTwo.Sample.Infrastructure.Products;
 
 [SugarTable("product_record")]
 [SugarIndex("uq_product_record_code", nameof(Code), OrderByType.Asc, true)]
-internal sealed class ProductRecord : BaseEntity, IAudited, IOrgScoped
+internal sealed class ProductRecord : BaseEntity
 {
     /// <summary>
     /// 商品名称。
@@ -54,7 +53,7 @@ internal sealed class ProductRecord : BaseEntity, IAudited, IOrgScoped
 
 [SugarTable("product_category_record")]
 [SugarIndex("ix_product_category_record_parent_id", nameof(ParentId), OrderByType.Asc)]
-internal sealed class ProductCategoryRecord : BaseEntity, IAudited, IOrgScoped
+internal sealed class ProductCategoryRecord : BaseEntity
 {
     /// <summary>
     /// 类目名称。
