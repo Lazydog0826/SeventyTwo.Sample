@@ -29,6 +29,7 @@ public sealed class ProductsController(
     /// <returns>创建后的商品信息。</returns>
     [HttpPost("create")]
     [Permission(PermissionMatchMode.All, "productsCreate")]
+    [BusinessUserContext]
     public async Task<IActionResult> Create(CreateProductRequest request, CancellationToken cancellationToken)
     {
         var result = await productApplication.CreateAsync(request.Adapt<CreateProductInput>(), cancellationToken);
