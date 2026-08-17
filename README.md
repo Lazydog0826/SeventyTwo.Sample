@@ -1,6 +1,6 @@
 # SeventyTwo.Sample
 
-基于 .NET 10 的分层 Web API 示例项目，包含用户、权限、机构、数据字典、商品、订单、库存和钱包等业务场景，并集成 PostgreSQL、Redis、RabbitMQ 与 CAP。
+基于 .NET 10 的分层 Web API 示例项目，包含用户、权限、机构、数据字典、商品、订单和库存等业务场景，并集成 PostgreSQL、Redis、RabbitMQ 与 CAP。
 
 ## 项目结构
 
@@ -130,7 +130,6 @@ Authorization: Bearer <access-token>
 - `/api/products`：商品增删改查、状态变更、分页查询及类目选项
 - `/api/orders`：随机订单生成及偏移量、ID 列表、游标三种分页查询
 - `/api/inventories/changes`：库存变更
-- `/api/wallets/changes`：钱包余额变更
 
 基础设施端点：
 
