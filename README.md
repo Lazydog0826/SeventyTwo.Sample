@@ -23,6 +23,7 @@ tests/
 - PostgreSQL / SqlSugar
 - Redis
 - RabbitMQ / DotNetCore.CAP
+- SeventyTwo.InfraKit（依赖注入、缓存、WebApiResponse 等基础设施）
 - Autofac
 - Mapster
 - Serilog
@@ -57,7 +58,7 @@ tests/
 dotnet run --project src/SeventyTwo.Sample.DataSetup
 ```
 
-初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员、测试机构、测试用户、商品类目和测试商品，以及权限管理、机构管理、数据字典、用户管理、商品类目管理所需的初始权限。默认管理员账号为 `superadmin`；测试账号包括 `group.admin`、`east.manager`、`shanghai.manager`、`pudong.sales`、`shenzhen.manager` 和 `operations.manager`，所有初始密码均为 `123456`。相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Seeders/` 目录中。
+初始化程序通过 SqlSugar Code First 创建业务表，并写入超级管理员、测试机构、测试用户、商品类目和测试商品，以及首页、权限管理、机构管理、数据字典、用户管理、商品类目管理和商品管理所需的初始权限。默认管理员账号为 `superadmin`；测试账号包括 `group.admin`、`east.manager`、`shanghai.manager`、`pudong.sales`、`shenzhen.manager` 和 `operations.manager`，所有初始密码均为 `123456`。相关初始信息定义在 `src/SeventyTwo.Sample.DataSetup/Seeders/` 目录中。
 
 ## 配置 Web API
 
@@ -71,6 +72,7 @@ Copy-Item src/SeventyTwo.Sample.WebApi/appsettings.sample.json src/SeventyTwo.Sa
 
 - `CorsConfiguration`：允许跨域访问的来源、请求头和 HTTP 方法
 - `JwtConfiguration`：令牌签发者、接收者、签名密钥、加密密钥及访问令牌和刷新令牌有效期
+- `RefreshTokenCookieConfiguration`：刷新令牌 Cookie 的 SameSite 策略（Lax 或 Strict）
 - `ConnectionStrings:PostgreSQL`：业务数据库及 CAP 消息存储使用的 PostgreSQL 连接字符串
 - `CapConfiguration`：RabbitMQ 主机、账号、密码和虚拟主机
 - `CapDashboardAuthenticationConfiguration`：CAP Dashboard 的 Basic Authentication 凭据
@@ -114,19 +116,19 @@ Authorization: Bearer <access-token>
 
 刷新令牌保存在名为 `refresh_token` 的 HttpOnly、Secure Cookie 中，可通过 `POST /api/users/RefreshToken` 刷新访问令牌，通过 `POST /api/users/Logout` 注销当前会话。
 
-用户、权限、机构和数据字典管理接口还会根据权限编码进行授权。超级管理员不受普通权限分配限制。CAP Dashboard 使用独立的 HTTP Basic Authentication。
+用户、权限、机构、数据字典、商品类目和商品管理接口还会根据权限编码进行授权。超级管理员不受普通权限分配限制。CAP Dashboard 使用独立的 HTTP Basic Authentication。
 
 ## 示例功能
 
 主要 HTTP API：
 
-- `/api/users`：登录、令牌刷新、用户管理和用户授权
+- `/api/users`：登录、令牌刷新、当前用户信息、用户管理和用户授权
 - `/api/permissions`：权限树及权限管理
 - `/api/organizations`：机构管理
 - `/api/dataDictionaries`：数据字典和字典项管理
 - `/api/productCategories`：商品类目列表及类目管理
-- `/api/products`：商品增删改查、分页查询及类目选项
-- `/api/orders`：随机订单生成及多种分页查询
+- `/api/products`：商品增删改查、状态变更、分页查询及类目选项
+- `/api/orders`：随机订单生成及偏移量、ID 列表、游标三种分页查询
 - `/api/inventories/changes`：库存变更
 - `/api/wallets/changes`：钱包余额变更
 
@@ -136,7 +138,7 @@ Authorization: Bearer <access-token>
 - <http://localhost:5272/openapi/v1.yaml>：OpenAPI 3.1 文档，仅在开发环境提供
 - <http://localhost:5272/cap>：CAP Dashboard，使用配置的 Dashboard 凭据登录
 
-应用日志输出到控制台；Error 及以上级别日志同时按天写入 `logs/log-*.txt`，最多保留 30 个文件。
+应用日志中 Information 级别输出到控制台；Error 及以上级别日志同时按天写入 `logs/log-*.txt`，最多保留 30 个文件。
 
 ## 测试
 
