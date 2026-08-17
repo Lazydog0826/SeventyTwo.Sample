@@ -160,10 +160,12 @@ builder.Services.AddControllers().AddJsonOptions(JsonConfiguration.Configure);
 
 #region 模型验证
 
-// 覆盖 MVC 默认的模型验证失败响应：选择首个字段消息键，
-// 再抛出业务验证异常，由全局异常处理器生成统一格式的 API 错误响应。
+// 覆盖 MVC 默认的模型验证失败响应，抛出业务验证异常，
+// 由全局异常处理器生成统一格式的 API 错误响应。
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
+    // 模型验证可能同时产生多个字段错误。为保持前端多语言消息协议稳定，
+    // 此处不返回 ModelState 中顺序不确定的具体错误，仅返回统一的模型验证失败消息键。
     options.InvalidModelStateResponseFactory = _ => throw new ApiValidationException(MessageKeys.Validation.Failed);
 });
 
