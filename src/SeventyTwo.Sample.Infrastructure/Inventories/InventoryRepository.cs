@@ -77,6 +77,10 @@ public sealed class InventoryRepository(ISqlSugarClient db) : IInventoryReposito
 
         if (changedInventories.Count > 0)
         {
+            // 规范（设计取舍）：数量变更不回写库存主表的 updated_by/updated_at（聚合仅修改 Quantity），
+            // 本方法按全字段更新会原样写回旧值；"谁在何时改了数量"的审计以 inventory_change_record
+            // 变更明细表为准。若未来需要主表审计，须由调用方在聚合上设置 UpdatedBy/UpdatedAt
+            // 并改为 UpdateColumns 精确更新，避免覆盖并发写入。
             var changedRecords = changedInventories.Adapt<List<InventoryRecord>>();
             await db.Updateable(changedRecords).ExecuteCommandAsync(cancellationToken);
         }

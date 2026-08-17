@@ -71,6 +71,10 @@ public sealed class WalletRepository(ISqlSugarClient db) : IWalletRepository
 
         if (changedWallets.Count > 0)
         {
+            // 规范（设计取舍）：余额变更不回写钱包主表的 updated_by/updated_at（聚合仅修改 Balance），
+            // 本方法按全字段更新会原样写回旧值；"谁在何时改了余额"的审计以 wallet_change_record
+            // 变更明细表为准。若未来需要主表审计，须由调用方在聚合上设置 UpdatedBy/UpdatedAt
+            // 并改为 UpdateColumns 精确更新，避免覆盖并发写入。
             var changedWalletRecords = changedWallets.Adapt<List<WalletRecord>>();
             await db.Updateable(changedWalletRecords).ExecuteCommandAsync(cancellationToken);
         }
