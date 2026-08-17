@@ -128,7 +128,7 @@ Authorization: Bearer <access-token>
 - `/api/dataDictionaries`：数据字典和字典项管理
 - `/api/productCategories`：商品类目列表及类目管理
 - `/api/products`：商品增删改查、状态变更、分页查询及类目选项
-- `/api/orders`：随机订单生成及偏移量、ID 列表、游标三种分页查询
+- `/api/orders`：偏移量、ID 列表、游标三种分页查询
 - `/api/inventories/changes`：库存变更
 
 基础设施端点：
