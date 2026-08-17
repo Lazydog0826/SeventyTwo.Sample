@@ -56,7 +56,7 @@ public static class DataPermissionQueryExtensions
 
     /// <summary>
     /// 本机构与下级机构数据：行的机构 ID 命中本机构，
-    /// 或左联机构后其 Path 以本机构 Path 为字符串前缀（含本机构自身与下级机构）。
+    /// 或其机构 Path 以本机构 Path 为字符串前缀（含本机构自身与下级机构）。
     /// </summary>
     private static ISugarQueryable<T> ApplyOrganizationAndDescendants<T>(
         ISugarQueryable<T> query,
@@ -74,12 +74,18 @@ public static class DataPermissionQueryExtensions
             );
         }
 
-        // 左联而非内联：行的机构缺失时仍可命中 "机构 ID 等于本机构" 分支；
+        // 使用 EXISTS 关联子查询而非 LeftJoin：Join 会让查询进入多表形态，
+        // SqlSugar 要求后续 OrderBy/Where 使用与 Join 相同的别名，调用方链式调用会因别名不一致抛异常；
+        // 子查询保持单表形态，调用方可继续按单表约定叠加条件与排序。
+        // 行的机构缺失时子查询不命中，仍可走 "机构 ID 等于本机构" 分支，与原左联语义一致；
         // 机构是否软删不属于数据权限范畴，可见性由基础查询自行控制。
-        return query
-            .LeftJoin<OrganizationRecord>((q, org) => q.OrgId == org.Id)
-            .Where((q, org) => q.OrgId == orgId || org.Path.StartsWith(organizationPath))
-            .Select((q, org) => q);
+        return query.Where(x =>
+            x.OrgId == orgId
+            || SqlFunc
+                .Subqueryable<OrganizationRecord>()
+                .Where(org => org.Id == x.OrgId && org.Path.StartsWith(organizationPath))
+                .Any()
+        );
     }
 
     /// <summary>
