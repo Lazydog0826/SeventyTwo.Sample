@@ -283,6 +283,8 @@ public sealed class UsersController(
             new CookieOptions
             {
                 HttpOnly = true,
+                // 刷新令牌仅允许通过安全连接传输。本地开发使用 localhost 调试；
+                // 局域网 IP、机器名或域名等非本地环境必须通过 HTTPS 访问。
                 Secure = true,
                 SameSite = refreshTokenCookieConfiguration.Value.SameSite,
                 Expires = data.ExpireTime,
