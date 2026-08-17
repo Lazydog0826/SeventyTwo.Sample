@@ -40,6 +40,26 @@ public sealed class ApiExceptionHandlerTests
         );
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TryHandleAsync_ShouldShortCircuitCancellationException(bool isTaskCanceledException)
+    {
+        var handler = new ApiExceptionHandler(
+            NullLogger<ApiExceptionHandler>.Instance,
+            Options.Create(new JsonOptions())
+        );
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        Exception exception = isTaskCanceledException ? new TaskCanceledException() : new OperationCanceledException();
+
+        var handled = await handler.TryHandleAsync(context, exception, CancellationToken.None);
+
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.Equal(0, context.Response.Body.Length);
+    }
+
     private static Task AssertDomainResponseAsync(DomainErrorType errorType, HttpStatusCode expectedStatusCode) =>
         AssertResponseAsync(
             new DomainException(MessageKeys.Products.NameRequired, errorType),

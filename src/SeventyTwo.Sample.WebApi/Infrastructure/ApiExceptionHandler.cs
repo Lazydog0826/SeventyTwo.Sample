@@ -33,6 +33,12 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
         var request = httpContext.Request;
         request.Headers.TryGetValue("RequestNo", out var requestNo);
 
+        // 取消属于请求生命周期的正常结束，无需记录错误或写入响应。
+        if (exception is OperationCanceledException)
+        {
+            return true;
+        }
+
         if (exception is not DomainException and not ApiValidationException and not TokenAuthenticationException)
         {
             logger.LogError(
