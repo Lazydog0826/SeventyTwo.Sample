@@ -2,6 +2,8 @@
 
 基于 .NET 10 的分层 Web API 示例项目，包含用户、权限、机构、数据字典、商品、订单和库存等业务场景，并集成 PostgreSQL、Redis、RabbitMQ 与 CAP。
 
+演示地址：<https://sample.web.dot-net.dev/>
+
 ## 项目结构
 
 ```text
